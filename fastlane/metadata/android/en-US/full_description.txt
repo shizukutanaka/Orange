@@ -1,0 +1,20 @@
+Your phone stops ringing when it shouldn't.
+
+That's the entire product. Orange runs silently in the background, screens
+incoming calls, and blocks the unwanted ones before the ring ever reaches
+you. No menus to learn. No settings to configure. No account to create.
+
+Orange catches international scam corridors, Caribbean premium-rate traps,
+Wangiri callback scams (both classic one-ring and the newer recorded-message
+variant), structurally impossible phone numbers, withheld caller IDs, and
+carrier-flagged spoofed calls — all without reading your contacts or
+connecting to any server.
+
+If someone calls pretending to be from your local police headquarters,
+Orange recognizes the number and shows a warning with a one-tap "Call my
+family" button. If you try to call back a number Orange just blocked,
+it warns you before you connect.
+
+Emergency numbers — 911, 112, 110, 119 — always ring through.
+
+Free. No ads. No subscription. Not now, not later.

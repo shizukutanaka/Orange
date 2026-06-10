@@ -1,0 +1,104 @@
+# Changelog
+
+All notable changes to Orange will be documented in this file.
+Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
+Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+
+## [Unreleased]
+
+### Added (v1.1 — 2026-06-10)
+- **BlockHistoryStore** — last 50 blocked calls (masked ****1234, timestamp, reason) stored on-device with 30-day TTL. Full number never written to disk.
+- **HistoryActivity** — review blocked calls and allow false positives with one tap.
+- **AllowSuffixStore** — suffix-based allow-override for false-positive recovery from history.
+- **SettingsActivity** — family number registration UI (3 slots) + link to block history.
+- **Post-trust-window recovery notification** — after the 7-day window, a silent IMPORTANCE_MIN notification still fires per block with "Restore" + "Review history" actions.
+- **Onboarding → Settings handoff** — first-launch opens SettingsActivity after role grant if no family numbers configured.
+- **Business directory v1.1** — 29 → 95+ entries. Carriers, credit cards, net banks, logistics, transit, utilities, medical hotlines, Digital Agency.
+- **AllowSuffix check in SilentBlockerService** — suffix-allowed numbers ring through unconditionally.
+- **BlockHistory recording** — every SILENCE verdict persisted to BlockHistoryStore.
+- **Test coverage** — BlockHistoryStoreTest (5 cases), AllowSuffixStoreTest (4 cases).
+
+## [1.0.0] — 2026-06-06
+
+### Added
+- **15-point pure decision engine** (`CallDecision.kt`) — Android-free, fully testable.
+- **Emergency bypass** — 110/119/118/911/112/999/000 hard-coded, untouchable.
+- **Withheld number (非通知) blocking** — anonymous/hidden caller ID silenced.
+- **Domestic JP spoof detector** — MIC numbering plan structure checks (02x, wrong digit count, 060 mobile, 0990 premium, 8+ repeating digits).
+- **Wangiri 2.0 tracker** — 15-second threshold catches both 1-ring and recorded-message patterns; 6-hour callback window; 64-entry bounded LRU.
+- **STIR/SHAKEN verification** — API 30+ `VERIFICATION_STATUS_FAILED` silences carrier-flagged spoofs.
+- **Police HQ impersonation warning** — 47 prefectural police HQ numbers bundled; calls RING with heads-up warning + "家族に連絡" button. Replaces old 0110-tail heuristic.
+- **Family callback system** — pre-set up to 3 family numbers (manual entry, no READ_CONTACTS); Quick Settings tile for one-tap dial; action button on every warning notification.
+- **Outbound guard** — warns when user dials a number that was blocked/warned within 24 hours.
+- **Caribbean NANP premium area codes** — 22 high-fraud NANP codes (+1-242/+1-876 etc.) silenced as premium-rate.
+- **International premium rate blocking** — +800/+979/+882/+883 silenced.
+- **Elevated-risk country corridors** — +675/+7/+86/+44/+212/+234/+63/+39 for JP users.
+- **Bounded spam cache** — LRU eviction at 10,000 entries.
+- **Notification rate limiter** — 5 per 5-minute window; burst-scam protection.
+- **Weekly/monthly digest** — weekly for weeks 2-8, monthly thereafter. Never stops entirely.
+- **Role-loss monitor** — widget shows "·" if screening role revoked; tap to re-grant.
+- **Cold-start warmup** — ContentProvider pre-loads CSV directories before first call.
+- **Warning notification system** (`WarningNotifier.kt`) — extracted from SilentBlockerService for Carmack-compliant separation of concerns.
+- **Outbound call recording** — dual path: CallScreeningService DIRECTION_OUTGOING (API 29+) + CallStateObserver BroadcastReceiver fallback.
+- **Business directory** — 29 entries (central ministries, couriers, mega-banks, NHK) from verified public sources.
+- **Adaptive icon** — 3-layer (background/foreground/monochrome) + pre-O fallback.
+- **4-locale support** — en/ja/zh/ko, full string parity (21 keys each).
+- **TalkBack accessibility** — contentDescription on widget, Compose semantics on Onboarding.
+- **Theme.Orange** — brand-color window/status/nav bars; no white-flash on launch.
+- **CI pipeline** — Privacy guard + lint + test + R8 release build + APK size budget.
+- **Release pipeline** — tag-push signed AAB/APK + optional Fastlane Play Console upload.
+- **Documentation** — README, PRIVACY_MANIFESTO, HONESTY_ADDENDUM, THREAT_MODEL, COMPETITIVE_ANALYSIS, DESIGN_NOTES, STORE_LISTING, CONTRIBUTING, SECURITY, DEVELOPING, CHANGELOG.
+- **Privacy policy** — HTML, GitHub Pages-ready.
+- **Phone number normalization** (`PhoneNumbers.kt`) — single source of truth, eliminates duplicate `normalize()` across files.
+- **F-Droid metadata** — `metadata/com.orange.apple.yml`.
+- **Play Data Safety** — `docs/play_data_safety.json`.
+
+### Security
+- No `INTERNET` permission. No `READ_CONTACTS`. No backup sync.
+- Emergency numbers unconditionally exempt, asserted by unit tests.
+- All `!!` operators eliminated; `orEmpty()` pattern throughout.
+- No hardcoded user-facing strings; all R.string-referenced.
+- Privacy guard CI gate (`check_no_network.sh`) blocks any network code.
+- APK size budget CI gate (`check_apk_size.sh`), ≤1 MiB ceiling.
+- Comprehensive static analysis (`check_comprehensive.sh`): 7 automated checks.
+
+### Changed
+- Wangiri threshold: 6s → 15s (catches "Wangiri 2.0" recorded-message variant).
+- Police detection: 0110-tail heuristic → 47-entry exact-match directory + RING with warning (never block police).
+- Police warning escalation: when STIR/SHAKEN also reports FAILED, warning upgrades to 🚨 POLICE_IMPERSONATION_HIGH.
+- Weekly digest: 8-week cutoff → indefinite monthly continuation.
+- SilentBlockerService: 240 LOC → 161 LOC (notification logic extracted to WarningNotifier).
+- Layer ordering: Pause > Withheld (pause = all calls ring, including restricted IDs).
+- `normalize()` function: deduplicated from 2 files → single `PhoneNumbers.normalize()`.
+- Withheld detection: 2 patterns → 7 (added restricted/private/unavailable/unknown/withheld).
+- `OutboundGuard.record()`: empty-string guard added internally.
+- `DomesticSpoofDetector`: `02x` → `020` only (fixes false-positive on 022=仙台, 023=山形, etc.).
+
+### Added (continued)
+- `DND honor mode` (Layer 14): when device DND is active, unknown domestic calls silenced.
+- `Time-of-day risk multiplier` (Layer 15): unknown 090/080/070/060 during Mon-Fri 09-12/13-16 JST shows `HIGH_RISK_HOUR_DOMESTIC` warning. Rate-limited to once per 24h per number.
+- `RepeatCallerTracker`: same number ringing 3+ times in 60 minutes → 4th call blocked (`REPEAT_CALLER`).
+- `PostCallAdvisor`: after answered call >30s from unknown number, low-priority notification with #9110 / 188 / 0120-210-364 official hotlines.
+- `TileService.requestListeningState()`: Quick Settings tiles refresh after every block event.
+- IRSF/Wangiri elevated-risk corridors added to `ScamPrefixSeed` (Latvia +371, Lithuania +370, Sao Tome +239, Sierra Leone +232, Somalia +252, Cuba +53, Cook Islands +682, Tonga +676, Vanuatu +678) — recurrent IPRN termination points per NDSS 2021 IRSF research.
+
+### Fixed
+- `OnboardingActivity` no longer calls `startService()` on the CallScreeningService — threw on Android 8+ background-start limits and was semantically wrong (Telecom binds it via the role grant). See ADR 005.
+- `DomesticSpoofDetector` special-prefix digit lengths corrected: 0120/0570/0990 are 10-digit, 0800/050/06x-09x are 11-digit (a refactor had grouped them as all-11). See ADR 004.
+- Removed unused `android.content.Intent` import from `OnboardingActivity`.
+- `PhoneNumbers.normalize()` now folds full-width '＋' and digits (U+FF0B, U+FF10–FF19) to ASCII before filtering — full-width-formatted numbers were surviving normalization yet failing every half-width prefix test, silently misclassifying the call. Foreign-script digits are now stripped, not kept. See ADR 007.
+
+### Security (continued)
+- Spam cache now stores SHA-256 hashes instead of plaintext numbers — the user's blocklist no longer appears in cleartext on disk (defense against malware, forensic imaging, backup leakage). A per-install 128-bit CSPRNG salt defeats cross-user precomputation, and the salt itself is encrypted with a non-exportable AndroidKeyStore AES-256-GCM key so a forensic `/data` image cannot recover it (KeyDroid arXiv:2507.07927). `CallState.spamCached` (Set) became `isSpamCached` (Boolean), keeping the engine pure. See ADR 006, arXiv:2304.02810.
+
+## [1.0.0] — TBD
+
+### Highlights
+- 16-point pure decision engine, zero network permission, zero contact access.
+- 47 prefectural police HQ numbers bundled — shows warning (never blocks) with STIR/SHAKEN escalation.
+- Wangiri 2.0 detection (15s threshold), Caribbean NANP premium blocking (22 area codes).
+- Withheld-number blocking (7 carrier patterns), DND honor mode, time-of-day risk signal.
+- Repeat-caller velocity (3 calls / 60min → 4th blocked), OutboundGuard callback warning.
+- PostCallAdvisor: #9110 / 188 / 0120-210-364 shown after >30s unknown calls.
+- FamilyCallback Quick Settings tile (1-tap family dial, no READ_CONTACTS).
+- Weekly → monthly digest. 4 locales (en/ja/zh/ko). 213 unit tests. 8 CI gates.

@@ -1,0 +1,16 @@
+<!--
+  Monochrome icon for Android 13+ themed icons. Same shape, user's tonal
+  palette at runtime. Rams #8: ship the detail, don't leave the OS to
+  improvise. Without this layer, Android 13 fills the entire canvas white
+  when the user has themed icons on, and the icon loses its identity.
+-->
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M54,54m-22,0a22,22 0 1,0 44,0a22,22 0 1,0 -44,0"/>
+</vector>

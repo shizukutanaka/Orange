@@ -1,0 +1,31 @@
+*.iml
+.gradle/
+/local.properties
+/.idea/
+.DS_Store
+/build
+/captures
+.externalNativeBuild
+.cxx
+local.properties
+
+# Android build artifacts
+**/build/
+**/.cxx/
+
+# Keystore must never be committed
+*.jks
+*.keystore
+!debug.keystore
+
+# Gradle wrapper jar — downloaded at CI/build time, not committed.
+# Keeps the repo free of binaries; CI bootstrap step fetches it.
+gradle/wrapper/gradle-wrapper.jar
+
+# IDE
+*.swp
+.vscode/
+
+# Python (tools/oracle_decision.py bytecode cache)
+__pycache__/
+*.pyc

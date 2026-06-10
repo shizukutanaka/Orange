@@ -1,0 +1,33 @@
+# Rams #10: as little duplication as possible. One file that owns every
+# version number. When we upgrade, we touch this file and nothing else.
+#
+# Every version pin here should be justifiable with one sentence.
+
+[versions]
+agp = "8.5.2"
+kotlin = "2.0.20"
+compose-bom = "2024.09.02"
+compose-compiler = "2.0.20"
+core-ktx = "1.13.1"
+activity-compose = "1.9.2"
+lifecycle = "2.8.6"
+junit = "4.13.2"
+
+[libraries]
+androidx-core-ktx          = { group = "androidx.core",       name = "core-ktx",          version.ref = "core-ktx" }
+androidx-activity-compose  = { group = "androidx.activity",   name = "activity-compose",  version.ref = "activity-compose" }
+androidx-lifecycle-runtime = { group = "androidx.lifecycle",  name = "lifecycle-runtime-ktx", version.ref = "lifecycle" }
+
+androidx-compose-bom             = { group = "androidx.compose",          name = "compose-bom",  version.ref = "compose-bom" }
+androidx-compose-ui              = { group = "androidx.compose.ui",       name = "ui" }
+androidx-compose-ui-graphics     = { group = "androidx.compose.ui",       name = "ui-graphics" }
+androidx-compose-material3       = { group = "androidx.compose.material3", name = "material3" }
+androidx-compose-foundation      = { group = "androidx.compose.foundation", name = "foundation" }
+androidx-compose-material-ripple = { group = "androidx.compose.material", name = "material-ripple" }
+
+junit = { group = "junit", name = "junit", version.ref = "junit" }
+
+[plugins]
+android-application = { id = "com.android.application", version.ref = "agp" }
+kotlin-android      = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
+compose-compiler    = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "compose-compiler" }

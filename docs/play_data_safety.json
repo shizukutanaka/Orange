@@ -1,0 +1,111 @@
+{
+  "_comment_purpose": "Google Play Data Safety declaration source of truth. Export this file's contents verbatim when filling the Data Safety form in Play Console. If this file disagrees with what Play Console shows, this file is the bug — Play Console is our public promise.",
+
+  "app_name": "Orange",
+  "package_name": "com.orange.apple",
+
+  "data_collection": {
+    "collects_any_data": false,
+    "_reason": "Orange has no INTERNET permission and operates entirely on-device. Nothing is uploaded, sent, or transmitted to any server, first-party or third-party, ever. All state is stored in the app's sandboxed SharedPreferences and is excluded from Auto Backup and device-transfer migrations."
+  },
+
+  "data_sharing": {
+    "shares_with_third_parties": false
+  },
+
+  "security_practices": {
+    "data_encrypted_in_transit": "not_applicable_no_network",
+    "user_can_request_data_deletion": true,
+    "user_deletion_mechanism": "Uninstalling Orange removes all state. The app has no account, no server, and no off-device persistence. A fresh install starts from zero.",
+    "adheres_to_play_families_policy": false,
+    "independent_security_review": "pending",
+    "_audit_artifacts": [
+      "THREAT_MODEL.md",
+      "PRIVACY_MANIFESTO.md",
+      "HONESTY_ADDENDUM.md"
+    ]
+  },
+
+  "permissions_requested": [
+    {
+      "permission": "android.permission.READ_CALL_LOG",
+      "purpose": "Required by the CallScreeningService contract to inspect incoming call numbers for screening decisions."
+    },
+    {
+      "permission": "android.permission.POST_NOTIFICATIONS",
+      "purpose": "Shows silent per-block notifications during the first seven days post-install (so users can Restore false positives), weekly digests from day 8 through week 8, monthly digests thereafter, police-impersonation warnings, and outbound-call warnings when the user dials a recently-blocked number."
+    },
+    {
+      "permission": "android.permission.RECEIVE_BOOT_COMPLETED",
+      "purpose": "Re-checks call-screening role status after reboot and after package replacement so the home-screen widget can reflect the current state."
+    }
+  ],
+
+  "components": {
+    "activities": ["OnboardingActivity (single-screen role-grant flow)"],
+    "services": [
+      "SilentBlockerService (CallScreeningService — 15-point decision engine)",
+      "PauseTile (Quick Settings tile — pause all blocking for 1 hour)",
+      "FamilyCallbackTile (Quick Settings tile — one-tap dial to pre-set family number)"
+    ],
+    "receivers": [
+      "RestoreReceiver (acts on user Restore tap from notification)",
+      "OrangeWidget (home-screen widget renderer with role-loss detection)",
+      "RoleMonitorReceiver (boot/package-replace triggers role status refresh)",
+      "CallStateObserver (PHONE_STATE listener for Wangiri detection and outbound logging)",
+      "WeeklyDigest (AlarmManager-driven Sunday 09:00 summary, weekly then monthly)"
+    ],
+    "providers": [
+      "EngineWarmup (ContentProvider that pre-loads CSV directories at app start)"
+    ],
+    "notification_objects": [
+      "TrustNotifier — per-block notifications during 7-day trust window (channel: orange_trust)",
+      "WarningNotifier — police-impersonation warnings (channel: orange_police_warn), outbound-callback warnings (channel: orange_outbound_warn), high-risk-hour domestic mobile warnings (channel: orange_highrisk; rate-limited once per 24h per number)",
+      "PostCallAdvisor — post-call #9110/188/0120-210-364 hotline advisory after answered unknown calls >30s (channel: orange_postcall; rate-limited once per 24h per number)",
+      "NotificationRateLimiter — caps 5 notifications per 5-minute window across TrustNotifier",
+      "WeeklyDigest — weekly block-count summary (channel: orange_digest); transitions to monthly after week 8"
+    ],
+    "offline_databases": [
+      "BusinessDirectoryBundle (29 verified government/business numbers)",
+      "PoliceStationDirectory (47 prefectural police HQ representative numbers)",
+      "ScamPrefixSeed (8 elevated-risk international country codes)",
+      "CaribbeanPremiumNANP (22 NANP premium-rate area codes)",
+      "EmergencyWhitelist (emergency numbers that always ring through)"
+    ],
+    "family_safety": [
+      "FamilyCallback (up to 3 pre-set family numbers, stored locally, no READ_CONTACTS)",
+      "OutboundGuard (warns when user dials a recently-blocked number)"
+    ]
+  },
+
+  "permissions_deliberately_not_requested": [
+    {
+      "permission": "android.permission.INTERNET",
+      "reason": "No server communication of any kind. The product runs entirely offline."
+    },
+    {
+      "permission": "android.permission.READ_CONTACTS",
+      "reason": "Orange resolves callers via a bundled offline business directory, not the user's address book. Competitors' reliance on contact upload is Orange's single largest differentiation point."
+    },
+    {
+      "permission": "android.permission.RECORD_AUDIO",
+      "reason": "No call recording, no voice-assistant screening."
+    },
+    {
+      "permission": "android.permission.ACCESS_FINE_LOCATION",
+      "reason": "Geographic context not used. SIM country from TelephonyManager is sufficient."
+    }
+  ],
+
+  "sdks_included": [],
+  "_sdks_comment": "Intentionally empty. No Firebase, no Crashlytics, no Sentry, no Amplitude, no ads SDK, no attribution SDK, no IAP. Dependency list is in app/build.gradle.kts and contains only AndroidX + Compose.",
+
+  "in_app_purchases": {
+    "offers_purchases": false,
+    "offers_subscriptions": false,
+    "serves_ads": false
+  },
+
+  "deletion_url": "N/A — uninstall is complete deletion; no server data exists to delete.",
+  "privacy_policy_url": "https://<github-pages-hostname>/privacy — deployed from docs/privacy_policy.html in the repository"
+}

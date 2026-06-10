@@ -1,0 +1,18 @@
+#!/usr/bin/env bash
+# Orange pre-commit hook.
+# Fast, deterministic checks that must pass before every commit.
+# Install with: git config core.hooksPath .githooks
+set -e
+
+echo "[pre-commit] privacy guard…"
+bash tools/check_no_network.sh app/src/main
+
+echo "[pre-commit] decision oracle…"
+if command -v python3 >/dev/null 2>&1; then
+    python3 tools/oracle_decision.py
+fi
+
+echo "[pre-commit] comprehensive static checks…"
+bash tools/check_comprehensive.sh >/dev/null
+
+echo "[pre-commit] OK"

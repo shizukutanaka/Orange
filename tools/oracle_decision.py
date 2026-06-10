@@ -1,0 +1,134 @@
+#!/usr/bin/env python3
+"""
+Reference oracle for the Orange decision engine's number-classification rules.
+
+WHY THIS EXISTS
+---------------
+The authoritative engine is Kotlin (`DomesticSpoofDetector.kt`,
+`CaribbeanPremiumNANP.kt`, etc.) and is tested by `gradlew testReleaseUnitTest`
+in a JVM. But during rapid local iteration WITHOUT a JVM (e.g. inside a
+container that only has Python), a pure-static grep check cannot catch a
+behavioral regression — exactly the class of bug that once made every 0120
+freephone call get silenced after a refactor (see docs/adr/004).
+
+This script encodes the SAME numbering-plan rules in Python and asserts them
+against a table of known-good / known-bad numbers. It is NOT a replacement for
+the Kotlin tests; it is a fast tripwire. If the Python oracle and the Kotlin
+source disagree on a rule, one of them is wrong — investigate before shipping.
+
+USAGE
+-----
+    python3 tools/oracle_decision.py          # run all cases, exit 1 on failure
+
+KEEP IN SYNC
+------------
+When you change a digit-length rule in DomesticSpoofDetector.kt, change it here
+too, and add the new case to CASES below. The two must always agree.
+"""
+import sys
+
+ELEVEN_DIGIT_PREFIXES = ("050", "060", "070", "080", "090", "0800")
+TEN_DIGIT_PREFIXES = ("0120", "0570", "0990")
+
+
+def to_domestic(n: str):
+    """E.164 (+81…) or domestic (0…) → domestic string; None if not JP."""
+    if n.startswith("+81"):
+        rest = n[3:]
+        return rest if rest.startswith("0") else "0" + rest
+    if n.startswith("0") and n.isdigit():
+        return n
+    return None
+
+
+def has_eight_repeating(s: str) -> bool:
+    if len(s) < 8:
+        return False
+    run = 1
+    for i in range(1, len(s)):
+        if s[i] == s[i - 1]:
+            run += 1
+            if run >= 8:
+                return True
+        else:
+            run = 1
+    return False
+
+
+def is_impossible_jp(n: str) -> bool:
+    """Mirror of DomesticSpoofDetector.isImpossibleJpNumber."""
+    d = to_domestic(n)
+    if d is None:
+        return False
+    if d.startswith("020"):
+        return True
+    if any(d.startswith(p) for p in ELEVEN_DIGIT_PREFIXES) and len(d) != 11:
+        return True
+    if any(d.startswith(p) for p in TEN_DIGIT_PREFIXES) and len(d) != 10:
+        return True
+    if has_eight_repeating(d):
+        return True
+    if not (10 <= len(d) <= 11):
+        return True
+    if len(d) > 1 and d[1] == "0":
+        return True
+    return False
+
+
+# (number, expected_is_impossible, description)
+CASES = [
+    # 020 = M2M/IoT or defunct pager — never a human voice caller
+    ("02012345678", True, "020 M2M/pager — impossible human voice caller"),
+    ("0201234567", True, "020 any length — blocked"),
+    # geographic area codes 022-029 are VALID (the famous regression)
+    ("0222211611", False, "022 Sendai police HQ — must NOT be spoof"),
+    ("0236265211", False, "023 Yamagata"),
+    ("0245221111", False, "024 Fukushima"),
+    ("0293011621", False, "029 Mito"),
+    # freephone / navi-dial / teledome lengths
+    ("0120123456", False, "0120 freephone valid 10-digit"),
+    ("01201234567", True, "0120 wrong 11-digit"),
+    ("08001234567", False, "0800 freephone valid 11-digit"),
+    ("0800123456", True, "0800 wrong 10-digit"),
+    ("0570123456", False, "0570 navi-dial valid 10-digit"),
+    ("05701234567", True, "0570 wrong 11-digit"),
+    ("0990123456", False, "0990 teledome valid 10-digit"),
+    # IP phone
+    ("05012345678", False, "050 IP valid 11-digit"),
+    ("0501234567", True, "050 too short 10-digit"),
+    # mobiles
+    ("09012345678", False, "090 mobile valid 11-digit"),
+    ("08012345678", False, "080 mobile valid"),
+    ("07012345678", False, "070 mobile valid"),
+    ("06012345678", False, "060 mobile valid (2025 MIC allocation)"),
+    ("0901234567", True, "090 too short 10-digit"),
+    # repeating-digit robot artifact
+    ("09011111111", True, "090 with 8 repeating 1s"),
+    ("0311111111", True, "03 landline with 8 repeating 1s"),
+    # landline
+    ("0312345678", False, "03 Tokyo landline valid 10-digit"),
+    # 00x intl access used domestically
+    ("00123456789", True, "00x intl-access prefix domestic"),
+    # non-JP — out of scope, never flagged
+    ("+12125551234", False, "US number — not JP, out of scope"),
+    ("+447911123456", False, "UK number — not JP, out of scope"),
+]
+
+
+def main() -> int:
+    failures = 0
+    for number, expected, desc in CASES:
+        actual = is_impossible_jp(number)
+        if actual != expected:
+            failures += 1
+            print(f"FAIL: {desc} ({number}) → {actual}, expected {expected}")
+    total = len(CASES)
+    if failures:
+        print(f"\n{failures}/{total} oracle cases FAILED")
+        return 1
+    print(f"All {total} oracle cases passed")
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

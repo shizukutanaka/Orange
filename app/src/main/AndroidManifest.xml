@@ -1,0 +1,139 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <!--
+      Deliberately NOT requested:
+        READ_CONTACTS  — Orange resolves callers via the bundled business
+                         directory and the user's own outbound call history.
+                         Competitors (Truecaller, Whoscall) require contact
+                         upload. We do not. Primary privacy claim.
+        INTERNET       — No servers. No telemetry. No crowdsourced DB uploads.
+                         Entire product runs offline after install.
+    -->
+    <uses-permission android:name="android.permission.READ_CALL_LOG"/>
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
+    <!-- Required to register a BOOT_COMPLETED receiver. Does not access any
+         data; only allows the receiver to fire on boot. -->
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED"/>
+
+    <application
+        android:label="@string/app_name"
+        android:icon="@mipmap/ic_launcher"
+        android:roundIcon="@mipmap/ic_launcher"
+        android:allowBackup="false"
+        android:dataExtractionRules="@xml/data_extraction_rules"
+        android:fullBackupContent="@xml/backup_rules"
+        android:theme="@style/Theme.Orange"
+        android:supportsRtl="true">
+
+        <!-- Cold-start warmup: pre-loads CSV directories so the first
+             onScreenCall() hits in-memory caches, not disk I/O. -->
+        <provider
+            android:name=".EngineWarmup"
+            android:authorities="${applicationId}.warmup"
+            android:exported="false"/>
+
+        <activity
+            android:name=".OnboardingActivity"
+            android:exported="true"
+            android:noHistory="true"
+            android:theme="@style/Theme.Orange">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN"/>
+                <category android:name="android.intent.category.LAUNCHER"/>
+            </intent-filter>
+        </activity>
+
+        <activity
+            android:name=".HistoryActivity"
+            android:exported="false"
+            android:theme="@style/Theme.Orange"/>
+
+        <activity
+            android:name=".SettingsActivity"
+            android:exported="false"
+            android:theme="@style/Theme.Orange"/>
+
+        <service
+            android:name=".SilentBlockerService"
+            android:exported="true"
+            android:permission="android.permission.BIND_SCREENING_SERVICE">
+            <intent-filter>
+                <action android:name="android.telecom.CallScreeningService"/>
+            </intent-filter>
+        </service>
+
+        <receiver
+            android:name=".RestoreReceiver"
+            android:exported="false"/>
+
+        <receiver
+            android:name=".OrangeWidget"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE"/>
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/widget_orange_info"/>
+        </receiver>
+
+        <!--
+          Role-loss detector. If the user disables Orange in
+          Settings → Default apps → Caller ID, we update the widget glyph
+          on next boot/package replace so the user notices. No notification
+          is fired; the widget change is the only signal.
+        -->
+        <receiver
+            android:name=".RoleMonitorReceiver"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED"/>
+                <action android:name="android.intent.action.MY_PACKAGE_REPLACED"/>
+            </intent-filter>
+        </receiver>
+
+        <!--
+          Phone state observer. Single receiver for two concerns:
+          (A) Wangiri short-ring detection, (B) Outbound call logging.
+          Does NOT require READ_PHONE_STATE (Android 12+ delivers number
+          without it; degrades gracefully on earlier versions).
+        -->
+        <receiver
+            android:name=".CallStateObserver"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.PHONE_STATE"/>
+            </intent-filter>
+        </receiver>
+
+        <!-- Weekly digest notification (Sunday 09:00, day 8–56 only) -->
+        <receiver
+            android:name=".WeeklyDigest"
+            android:exported="false"/>
+
+        <service
+            android:name=".PauseTile"
+            android:exported="true"
+            android:icon="@android:drawable/ic_lock_silent_mode"
+            android:label="@string/tile_label_active"
+            android:permission="android.permission.BIND_QUICK_SETTINGS_TILE">
+            <intent-filter>
+                <action android:name="android.service.quicksettings.action.QS_TILE"/>
+            </intent-filter>
+        </service>
+
+        <!-- Family callback tile: one-tap dial to pre-set family number -->
+        <service
+            android:name=".FamilyCallbackTile"
+            android:exported="true"
+            android:icon="@android:drawable/ic_menu_call"
+            android:label="@string/tile_label_family"
+            android:permission="android.permission.BIND_QUICK_SETTINGS_TILE">
+            <intent-filter>
+                <action android:name="android.service.quicksettings.action.QS_TILE"/>
+            </intent-filter>
+        </service>
+
+    </application>
+</manifest>

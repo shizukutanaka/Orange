@@ -1,0 +1,23 @@
+#!/usr/bin/env bash
+# Orange pre-push hook.
+# Heavier checks before code leaves the machine. Requires a JVM/Gradle.
+# Install with: git config core.hooksPath .githooks
+set -e
+
+echo "[pre-push] privacy guard…"
+bash tools/check_no_network.sh app/src/main
+
+echo "[pre-push] decision oracle…"
+if command -v python3 >/dev/null 2>&1; then
+    python3 tools/oracle_decision.py
+fi
+
+if [ -x ./gradlew ]; then
+    echo "[pre-push] JVM unit tests (authoritative)…"
+    ./gradlew testReleaseUnitTest --no-daemon
+else
+    echo "[pre-push] WARNING: ./gradlew not found — JVM tests NOT run."
+    echo "           CI will run them, but you are pushing unverified behavior."
+fi
+
+echo "[pre-push] OK"

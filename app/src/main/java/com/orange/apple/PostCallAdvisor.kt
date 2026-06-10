@@ -1,0 +1,108 @@
+package com.orange.apple
+
+import android.app.NotificationChannel
+import android.app.NotificationManager
+import android.app.PendingIntent
+import android.content.Context
+import android.content.Intent
+import android.net.Uri
+import androidx.core.app.NotificationCompat
+
+/**
+ * Post-call safety advisor.
+ *
+ * After answering an unknown number for >30 seconds, show a low-priority
+ * notification with official JP reporting/advice hotlines:
+ *
+ *   警察相談    #9110
+ *   消費者      188
+ *   国際電話不取扱受付  0120-210-364
+ *   でんわんセンター    03-6162-1111 (weekdays 10:00-17:00)
+ *
+ * This operationalizes the consistent advice from 警察庁・国民生活センター:
+ *   「一旦電話を切り、ご家族や警察（#9110）に相談を」
+ *
+ * Design:
+ *   - LOW priority (no sound, no vibration, doesn't interrupt the user)
+ *   - Auto-cancel on tap
+ *   - One notification per number per 24 hours (rate-limited)
+ *   - Only fires if the number was NOT in outbound-known or business-bundle
+ *     (those are trusted callers; advice is not needed)
+ *
+ * Called from CallStateObserver.onIdle() when:
+ *   - The call was answered (OFFHOOK was observed)
+ *   - Duration > THRESHOLD_MS (30 seconds)
+ *   - The number was unknown (not outbound-known, not in business bundle)
+ */
+object PostCallAdvisor {
+
+    const val THRESHOLD_MS = 30_000L
+    private const val CHANNEL = "orange_postcall"
+    private const val WINDOW_MS = 24L * 60 * 60 * 1000
+
+    fun maybeShow(ctx: Context, number: String, durationMs: Long) {
+        if (durationMs < THRESHOLD_MS) return
+        if (number.isEmpty()) return
+
+        val prefs = ctx.getSharedPreferences(SilentBlockerService.PREFS, Context.MODE_PRIVATE)
+        // Rate-limit key uses hashCode to bound key length.
+        // E.164 numbers can be up to 15 digits; "postcall_last_" + 15 chars
+        // is safe but we use hashCode for defensive consistency with
+        // WarningNotifier.showHighRiskHourWarning.
+        val rateKey = "postcall_last_${number.hashCode()}"
+        val lastShown = prefs.getLong(rateKey, 0L)
+        val now = System.currentTimeMillis()
+        if (now - lastShown < WINDOW_MS) return   // rate-limit: once per 24h per number
+
+        // Only fire for numbers not already in trusted sets
+        val outbound = prefs.getStringSet(SilentBlockerService.KEY_OUTBOUND, emptySet()).orEmpty()
+        if (number in outbound) return
+
+        prefs.edit().putLong(rateKey, now).apply()
+        show(ctx, number)
+    }
+
+    private fun show(ctx: Context, number: String) {
+        val mgr = ctx.getSystemService(Context.NOTIFICATION_SERVICE) as? NotificationManager
+            ?: return
+
+        if (mgr.getNotificationChannel(CHANNEL) == null) {
+            mgr.createNotificationChannel(
+                NotificationChannel(
+                    CHANNEL,
+                    ctx.getString(R.string.notif_channel_postcall),
+                    NotificationManager.IMPORTANCE_LOW
+                ).apply {
+                    setShowBadge(false)
+                    enableVibration(false)
+                    setSound(null, null)
+                }
+            )
+        }
+
+        // Primary action: dial #9110 (police consultation line)
+        val dial9110 = PendingIntent.getActivity(
+            ctx, 0,
+            Intent(Intent.ACTION_DIAL, Uri.parse("tel:%239110")).apply {
+                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            },
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+
+        val notif = NotificationCompat.Builder(ctx, CHANNEL)
+            .setSmallIcon(android.R.drawable.ic_menu_info_details)
+            .setContentTitle(ctx.getString(R.string.postcall_title))
+            .setContentText(ctx.getString(R.string.postcall_body))
+            .setStyle(
+                NotificationCompat.BigTextStyle()
+                    .bigText(ctx.getString(R.string.postcall_body_big))
+            )
+            .setPriority(NotificationCompat.PRIORITY_LOW)
+            .setAutoCancel(true)
+            .setContentIntent(dial9110)
+            .addAction(0, ctx.getString(R.string.postcall_action_9110), dial9110)
+            .build()
+
+        mgr.notify(number.hashCode() + 0x09110, notif)
+    }
+}

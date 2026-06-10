@@ -1,0 +1,80 @@
+# Tag-driven release pipeline.
+#
+# Trigger: push a tag matching v*.*.* (e.g. v1.0.0).
+# Effect:  builds a signed AAB + APK, attaches to GitHub release, optionally
+#          uploads to Play Console (if PLAY_SERVICE_ACCOUNT_JSON is set).
+#
+# Why this is in a separate workflow from CI: tag releases need secrets,
+# and secrets should not be exposed to PRs from forks. Splitting the
+# workflows keeps PR CI fast (no secret access) and release CI safe
+# (only main-branch tags trigger).
+
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+
+jobs:
+  release:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    permissions:
+      contents: write   # for creating GitHub releases
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: gradle/actions/setup-gradle@v4
+
+      - name: Re-check privacy guard before signing
+        run: bash tools/check_no_network.sh app/src/main
+
+      - name: Decode keystore
+        run: |
+          mkdir -p app/keystore
+          echo "${{ secrets.ORANGE_KEYSTORE_BASE64 }}" | base64 -d > app/keystore/release.jks
+        if: ${{ secrets.ORANGE_KEYSTORE_BASE64 != '' }}
+
+      - name: Build signed AAB + APK
+        env:
+          ORANGE_KEYSTORE_PATH: ${{ github.workspace }}/app/keystore/release.jks
+          ORANGE_KEYSTORE_PASSWORD: ${{ secrets.ORANGE_KEYSTORE_PASSWORD }}
+          ORANGE_KEY_ALIAS: ${{ secrets.ORANGE_KEY_ALIAS }}
+          ORANGE_KEY_PASSWORD: ${{ secrets.ORANGE_KEY_PASSWORD }}
+        run: ./gradlew bundleRelease assembleRelease --no-daemon
+
+      - name: Verify APK size budget
+        run: bash tools/check_apk_size.sh
+
+      - name: Attach to GitHub release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            app/build/outputs/apk/release/*.apk
+            app/build/outputs/bundle/release/*.aab
+          generate_release_notes: true
+
+      # Play Console upload via Fastlane supply.
+      # Requires PLAY_SERVICE_ACCOUNT_JSON secret with edit scope on the package.
+      # Without that secret this step is skipped — the GitHub release artifacts
+      # are still available for sideload or F-Droid pickup.
+      - name: Upload to Play Console (internal track)
+        if: ${{ secrets.PLAY_SERVICE_ACCOUNT_JSON != '' }}
+        env:
+          SUPPLY_PACKAGE_NAME: com.orange.apple
+          SUPPLY_TRACK: internal
+          SUPPLY_AAB: ${{ github.workspace }}/app/build/outputs/bundle/release/app-release.aab
+          SUPPLY_JSON_KEY_DATA: ${{ secrets.PLAY_SERVICE_ACCOUNT_JSON }}
+          SUPPLY_METADATA_PATH: ${{ github.workspace }}/fastlane/metadata/android
+        run: |
+          gem install fastlane --no-document
+          fastlane supply --aab "$SUPPLY_AAB" \
+                          --track "$SUPPLY_TRACK" \
+                          --metadata_path "$SUPPLY_METADATA_PATH" \
+                          --skip_upload_screenshots true \
+                          --skip_upload_images true \
+                          --json_key_data "$SUPPLY_JSON_KEY_DATA"

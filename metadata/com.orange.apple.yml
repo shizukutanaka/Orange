@@ -1,0 +1,36 @@
+Categories:
+  - Phone & SMS
+License: MIT
+AuthorName: Orange contributors
+SourceCode: https://github.com/OWNER/orange
+IssueTracker: https://github.com/OWNER/orange/issues
+
+# Note: replace OWNER with the GitHub username/org before submitting to F-Droid.
+# The repository name "orange" may need qualification if it conflicts with existing repos.
+
+AutoName: Orange
+Description: |
+  Your phone stops ringing when it shouldn't.
+
+  Orange is an offline-only call blocker. No account, no server, no contact
+  upload, no ads, no subscription. Emergency numbers always ring through.
+
+  What Orange does NOT do: it does not read your contacts, does not connect
+  to any server, and does not include any analytics or advertising SDK.
+  See PRIVACY_MANIFESTO.md in the source repository.
+
+RepoType: git
+Repo: https://github.com/OWNER/orange
+
+Builds:
+  - versionName: 1.0.0
+    versionCode: 1
+    commit: v1.0.0
+    subdir: app
+    gradle:
+      - yes
+
+AutoUpdateMode: Version
+UpdateCheckMode: Tags
+CurrentVersion: 1.0.0
+CurrentVersionCode: 1

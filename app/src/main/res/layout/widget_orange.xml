@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Widget layout. Rams #4 (makes product understandable): one number, one
+  caption. No buttons, no decoration, no chrome. If the widget doesn't
+  invite fidgeting, users learn to trust it.
+
+  16dp padding on all sides gives the foreground 88x88dp breathing room
+  inside Android's 110x110dp widget minimum, which matches the app icon's
+  inner safe zone. The widget is the icon enlarged.
+-->
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/widget_root"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#FF8C42"
+    android:padding="16dp">
+
+    <LinearLayout
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center"
+        android:orientation="vertical">
+
+        <TextView
+            android:id="@+id/w_number"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center_horizontal"
+            android:textSize="48sp"
+            android:textStyle="bold"
+            android:importantForAccessibility="yes"
+            tools:text="247"/>
+
+        <TextView
+            android:id="@+id/w_caption"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center_horizontal"
+            android:layout_marginTop="-4dp"
+            android:textSize="12sp"
+            android:importantForAccessibility="yes"
+            tools:text="silenced"/>
+    </LinearLayout>
+</FrameLayout>

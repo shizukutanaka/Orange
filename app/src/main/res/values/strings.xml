@@ -1,0 +1,83 @@
+<!--
+  English strings. Apple copywriting rules applied:
+   - "Your" perspective, not feature perspective
+   - Verbs, not nouns ("Protect", "Restore", not "Protection", "Restoration")
+   - No jargon ("Silenced", not "Screened out via heuristic rules")
+   - No marketing superlatives ("Silenced", not "Perfectly silenced")
+   - Brevity: the entire surface area of the app is 6 visible strings
+
+  If a new string is proposed and it can't clear all five tests,
+  the feature that needs it shouldn't ship.
+-->
+<resources>
+    <string name="app_name">Orange</string>
+
+    <!-- Onboarding: single screen, single action. -->
+    <string name="cta_protect">Protect</string>
+    <string name="cta_protect_description">Start protecting this phone from unwanted calls</string>
+
+    <!-- Trust-week notification. Low priority, silent. -->
+    <string name="notif_title">Silenced a call</string>
+    <string name="notif_action_restore">Restore</string>
+    <string name="notif_channel_trust">Blocked calls (first week)</string>
+
+    <!-- Confirmation after Restore. One sentence, no punctuation games. -->
+    <string name="toast_restored">Will ring from now on</string>
+
+    <!-- Widget caption. Unchanging whether count is 0, 1, or 1,000,000. -->
+    <string name="widget_caption">silenced</string>
+    <string name="widget_a11y_role_lost">Orange is inactive. Tap to reactivate.</string>
+
+    <!-- Quick Settings tile. -->
+    <string name="tile_label_active">Orange</string>
+    <string name="tile_label_paused">Orange paused</string>
+    <string name="digest_text">Silenced %1$d calls this week.</string>
+    <string name="notif_channel_police_warn">Police impersonation warning</string>
+    <string name="police_warn_title">%1$s の番号です</string>
+    <string name="police_warn_body">偽装の可能性があります。一度切って #9110 にかけ直してください</string>
+    <string name="police_warn_family">家族に連絡</string>
+    <string name="tile_label_family">家族に連絡</string>
+    <string name="notif_channel_outbound_warn">Outbound call warning</string>
+    <string name="outbound_warn_title">Warning: recently flagged</string>
+    <string name="outbound_warn_body">This number was recently blocked. Consider hanging up.</string>
+    <string name="notif_channel_digest">Weekly summary</string>
+    <string name="police_warn_title_high">🚨 %1$s の番号 — 偽装の疑い極めて高</string>
+    <string name="notif_channel_highrisk">High-risk hour warning</string>
+    <string name="highrisk_warn_title">⚠️ 不審な着信</string>
+    <string name="highrisk_warn_body">業務時間帯の携帯からの不審な着信です。折り返さないでください</string>
+    <string name="notif_channel_postcall">Post-call safety</string>
+    <string name="postcall_title">通話後のご確認</string>
+    <string name="postcall_body">#9110 に相談できます</string>
+    <string name="postcall_body_big">#9110 警察相談 / 188 消費者 / 0120-210-364 国際電話不取扱受付（無料）</string>
+    <string name="postcall_action_9110">#9110 に電話</string>
+
+    <!-- History screen -->
+    <string name="history_title">Blocked Calls</string>
+    <string name="history_empty">No recent blocked calls.</string>
+    <string name="history_action_allow">Allow</string>
+    <string name="history_footer">Numbers shown masked. Entries older than 30 days are removed automatically.</string>
+
+    <!-- Block reasons (history display) -->
+    <string name="reason_spam_cache">Previously blocked</string>
+    <string name="reason_foreign_elevated">High-risk country</string>
+    <string name="reason_foreign_generic">International</string>
+    <string name="reason_domestic_spoof">Invalid JP number</string>
+    <string name="reason_wangiri">Wangiri callback</string>
+    <string name="reason_stir_shaken">Carrier: spoofed</string>
+    <string name="reason_withheld">Withheld number</string>
+    <string name="reason_premium_rate">Premium rate</string>
+    <string name="reason_dnd">DND active</string>
+    <string name="reason_repeat_caller">Repeat caller</string>
+
+    <!-- Settings screen -->
+    <string name="settings_title">Settings</string>
+    <string name="settings_section_family">Family contacts</string>
+    <string name="settings_family_description">If Orange warns you about a suspicious call, these numbers appear as one-tap shortcuts so you can quickly reach family.</string>
+    <string name="settings_family_slot">Slot %1$d</string>
+    <string name="settings_family_placeholder">+81901234567</string>
+    <string name="settings_save">Save</string>
+    <string name="settings_saved">Saved</string>
+    <string name="settings_section_history">Call history</string>
+    <string name="settings_view_history">View blocked calls</string>
+    <string name="settings_footer">Orange stores no data outside this device. Numbers in history are masked. No account, no sync, no ads.</string>
+</resources>

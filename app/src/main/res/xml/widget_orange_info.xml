@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  AppWidget provider info.
+
+  updatePeriodMillis = 1800000 (30 min): the widget reflects a slowly
+  changing integer. Updating more often burns battery for nothing. The
+  screener itself writes prefs on every block, but the UI re-render
+  doesn't need to fire in real time.
+
+  resizeMode = none: the widget is a fixed 110x110 block. Resizing would
+  invite the user to treat it as a dashboard. It isn't one.
+-->
+<appwidget-provider xmlns:android="http://schemas.android.com/apk/res/android"
+    android:minWidth="110dp"
+    android:minHeight="110dp"
+    android:targetCellWidth="2"
+    android:targetCellHeight="2"
+    android:updatePeriodMillis="1800000"
+    android:initialLayout="@layout/widget_orange"
+    android:resizeMode="none"
+    android:widgetCategory="home_screen"
+    android:previewLayout="@layout/widget_orange"/>

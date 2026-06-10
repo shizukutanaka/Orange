@@ -1,0 +1,19 @@
+First release.
+
+Orange silences unwanted calls before they ring — no account, no server, no contact upload.
+
+What it does:
+• 16-point engine: withheld numbers, Wangiri callbacks, domestic spoofing, Caribbean premium numbers, STIR/SHAKEN verification, international scam corridors
+• Police HQ impersonation: 47 prefecture HQ numbers trigger a warning, never a block — "一度切って #9110 にかけ直してください"
+• Repeat-caller: same number ringing 3+ times in 60 minutes is silenced on the 4th attempt
+• DND respect: when Do Not Disturb is active, unknown domestic callers are silenced
+• アポ電 peak hours: unknown mobile numbers during Mon–Fri 09–12/13–16 JST get a soft heads-up
+• Post-call: after answering an unknown number for >30 seconds, a low-priority notification shows #9110 / 188 / 0120-210-364
+• Family tile: Quick Settings one-tap dial to a pre-set family number
+
+What it never does:
+• No internet connection — ever
+• No contact list access
+• No account, no subscription, no ads
+
+Emergency numbers (110, 119, 911, 112) always ring through. This is not configurable.

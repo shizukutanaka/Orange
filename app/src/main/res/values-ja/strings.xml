@@ -1,0 +1,78 @@
+<!--
+  日本語リソース。Apple JP サイトのコピー流儀:
+   - 敬語・丁寧語は排除（「守る」であって「お守りします」ではない）
+   - 体言止めで終止（「ブロック済み」ではなく「ブロック」）
+   - 外来語は必要最小限（「プロテクト」ではなく「守る」）
+   - 短く・ひとことで・誤解の余地なく
+
+  カタカナ多用は外来プロダクト臭さを帯びる。JP市場では
+  競合（トビラフォン、Whoscall）が漢語/和語を多用しているため
+  Orangeもそれに倣う。
+-->
+<resources>
+    <string name="app_name">Orange</string>
+
+    <string name="cta_protect">守る</string>
+    <string name="cta_protect_description">この電話を迷惑電話から守る</string>
+
+    <string name="notif_title">着信を止めた</string>
+    <string name="notif_action_restore">解除</string>
+    <string name="notif_channel_trust">ブロック通知（最初の1週間）</string>
+
+    <string name="toast_restored">次回から鳴る</string>
+
+    <string name="widget_caption">件ブロック</string>
+
+    <string name="tile_label_active">Orange</string>
+    <string name="tile_label_paused">Orange 一時停止中</string>
+    <string name="widget_a11y_role_lost">Orangeが無効。タップして再有効化。</string>
+    <string name="digest_text">今週 %1$d 件の着信を止めた。</string>
+    <string name="notif_channel_police_warn">警察偽装警告</string>
+    <string name="police_warn_title">%1$s の番号です</string>
+    <string name="police_warn_body">偽装の可能性。一度切って #9110 にかけ直す</string>
+    <string name="police_warn_family">家族に連絡</string>
+    <string name="tile_label_family">家族に連絡</string>
+    <string name="notif_channel_outbound_warn">発信警告</string>
+    <string name="outbound_warn_title">警告: 直前にブロックされた番号</string>
+    <string name="outbound_warn_body">この番号は先ほどブロック対象。通話を切ることを推奨</string>
+    <string name="notif_channel_digest">週次サマリ</string>
+    <string name="police_warn_title_high">🚨 %1$s の番号 — 偽装の疑い極めて高</string>
+    <string name="notif_channel_highrisk">高リスク時間帯警告</string>
+    <string name="highrisk_warn_title">⚠️ 不審な携帯着信</string>
+    <string name="highrisk_warn_body">アポ電の多い時間帯です。折り返し不要</string>
+    <string name="notif_channel_postcall">通話後の安全確認</string>
+    <string name="postcall_title">通話後のご確認</string>
+    <string name="postcall_body">#9110 に相談できます</string>
+    <string name="postcall_body_big">#9110 警察相談 / 188 消費者ホットライン / 0120-210-364 国際電話不取扱受付（無料）</string>
+    <string name="postcall_action_9110">#9110 に電話</string>
+
+    <!-- 履歴画面 -->
+    <string name="history_title">ブロック履歴</string>
+    <string name="history_empty">最近のブロック記録はありません。</string>
+    <string name="history_action_allow">許可</string>
+    <string name="history_footer">番号は末尾4桁のみ表示。30日経過後に自動削除。</string>
+
+    <!-- ブロック理由 -->
+    <string name="reason_spam_cache">ブロック済み番号</string>
+    <string name="reason_foreign_elevated">高リスク国際番号</string>
+    <string name="reason_foreign_generic">海外番号</string>
+    <string name="reason_domestic_spoof">無効な国内番号</string>
+    <string name="reason_wangiri">ワン切りコールバック</string>
+    <string name="reason_stir_shaken">キャリア: 番号偽装</string>
+    <string name="reason_withheld">非通知</string>
+    <string name="reason_premium_rate">国際有料番号</string>
+    <string name="reason_dnd">サイレントモード中</string>
+    <string name="reason_repeat_caller">連続着信</string>
+
+    <!-- 設定画面 -->
+    <string name="settings_title">設定</string>
+    <string name="settings_section_family">家族の連絡先</string>
+    <string name="settings_family_description">不審な着信があったとき、警告通知に家族への1タップ発信ボタンが追加されます。</string>
+    <string name="settings_family_slot">スロット %1$d</string>
+    <string name="settings_family_placeholder">090-1234-5678</string>
+    <string name="settings_save">保存</string>
+    <string name="settings_saved">保存済み</string>
+    <string name="settings_section_history">着信履歴</string>
+    <string name="settings_view_history">ブロック履歴を見る</string>
+    <string name="settings_footer">Orangeはすべてのデータを端末内にのみ保存します。番号は末尾4桁のみ表示。アカウント不要・同期なし・広告なし。</string>
+</resources>

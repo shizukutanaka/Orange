@@ -1,0 +1,81 @@
+# Orange
+
+**Your phone stops ringing when it shouldn't.**
+
+That's the whole product. Orange runs silently in the background, screens
+incoming calls, and blocks the unwanted ones before the ring reaches you.
+
+- **No account.** No sign-in, no email, no password, no sync.
+- **No network.** `INTERNET` permission is not requested. The app does not
+  talk to any server, ever. The spam cache is on your device and nowhere else.
+- **No contact upload.** `READ_CONTACTS` permission is not requested.
+  Whose-is-this lookups use a bundled directory, not your address book.
+- **No ads, no subscription.** Now or ever.
+
+## Try it
+
+**From source (debug build):**
+```bash
+./gradlew assembleDebug
+adb install app/build/outputs/apk/debug/app-debug.apk
+```
+
+**Signed release build** (requires keystore env vars from `signing.gradle.kts`):
+```bash
+./gradlew assembleRelease
+adb install app/build/outputs/apk/release/app-release.apk
+```
+
+Open Orange → tap the white circle → grant the Call Screening role.
+The app self-destructs from the task list. The widget and Quick Settings
+tiles are the only surface you interact with afterwards.
+
+## How it decides what to silence
+
+Sixteen-point decision engine, in order:
+
+1. **Emergency bypass** — 110, 119, 911, 112, 999, 000 always ring, no exceptions.
+2. **Pause tile** — if you tapped Quick Settings, everything rings (including withheld) until the hour is up.
+3. **Withheld caller ID** — anonymous / 非通知 / restricted calls silenced.
+4. **Outgoing call** — records dialed numbers; warns if you're calling back a recently-blocked number. (Adapter layer.)
+5. **Outbound-known** — numbers you have dialed always ring.
+6. **Business bundle** — known-legit business numbers ring.
+7. **Spam cache** — numbers you've previously blocked stay silent.
+8. **Wangiri callback** — same number short-rang you (under 15s) in last 6 hours → silenced.
+9. **Domestic spoofing** — JP numbers violating the MIC numbering plan silenced.
+10. **Carrier verification failed** — STIR/SHAKEN says caller ID not authentic (API 30+) → silenced.
+11. **Police HQ impersonation** — 47 prefectural HQ numbers: call **rings** + warning. STIR/SHAKEN FAILED escalates to 🚨 high-severity alert.
+12. **International premium rate** — +800/+979/+882/+883 and Caribbean NANP (+1-242, +1-876, etc.) silenced.
+13. **Foreign elevated-risk** — +675/+7/+86/+44/+212/+234/+63/+39 silenced for JP users.
+14. **Foreign generic** — any international call to your country not in outbound history silenced.
+15. **DND honor mode** — device Do Not Disturb active → unknown domestic calls silenced.
+16. **Time-of-day risk** — unknown domestic mobile (090/080/070/060) during アポ電 peak hours (Mon–Fri 09–12/13–16 JST) → RING + soft warning.
+17. **Allow** — everything else rings.
+
+See `HONESTY_ADDENDUM.md` for what Orange **doesn't** catch.
+
+## Docs
+
+| File | What it's for |
+|------|---------------|
+| [`PRIVACY_MANIFESTO.md`](PRIVACY_MANIFESTO.md) | The nine things Orange does NOT do. |
+| [`HONESTY_ADDENDUM.md`](HONESTY_ADDENDUM.md) | What still rings, and why. |
+| [`RESEARCH_BASIS.md`](RESEARCH_BASIS.md) | Academic basis for each layer; why CEIVE/LLM are rejected. |
+| [`DESIGN_NOTES.md`](DESIGN_NOTES.md) | The subtraction log. What was cut, and why. |
+| [`THREAT_MODEL.md`](THREAT_MODEL.md) | STRIDE analysis and security invariants. |
+| [`docs/adr/`](docs/adr/) | Architecture Decision Records (6). |
+| [`COMPETITIVE_ANALYSIS.md`](COMPETITIVE_ANALYSIS.md) | Truecaller, Whoscall, Hiya, トビラフォン etc. |
+| [`STORE_LISTING.md`](STORE_LISTING.md) | App Store / Google Play copy (JP + EN). |
+
+## Contributing
+
+Orange values subtraction over addition. Before opening a PR that adds a
+feature, read `DESIGN_NOTES.md`'s **Future restraint checklist**. If you
+can't answer "yes" to all three questions, the feature doesn't ship.
+
+Pull requests that **remove** code, features, strings, or dependencies are
+strongly encouraged.
+
+## License
+
+[MIT](LICENSE).

@@ -1,0 +1,20 @@
+<!--
+  Pre-O launcher fallback.
+
+  Android 8.0+ uses res/mipmap-anydpi-v26/ic_launcher.xml (adaptive icon).
+  Pre-O devices ignore that file and need a flat icon at this name. We
+  provide a layer-list that flattens the same background+foreground pair
+  so the visual identity is consistent across all Android versions.
+
+  This is one more piece of Rams #8 (thorough). Without this file, an
+  Android 7 user (still ~5% of JP devices in 2026) sees the system's
+  default placeholder icon — which silently undermines every other care
+  we've taken with branding.
+-->
+<?xml version="1.0" encoding="utf-8"?>
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:drawable="@drawable/ic_launcher_background"/>
+    <item
+        android:drawable="@drawable/ic_launcher_foreground"
+        android:gravity="center"/>
+</layer-list>

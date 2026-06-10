@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  App-level theme. Compose renders its own UI, so this theme governs only:
+   - System bars (status bar, navigation bar) on the Activity level
+   - The brief window between Activity creation and Compose first frame
+
+  The orange background ensures the "flash of white" that plagues most
+  Android apps on launch is instead a flash of brand-color, which feels
+  intentional. Apple achieves the same with a storyboard launch screen
+  matching the first view.
+-->
+<resources>
+    <style name="Theme.Orange" parent="android:Theme.Material.NoActionBar.Fullscreen">
+        <item name="android:windowBackground">@color/orange_primary</item>
+        <item name="android:statusBarColor">@color/orange_primary</item>
+        <item name="android:navigationBarColor">@color/orange_primary</item>
+        <item name="android:windowLightStatusBar">false</item>
+    </style>
+</resources>

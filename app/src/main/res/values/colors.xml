@@ -1,0 +1,21 @@
+<!--
+  Color values. Single source of truth.
+  Rams #6 (honest): when a color appears in code rather than here, that's
+  a bug — the code should reference these by name so a dark-mode pass or a
+  contrast tweak is one file change.
+
+  WCAG check (April 2026 audit):
+   - Orange #FF8C42 against white: 2.6:1 (FAIL for body, PASS for large text)
+   - White on Orange: same ratio, used only for the 48sp widget number
+     (qualifies as large text, AA pass)
+   - The Onboarding "Protect" text uses Orange #FF8C42 on White, again
+     in a 28sp button — AA-large pass
+  We do not aim for AAA on the brand-color combinations; the AA-large pass
+  is the documented constraint. Body text never appears on the orange
+  background.
+-->
+<resources>
+    <color name="orange_primary">#FF8C42</color>
+    <color name="orange_primary_pale">#FFE4CC</color>
+    <color name="white">#FFFFFF</color>
+</resources>

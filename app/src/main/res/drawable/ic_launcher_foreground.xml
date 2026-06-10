@@ -1,0 +1,21 @@
+<!--
+  Adaptive icon foreground. One white circle, centered.
+  Matches the Protect button on the onboarding screen — same mark, same
+  proportion. Opening the app feels like the icon enlarging. Rams #8
+  (thorough to the last detail): the icon IS the first tap target the
+  user sees, and should visually complete when the app opens.
+
+  Safe zone: Android adaptive icons render foreground inside a 72x72dp
+  inner rectangle of the 108x108dp canvas. We use 44dp radius ≈ 88dp
+  diameter, which fits comfortably inside the guaranteed mask.
+-->
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M54,54m-22,0a22,22 0 1,0 44,0a22,22 0 1,0 -44,0"/>
+</vector>

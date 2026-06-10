@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Orange — Privacy Policy</title>
+<style>
+  body { max-width: 640px; margin: 2rem auto; padding: 0 1rem; font-family: system-ui, sans-serif; line-height: 1.6; color: #222; }
+  h1 { color: #FF8C42; font-size: 1.5rem; }
+  h2 { font-size: 1.1rem; margin-top: 2rem; }
+  .updated { color: #888; font-size: 0.85rem; }
+</style>
+</head>
+<body>
+<h1>Orange — Privacy Policy</h1>
+<p class="updated">Last updated: May 2026</p>
+
+<h2>What Orange collects</h2>
+<p>Nothing. Orange does not collect, transmit, store, or share any personal data
+with anyone, including the developer.</p>
+
+<h2>Permissions</h2>
+<p><strong>READ_CALL_LOG</strong> — Required by Android's CallScreeningService
+contract so Orange can inspect the phone number of incoming calls and decide
+whether to silence them. The call log is read on-device only and is never
+transmitted.</p>
+<p><strong>POST_NOTIFICATIONS</strong> — During the first seven days after
+install, Orange shows a silent notification for each blocked call so the user
+can restore false positives. After seven days, no notifications are shown.</p>
+<p><strong>RECEIVE_BOOT_COMPLETED</strong> — Allows Orange to check whether
+its screening role is still active after a device reboot.</p>
+
+<h2>Permissions deliberately not requested</h2>
+<p><strong>INTERNET</strong> — Orange has no server. It makes no HTTP requests,
+sends no telemetry, uploads no crash reports, and contacts no analytics service.
+The entire product runs offline after installation.</p>
+<p><strong>READ_CONTACTS</strong> — Orange does not access the user's address
+book. Caller identification uses a bundled offline business directory, not the
+user's contacts.</p>
+
+<h2>Data storage</h2>
+<p>Orange stores a small amount of data on the device in the app's private
+SharedPreferences. This includes: a set of phone numbers the user has dialed
+(so their callbacks ring through), a set of phone numbers the user has
+blocked, and a cumulative block count. This data is excluded from Android
+Auto Backup and device-to-device migration. Uninstalling Orange permanently
+deletes all stored data.</p>
+
+<h2>Third-party services</h2>
+<p>None. Orange contains no third-party SDKs, no advertising frameworks,
+no analytics libraries, and no crash-reporting tools.</p>
+
+<h2>Children's privacy</h2>
+<p>Orange does not knowingly collect any information from children under
+the age of 13. The app does not collect information from anyone.</p>
+
+<h2>Changes to this policy</h2>
+<p>If Orange ever adds a feature that changes this privacy posture, this
+policy will be updated before the feature ships. The policy is versioned
+in the same Git repository as the source code; the commit history is the
+audit trail.</p>
+
+<h2>Contact</h2>
+<p>Questions about this policy can be directed to the project's GitHub
+Issues page.</p>
+</body>
+</html>
