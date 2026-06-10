@@ -29,3 +29,4 @@ gradle/wrapper/gradle-wrapper.jar
 # Python (tools/oracle_decision.py bytecode cache)
 __pycache__/
 *.pyc
+.github/workflows/
