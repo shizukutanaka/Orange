@@ -79,10 +79,20 @@ class WeeklyDigest : BroadcastReceiver() {
 
         val text = ctx.getString(R.string.digest_text, count)
 
+        val historyPi = android.app.PendingIntent.getActivity(
+            ctx, 0,
+            Intent(ctx, HistoryActivity::class.java).apply {
+                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP)
+            },
+            android.app.PendingIntent.FLAG_UPDATE_CURRENT or
+                android.app.PendingIntent.FLAG_IMMUTABLE
+        )
+
         val notif = NotificationCompat.Builder(ctx, CHANNEL)
             .setSmallIcon(android.R.drawable.stat_sys_phone_call_forward)
             .setContentTitle(ctx.getString(R.string.app_name))
             .setContentText(text)
+            .setContentIntent(historyPi)
             .setAutoCancel(true)
             .setOnlyAlertOnce(true)
             .setPriority(NotificationCompat.PRIORITY_LOW)

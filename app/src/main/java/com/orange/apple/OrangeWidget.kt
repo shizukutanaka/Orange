@@ -63,8 +63,11 @@ class OrangeWidget : AppWidgetProvider() {
                 ctx.getString(R.string.widget_a11y_role_lost))
         }
 
-        // Make the widget tappable: routes back to onboarding for re-grant.
-        val openIntent = android.content.Intent(ctx, OnboardingActivity::class.java)
+        // Role held → tap opens block history. Role lost → tap re-grants role.
+        val openTarget = if (roleHeld) HistoryActivity::class.java else OnboardingActivity::class.java
+        val openIntent = android.content.Intent(ctx, openTarget).apply {
+            addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK)
+        }
         val pi = android.app.PendingIntent.getActivity(
             ctx, 0, openIntent,
             android.app.PendingIntent.FLAG_UPDATE_CURRENT or

@@ -72,10 +72,8 @@ object TrustNotifier {
             .setPriority(NotificationCompat.PRIORITY_LOW)
             .build()
 
-        NotificationManager::class.java.let {
-            (ctx.getSystemService(Context.NOTIFICATION_SERVICE) as? NotificationManager) ?: return
-                .notify(blockedNumber.hashCode(), notif)
-        }
+        val mgr = ctx.getSystemService(Context.NOTIFICATION_SERVICE) as? NotificationManager ?: return
+        mgr.notify(blockedNumber.hashCode(), notif)
     }
 
     /**

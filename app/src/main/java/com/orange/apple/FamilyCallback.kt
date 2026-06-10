@@ -90,12 +90,12 @@ class FamilyCallbackTile : TileService() {
     override fun onClick() {
         super.onClick()
         if (!FamilyCallback.dialPrimary(this)) {
-            // No number configured — open Onboarding for setup.
-            val intent = Intent(this, OnboardingActivity::class.java).apply {
-                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                putExtra("show_family_setup", true)
-            }
-            startActivityAndCollapse(intent)
+            // No number configured — open Settings for family number entry.
+            startActivityAndCollapse(
+                Intent(this, SettingsActivity::class.java).apply {
+                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                }
+            )
         }
     }
 }
