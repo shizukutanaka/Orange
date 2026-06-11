@@ -4,9 +4,9 @@ All notable changes to Orange will be documented in this file.
 Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [1.1.0] — 2026-06-11
 
-### Added (v1.1 — 2026-06-10)
+### Added
 - **BlockHistoryStore** — last 50 blocked calls (masked ****1234, timestamp, reason) stored on-device with 30-day TTL. Full number never written to disk.
 - **HistoryActivity** — review blocked calls and allow false positives with one tap.
 - **AllowSuffixStore** — suffix-based allow-override for false-positive recovery from history.
