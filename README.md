@@ -27,8 +27,17 @@ adb install app/build/outputs/apk/release/app-release.apk
 ```
 
 Open Orange → tap the white circle → grant the Call Screening role.
-The app self-destructs from the task list. The widget and Quick Settings
-tiles are the only surface you interact with afterwards.
+On first setup, Orange offers a one-time family-number registration screen
+(3 slots, manual entry — no contacts access). After that the app stays out
+of your way: the widget and Quick Settings tiles are the everyday surface,
+and two small screens exist for when you need them:
+
+- **Block history** — tap the widget or the weekly digest notification.
+  Shows the last 50 blocked calls (numbers masked to the final 4 digits)
+  with one-tap **Allow** to recover a false positive. Entries auto-delete
+  after 30 days.
+- **Settings** — family number registration only. Reached from the
+  家族に連絡 tile when no number is set. There is nothing else to configure.
 
 ## How it decides what to silence
 
@@ -63,7 +72,8 @@ See `HONESTY_ADDENDUM.md` for what Orange **doesn't** catch.
 | [`RESEARCH_BASIS.md`](RESEARCH_BASIS.md) | Academic basis for each layer; why CEIVE/LLM are rejected. |
 | [`DESIGN_NOTES.md`](DESIGN_NOTES.md) | The subtraction log. What was cut, and why. |
 | [`THREAT_MODEL.md`](THREAT_MODEL.md) | STRIDE analysis and security invariants. |
-| [`docs/adr/`](docs/adr/) | Architecture Decision Records (6). |
+| [`docs/adr/`](docs/adr/) | Architecture Decision Records (7). |
+| [`docs/SETUP_GUIDE_FAMILY.md`](docs/SETUP_GUIDE_FAMILY.md) | 家族向けセットアップガイド — for caregivers installing Orange on a parent's phone. |
 | [`COMPETITIVE_ANALYSIS.md`](COMPETITIVE_ANALYSIS.md) | Truecaller, Whoscall, Hiya, トビラフォン etc. |
 | [`STORE_LISTING.md`](STORE_LISTING.md) | App Store / Google Play copy (JP + EN). |
 
