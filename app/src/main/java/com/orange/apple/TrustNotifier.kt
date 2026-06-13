@@ -147,12 +147,14 @@ class RestoreReceiver : BroadcastReceiver() {
         val prefs = ctx.getSharedPreferences(SilentBlockerService.PREFS, Context.MODE_PRIVATE)
         val set = prefs.getStringSet(SilentBlockerService.KEY_OUTBOUND, emptySet()).orEmpty().toMutableSet()
         set.add(n)
-        val spam = prefs.getStringSet(SilentBlockerService.KEY_SPAM, emptySet()).orEmpty().toMutableSet()
-        spam.remove(n)
-        prefs.edit {
-            putStringSet(SilentBlockerService.KEY_OUTBOUND, set)
-            putStringSet(SilentBlockerService.KEY_SPAM, spam)
-        }
+        prefs.edit { putStringSet(SilentBlockerService.KEY_OUTBOUND, set) }
+        // SpamCache stores salted SHA-256 hashes — remove via the cache API so the
+        // hash (not the plaintext string) is actually erased. Direct KEY_SPAM removal
+        // of the plaintext would always be a no-op and leave Layer 6 permanently armed.
+        SpamCache.remove(prefs, n)
+        // Clear the OutboundGuard entry: a Restore is explicit trust, so the
+        // outbound-warning ("recently flagged") must not fire when the user calls back.
+        OutboundGuard.forget(prefs, n, System.currentTimeMillis())
         val mgr = ctx.getSystemService(Context.NOTIFICATION_SERVICE) as? NotificationManager ?: return
         mgr.cancel(n.hashCode())
 

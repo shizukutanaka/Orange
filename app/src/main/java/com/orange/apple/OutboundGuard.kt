@@ -48,6 +48,13 @@ internal object OutboundGuard {
     fun wasRecentlyFlagged(prefs: SharedPreferences, number: String, nowMs: Long): Boolean =
         snapshot(prefs, nowMs).containsKey(number)
 
+    /** Remove a number from the guard (called when user restores a false positive). */
+    fun forget(prefs: SharedPreferences, number: String, nowMs: Long) {
+        if (number.isEmpty()) return
+        val current = snapshot(prefs, nowMs).toMutableMap()
+        if (current.remove(number) != null) save(prefs, current)
+    }
+
     private fun snapshot(prefs: SharedPreferences, nowMs: Long): Map<String, Long> {
         val raw = prefs.getString(KEY, "") ?: ""
         if (raw.isEmpty()) return emptyMap()
