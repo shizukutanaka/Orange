@@ -8,6 +8,7 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import androidx.core.app.NotificationCompat
+import androidx.core.content.edit
 import java.util.Calendar
 
 /**
@@ -102,7 +103,7 @@ class WeeklyDigest : BroadcastReceiver() {
     }
 
     private fun resetWeekCounter(prefs: android.content.SharedPreferences) {
-        prefs.edit().putInt(KEY_WEEK_COUNT, 0).apply()
+        prefs.edit { putInt(KEY_WEEK_COUNT, 0) }
     }
 
     companion object {
@@ -121,7 +122,7 @@ class WeeklyDigest : BroadcastReceiver() {
             val am = ctx.getSystemService(Context.ALARM_SERVICE) as? AlarmManager ?: return
             val intent = Intent(ctx, WeeklyDigest::class.java)
             val pi = PendingIntent.getBroadcast(
-                ctx, 0, intent,
+                ctx, 0x0D16E57, intent,
                 PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
             )
 

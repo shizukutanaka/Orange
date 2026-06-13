@@ -62,7 +62,11 @@ class EngineInvariantTest {
 
     // INVARIANT 2: emergency numbers ALWAYS ring, regardless of state.
     @Test fun emergency_always_rings_under_any_state() {
-        val emergencies = listOf("110", "119", "118", "911", "112", "999", "000")
+        val emergencies = listOf(
+            "110", "119", "118", "911", "112", "999", "000",
+            "189", "171",
+            "+81110", "+81119", "+81118", "+81189", "+81171", "+61000"
+        )
         val hostileStates = listOf(
             baseState().copy(isSpamCached = true),
             baseState().copy(pausedUntilMillis = 0L),
