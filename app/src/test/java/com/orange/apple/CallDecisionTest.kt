@@ -182,6 +182,39 @@ class CallDecisionTest {
         assertEquals(BlockReason.FOREIGN_GENERIC, d.reason)
     }
 
+    // Regression tests for the isoOfCountryCode→callingCodeOf fix.
+    // These countries were previously allowed through because they weren't
+    // in the 16-entry isoOfCountryCode map. They must now be silenced.
+    @Test fun brazil_to_jp_silenced() {
+        val d = decide(call("+5511987654321"), emptyState)
+        assertEquals(Verdict.SILENCE, d.verdict)
+        assertEquals(BlockReason.FOREIGN_GENERIC, d.reason)
+    }
+
+    @Test fun thailand_to_jp_silenced() {
+        val d = decide(call("+66812345678"), emptyState)
+        assertEquals(Verdict.SILENCE, d.verdict)
+        assertEquals(BlockReason.FOREIGN_GENERIC, d.reason)
+    }
+
+    @Test fun indonesia_to_jp_silenced() {
+        val d = decide(call("+62812345678"), emptyState)
+        assertEquals(Verdict.SILENCE, d.verdict)
+        assertEquals(BlockReason.FOREIGN_GENERIC, d.reason)
+    }
+
+    @Test fun turkey_to_jp_silenced() {
+        val d = decide(call("+905551234567"), emptyState)
+        assertEquals(Verdict.SILENCE, d.verdict)
+        assertEquals(BlockReason.FOREIGN_GENERIC, d.reason)
+    }
+
+    @Test fun brazil_known_outbound_rings() {
+        // A Brazilian number the JP user previously called must still ring.
+        val state = emptyState.copy(outboundKnown = setOf("+5511987654321"))
+        assertEquals(Verdict.RING, decide(call("+5511987654321"), state).verdict)
+    }
+
     @Test fun jp_to_jp_unknown_rings() =
         assertEquals(Verdict.RING, decide(call("+819087654321"), emptyState).verdict)
 

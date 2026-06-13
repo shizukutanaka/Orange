@@ -238,10 +238,16 @@ fun decide(ctx: CallContext, state: CallState): Decision {
     }
 
     // Layer 13: International + foreign-unsolicited.
+    // Fix: compare caller's E.164 country code directly against the callee's
+    // calling code, rather than mapping through ISO strings.  The old
+    // isoOfCountryCode() bridge only covered 16 countries, so calls from
+    // Brazil (+55), Thailand (+66), Indonesia (+62), etc. silently rang
+    // through. ScamPrefixSeed.countryCodeOf() covers 150+ country codes,
+    // so this check now fires for almost any international call.
     if (ctx.number.startsWith("+")) {
-        val cc = ScamPrefixSeed.countryCodeOf(ctx.number)
-        val callerIso = cc?.let(::isoOfCountryCode)
-        if (callerIso != null && callerIso != ctx.calleeCountryIso) {
+        val callerCc = ScamPrefixSeed.countryCodeOf(ctx.number)
+        val calleeCc = callingCodeOf(ctx.calleeCountryIso)
+        if (callerCc != null && calleeCc != null && callerCc != calleeCc) {
             return Decision(Verdict.SILENCE, BlockReason.FOREIGN_GENERIC)
         }
     }
@@ -292,10 +298,16 @@ internal fun isUnknownDomesticMobile(number: String): Boolean =
     number.startsWith("090") || number.startsWith("080") ||
     number.startsWith("070") || number.startsWith("060")
 
-private fun isoOfCountryCode(cc: String): String? = when (cc) {
-    "81" -> "JP"; "1" -> "US"; "86" -> "CN"; "82" -> "KR"
-    "44" -> "GB"; "49" -> "DE"; "33" -> "FR"; "39" -> "IT"
-    "7"  -> "RU"; "61" -> "AU"; "91" -> "IN"; "84" -> "VN"
-    "63" -> "PH"; "212" -> "MA"; "234" -> "NG"; "675" -> "PW"
+/**
+ * Maps a callee's ISO country code to the ITU calling code for that country.
+ * Used only to determine whether an incoming international call is from the
+ * callee's own country. Keeping this small (homebase countries only) is
+ * intentional — for exotic callee countries the layer simply doesn't fire,
+ * which is the conservative safe default.
+ */
+private fun callingCodeOf(iso: String?): String? = when (iso) {
+    "JP" -> "81"; "US" -> "1"; "KR" -> "82"; "CN" -> "86"
+    "GB" -> "44"; "DE" -> "49"; "FR" -> "33"; "AU" -> "61"
+    "IN" -> "91"; "BR" -> "55"; "TH" -> "66"; "ID" -> "62"
     else -> null
 }

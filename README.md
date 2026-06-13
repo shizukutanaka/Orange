@@ -72,7 +72,7 @@ See `HONESTY_ADDENDUM.md` for what Orange **doesn't** catch.
 | [`RESEARCH_BASIS.md`](RESEARCH_BASIS.md) | Academic basis for each layer; why CEIVE/LLM are rejected. |
 | [`DESIGN_NOTES.md`](DESIGN_NOTES.md) | The subtraction log. What was cut, and why. |
 | [`THREAT_MODEL.md`](THREAT_MODEL.md) | STRIDE analysis and security invariants. |
-| [`docs/adr/`](docs/adr/) | Architecture Decision Records (8). |
+| [`docs/adr/`](docs/adr/) | Architecture Decision Records (9). |
 | [`docs/SETUP_GUIDE_FAMILY.md`](docs/SETUP_GUIDE_FAMILY.md) | 家族向けセットアップガイド — for caregivers installing Orange on a parent's phone. |
 | [`COMPETITIVE_ANALYSIS.md`](COMPETITIVE_ANALYSIS.md) | Truecaller, Whoscall, Hiya, トビラフォン etc. |
 | [`STORE_LISTING.md`](STORE_LISTING.md) | App Store / Google Play copy (JP + EN). |
