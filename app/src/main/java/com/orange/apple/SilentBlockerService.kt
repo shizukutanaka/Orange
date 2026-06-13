@@ -135,6 +135,13 @@ class SilentBlockerService : CallScreeningService() {
             if (decision.reason == BlockReason.WANGIRI_CALLBACK) {
                 WangiriTracker.forget(p, number)
             }
+            // Remember this number so a repeat call is silenced instantly by the
+            // Layer-6 spam-cache lookup (the cache's only writer — without this,
+            // Layer 6 never fires and the Restore-removes-from-cache path is moot).
+            // Contextual silences (DND_HONOR) are excluded; see isCacheableSilence.
+            if (number.isNotEmpty() && decision.reason?.let(::isCacheableSilence) == true) {
+                SpamCache.add(p, number)
+            }
             decision.reason?.let { BlockHistoryStore.record(p, number, it, now) }
             if (NotificationRateLimiter.shouldNotify(p, number, now)) {
                 TrustNotifier.maybeNotify(this, number)

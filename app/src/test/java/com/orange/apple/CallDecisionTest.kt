@@ -256,6 +256,25 @@ class CallDecisionTest {
     @Test fun jp_to_jp_unknown_rings() =
         assertEquals(Verdict.RING, decide(call("+819087654321"), emptyState).verdict)
 
+    // --- Spam-cache write policy (isCacheableSilence) -------------------------
+
+    @Test fun dnd_honor_silence_is_not_cached() {
+        // Contextual silence: must NOT persist into the spam cache, or the number
+        // would stay silenced after the user turns DND off.
+        assertEquals(false, isCacheableSilence(BlockReason.DND_HONOR))
+    }
+
+    @Test fun number_property_silences_are_cached() {
+        for (r in listOf(
+            BlockReason.SPAM_CACHE, BlockReason.FOREIGN_ELEVATED, BlockReason.FOREIGN_GENERIC,
+            BlockReason.DOMESTIC_SPOOF, BlockReason.WANGIRI_CALLBACK,
+            BlockReason.CARRIER_VERIFICATION_FAILED, BlockReason.PREMIUM_RATE_INTERNATIONAL,
+            BlockReason.REPEAT_CALLER, BlockReason.WITHHELD_NUMBER,
+        )) {
+            assertEquals("$r should be cacheable", true, isCacheableSilence(r))
+        }
+    }
+
     // --- Layer 10: Allow default ----------------------------------------------
 
     @Test fun domestic_format_unknown_rings() =

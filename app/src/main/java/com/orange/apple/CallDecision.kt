@@ -302,6 +302,21 @@ internal fun callingCodeOf(iso: String?): String? = when (iso) {
 }
 
 /**
+ * Whether a SILENCE for this reason should be remembered in the spam cache so a
+ * repeat call from the same number is silenced instantly by the cheap Layer-6
+ * lookup, rather than re-derived through every layer.
+ *
+ * DND_HONOR is excluded because that silence is CONTEXTUAL — the call was
+ * silenced only because the device was in Do Not Disturb, not because the number
+ * is spam. Caching it would keep the number silenced even after the user turns
+ * DND off, silencing legitimate callers. All other silence reasons reflect a
+ * persistent property of the number itself and are safe to cache; the user can
+ * always undo a false positive via the Restore action (which clears the cache).
+ */
+internal fun isCacheableSilence(reason: BlockReason): Boolean =
+    reason != BlockReason.DND_HONOR
+
+/**
  * Returns the set of equivalent forms of a phone number: the number itself
  * plus its domestic↔E.164 counterpart, given the home country's calling code.
  *
