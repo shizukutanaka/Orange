@@ -71,7 +71,7 @@ internal object RepeatCallerTracker {
     fun isRepeatOffender(prefs: SharedPreferences, number: String, nowMs: Long): Boolean {
         if (number.isEmpty()) return false
         val calls = snapshot(prefs, nowMs)[number] ?: return false
-        return calls.size >= N_THRESHOLD
+        return calls.size > N_THRESHOLD
     }
 
     private fun snapshot(prefs: SharedPreferences, nowMs: Long): Map<String, List<Long>> {

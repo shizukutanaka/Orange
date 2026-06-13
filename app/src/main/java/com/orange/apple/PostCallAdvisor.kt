@@ -7,6 +7,7 @@ import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import androidx.core.app.NotificationCompat
+import androidx.core.content.edit
 
 /**
  * Post-call safety advisor.
@@ -58,7 +59,7 @@ object PostCallAdvisor {
         val outbound = prefs.getStringSet(SilentBlockerService.KEY_OUTBOUND, emptySet()).orEmpty()
         if (number in outbound) return
 
-        prefs.edit().putLong(rateKey, now).apply()
+        prefs.edit { putLong(rateKey, now) }
         show(ctx, number)
     }
 

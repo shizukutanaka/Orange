@@ -62,6 +62,7 @@ internal object WangiriTracker {
 
     /** Record a short-ring candidate. Prunes expired entries as a side effect. */
     fun record(prefs: SharedPreferences, number: String, nowMs: Long) {
+        if (number.isEmpty()) return
         val current = snapshot(prefs, nowMs).toMutableMap()
         current[number] = nowMs
         // Keep newest MAX_ENTRIES only.

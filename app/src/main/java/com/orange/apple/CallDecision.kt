@@ -86,17 +86,6 @@ data class CallContext(
      */
     val dndActive: Boolean = false,
 )
-     */
-    val verificationFailed: Boolean = false,
-
-    /**
-     * True when caller ID is withheld (非通知). Android delivers these as
-     * empty or "anonymous" handles. 2025 NPA: ~75.5% of special-fraud
-     * first-contacts are phone, withheld-number calls are a common
-     * vector for 還付金詐欺 and 架空料金請求詐欺.
-     */
-    val numberWithheld: Boolean = false,
-)
 
 /** Everything the engine learns about the user's HISTORY. Pure snapshot. */
 data class CallState(
