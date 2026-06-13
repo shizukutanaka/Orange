@@ -68,7 +68,6 @@ internal object ScamPrefixSeed {
     fun countryCodeOf(intlNumber: String): String? {
         if (!intlNumber.startsWith("+")) return null
         val digits = intlNumber.removePrefix("+")
-        val allCodes = oneDigit + twoDigit + threeDigit
         for (len in 1..3) {
             val candidate = digits.take(len)
             if (candidate in allCodes) return candidate
@@ -105,4 +104,6 @@ internal object ScamPrefixSeed {
         "962","963","964","965","966","967","968","970","971","972",
         "973","974","975","976","977","992","993","994","995","996","998"
     )
+
+    private val allCodes: Set<String> = oneDigit + twoDigit + threeDigit
 }
