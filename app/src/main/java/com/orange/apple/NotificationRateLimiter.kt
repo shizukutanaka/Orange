@@ -36,6 +36,12 @@ internal object NotificationRateLimiter {
      *         Side-effect: records the decision in the rolling window.
      */
     fun shouldNotify(prefs: SharedPreferences, number: String, nowMs: Long): Boolean {
+        // Withheld (非通知) calls arrive with number = "". An empty string survives
+        // set.add() and set.contains() but is dropped by filter { isNotBlank() }
+        // when the seen-set is deserialized from its space-separated string — the
+        // dedup for withheld calls silently fails and they notify 5×/window.
+        // Use a non-blank sentinel that can never appear in a normalized number.
+        val key = number.ifEmpty { "#" }
         val windowStart = prefs.getLong(KEY_WINDOW_START, 0L)
         val inWindow = nowMs - windowStart < WINDOW_MS
 
@@ -48,7 +54,7 @@ internal object NotificationRateLimiter {
         }
 
         // Already notified for this number in this window: silent increment.
-        if (number in seen) {
+        if (key in seen) {
             prefs.edit {
                 putLong(KEY_WINDOW_START, if (inWindow) windowStart else nowMs)
                 putInt(KEY_WINDOW_COUNT, count)
@@ -68,7 +74,7 @@ internal object NotificationRateLimiter {
         }
 
         // Fire and record.
-        seen.add(number)
+        seen.add(key)
         prefs.edit {
             putLong(KEY_WINDOW_START, if (inWindow) windowStart else nowMs)
             putInt(KEY_WINDOW_COUNT, count + 1)

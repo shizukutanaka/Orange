@@ -47,6 +47,17 @@ class NotificationRateLimiterTest {
         val afterWindow = 1000L + NotificationRateLimiter.WINDOW_MS + 1
         assertTrue(NotificationRateLimiter.shouldNotify(p, "+9", afterWindow))
     }
+
+    @Test fun withheld_number_empty_string_deduped_within_window() {
+        // Withheld calls arrive with number = "". The space-separated serialization
+        // drops empty strings via filter { isNotBlank() }, so without a sentinel
+        // the per-number dedup fails and 5 withheld notifications fire per window.
+        val p = FakePrefs()
+        assertTrue(NotificationRateLimiter.shouldNotify(p, "", 1000L))
+        // Second withheld call in the same window must be suppressed.
+        assertFalse(NotificationRateLimiter.shouldNotify(p, "", 2000L))
+        assertFalse(NotificationRateLimiter.shouldNotify(p, "", 3000L))
+    }
 }
 
 /**
