@@ -5,6 +5,7 @@
     <string name="notif_title">已拦截一通来电</string>
     <string name="notif_action_restore">取消拦截</string>
     <string name="notif_channel_trust">已拦截的来电（前 7 天）</string>
+    <string name="notif_channel_ongoing">已拦截的来电</string>
     <string name="toast_restored">下次起将正常响铃</string>
     <string name="widget_caption">已拦截</string>
     <string name="tile_label_active">Orange</string>

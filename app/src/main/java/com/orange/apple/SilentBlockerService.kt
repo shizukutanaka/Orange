@@ -72,6 +72,10 @@ class SilentBlockerService : CallScreeningService() {
             return Decision(Verdict.RING)
         }
 
+        // Record every ring here so silenced calls (which may never reach
+        // CallStateObserver.onRinging) still accumulate toward the repeat threshold.
+        if (number.isNotEmpty()) RepeatCallerTracker.record(p, number, now)
+
         // Check repeat-caller velocity BEFORE building state (state is read-only).
         val isRepeat = RepeatCallerTracker.isRepeatOffender(p, number, now)
         if (isRepeat && number.isNotEmpty()) {

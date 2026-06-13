@@ -64,8 +64,6 @@ class CallStateObserver : BroadcastReceiver() {
                 putLong(KEY_RING_START, now)
                 putString(KEY_RING_NUMBER, norm)
             }
-            // Track repeat-caller velocity for ALL incoming numbers.
-            RepeatCallerTracker.record(prefs, norm, now)
         }
     }
 

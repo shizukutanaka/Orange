@@ -30,6 +30,7 @@ import androidx.core.content.edit
 object TrustNotifier {
 
     private const val CHANNEL_TRUST = "orange_trust"
+    private const val CHANNEL_ONGOING = "orange_ongoing"
     private const val CHANNEL_DIGEST = "orange_digest"
     const val TRUST_PERIOD_MS = 7L * 24 * 60 * 60 * 1000
     const val KEY_INSTALL_TS = "install_ts"
@@ -83,7 +84,7 @@ object TrustNotifier {
      * "Review history" content-tap that opens HistoryActivity.
      */
     private fun maybeNotifyPostTrust(ctx: Context, blockedNumber: String) {
-        ensureChannel(ctx, CHANNEL_TRUST, ctx.getString(R.string.notif_channel_trust),
+        ensureChannel(ctx, CHANNEL_ONGOING, ctx.getString(R.string.notif_channel_ongoing),
             NotificationManager.IMPORTANCE_MIN)
 
         val historyIntent = Intent(ctx, HistoryActivity::class.java).apply {
@@ -102,7 +103,7 @@ object TrustNotifier {
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
 
-        val notif = NotificationCompat.Builder(ctx, CHANNEL_TRUST)
+        val notif = NotificationCompat.Builder(ctx, CHANNEL_ONGOING)
             .setSmallIcon(android.R.drawable.stat_sys_phone_call_forward)
             .setContentTitle(ctx.getString(R.string.notif_title))
             .setContentText(mask(blockedNumber))
@@ -152,8 +153,8 @@ class RestoreReceiver : BroadcastReceiver() {
             putStringSet(SilentBlockerService.KEY_OUTBOUND, set)
             putStringSet(SilentBlockerService.KEY_SPAM, spam)
         }
-        (ctx.getSystemService(Context.NOTIFICATION_SERVICE) as? NotificationManager) ?: return
-            .cancel(n.hashCode())
+        val mgr = ctx.getSystemService(Context.NOTIFICATION_SERVICE) as? NotificationManager ?: return
+        mgr.cancel(n.hashCode())
 
         // Confirmation toast — closes the loop competitors (Hiya, Whoscall)
         // leave open. User tapped Restore; they should see the receipt.
