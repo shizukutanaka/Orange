@@ -15,7 +15,11 @@ import androidx.core.content.edit
  * was wrongly blocked; the suffix match is a best-effort unblock that covers
  * the common case without storing the full number.
  *
- * Max 100 entries. Suffixes are stored plaintext (4 digits = not sensitive).
+ * Max 100 entries, ordered by insertion time (newest last). When the list
+ * overflows, the OLDEST entry is evicted. Stored as a space-separated string
+ * rather than a StringSet — StringSet has no defined iteration order, so
+ * toList().takeLast(MAX) on a HashSet-backed set would discard entries
+ * arbitrarily (including the newly-added one the user just requested).
  */
 internal object AllowSuffixStore {
 
@@ -26,27 +30,28 @@ internal object AllowSuffixStore {
     fun allow(prefs: SharedPreferences, maskedNumber: String) {
         val suffix = maskedNumber.takeLast(4).filter { it.isDigit() }
         if (suffix.length < 4) return
-        val set = load(prefs).toMutableSet()
-        set.add(suffix)
-        if (set.size > MAX) {
-            val trimmed = set.toList().takeLast(MAX).toSet()
-            save(prefs, trimmed)
-        } else {
-            save(prefs, set)
+        val ordered = loadOrdered(prefs).toMutableList()
+        if (suffix !in ordered) {
+            ordered.add(suffix)
+            if (ordered.size > MAX) ordered.removeAt(0)   // evict oldest
         }
+        save(prefs, ordered)
     }
 
     @Synchronized
     fun isAllowed(prefs: SharedPreferences, number: String): Boolean {
         if (number.length < 4) return false
         val suffix = number.takeLast(4)
-        return suffix in load(prefs)
+        return suffix in loadOrdered(prefs)
     }
 
-    private fun load(prefs: SharedPreferences): Set<String> =
-        prefs.getStringSet(KEY, emptySet()) ?: emptySet()
+    private fun loadOrdered(prefs: SharedPreferences): List<String> {
+        val raw = prefs.getString(KEY, "") ?: ""
+        return if (raw.isBlank()) emptyList()
+        else raw.split(' ').filter { it.length == 4 && it.all { c -> c.isDigit() } }
+    }
 
-    private fun save(prefs: SharedPreferences, set: Set<String>) {
-        prefs.edit { putStringSet(KEY, set) }
+    private fun save(prefs: SharedPreferences, ordered: List<String>) {
+        prefs.edit { putString(KEY, ordered.joinToString(" ")) }
     }
 }

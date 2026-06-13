@@ -39,4 +39,24 @@ class AllowSuffixStoreTest {
         assertTrue(AllowSuffixStore.isAllowed(prefs, "09022222222"))
         assertFalse(AllowSuffixStore.isAllowed(prefs, "09033333333"))
     }
+
+    @Test
+    fun `overflow evicts oldest, keeps newest`() {
+        // Fill to MAX with suffixes 0000..0099 (100 entries)
+        for (i in 0 until 100) {
+            AllowSuffixStore.allow(prefs, "****%04d".format(i))
+        }
+        // Adding a 101st entry should evict the oldest (0000), keep all others.
+        AllowSuffixStore.allow(prefs, "****9999")
+        assertFalse("oldest should be evicted", AllowSuffixStore.isAllowed(prefs, "09010000"))
+        assertTrue("newest must survive", AllowSuffixStore.isAllowed(prefs, "09019999"))
+        assertTrue("recent entry must survive", AllowSuffixStore.isAllowed(prefs, "09010099"))
+    }
+
+    @Test
+    fun `duplicate allow is idempotent and does not grow list`() {
+        AllowSuffixStore.allow(prefs, "****1234")
+        AllowSuffixStore.allow(prefs, "****1234")
+        assertTrue(AllowSuffixStore.isAllowed(prefs, "09012341234"))
+    }
 }
