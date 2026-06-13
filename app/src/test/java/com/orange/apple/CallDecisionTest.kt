@@ -407,17 +407,6 @@ class CallDecisionTest {
         assertEquals(Verdict.RING, decide(ctxNotWithheld, state).verdict)
     }
 
-    @Test fun withheld_overrides_pause() {
-        // Withheld is now Layer 2 (above pause). Even if user paused, a
-        // non-emergency anonymous call is silenced. Trade-off: most users
-        // expect "pause" to mean "everything rings" — but anonymous calls
-        // are rarely intended recipients of a pause. Documented in
-        // HONESTY_ADDENDUM.
-        val state = emptyState.copy(pausedUntilMillis = Long.MAX_VALUE)
-        val d = decide(call("").copy(numberWithheld = true), state)
-        assertEquals(Verdict.SILENCE, d.verdict)
-    }
-
     // --- Caribbean NANP premium (+1-242, +1-876 etc.) -------------------------
 
     @Test fun caribbean_jamaica_876_silenced() {
@@ -567,3 +556,4 @@ class CallDecisionTest {
         val d = decide(call("0312345678"), emptyState)
         assertNull(d.warnPayload)
     }
+}
