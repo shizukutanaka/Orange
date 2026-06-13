@@ -216,11 +216,16 @@ class SilentBlockerService : CallScreeningService() {
         return result
     }
 
-    private fun simCountryIso(): String? =
-        getSystemService(TelephonyManager::class.java)
-            ?.networkCountryIso
-            ?.takeIf { it.isNotEmpty() }
-            ?.uppercase(Locale.ROOT)
+    private fun simCountryIso(): String? {
+        val tm = getSystemService(TelephonyManager::class.java) ?: return null
+        // Use simCountryIso (SIM card's home country) rather than networkCountryIso
+        // (serving network). While roaming, networkCountryIso returns the visited
+        // country; a JP SIM in the US would return "US", causing all JP calls to be
+        // silenced as FOREIGN_GENERIC. simCountryIso is always the home country.
+        val iso = tm.simCountryIso.takeIf { it.isNotEmpty() }
+            ?: tm.networkCountryIso.takeIf { it.isNotEmpty() }  // fallback for eSIM edge cases
+        return iso?.uppercase(Locale.ROOT)
+    }
 
     private fun normalize(raw: String): String = PhoneNumbers.normalize(raw)
 

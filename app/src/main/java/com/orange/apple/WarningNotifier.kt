@@ -7,6 +7,7 @@ import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import androidx.core.app.NotificationCompat
+import androidx.core.content.edit
 
 /**
  * Centralized warning notification builder.
@@ -59,7 +60,7 @@ internal object WarningNotifier {
         val now = System.currentTimeMillis()
         val last = prefs.getLong(key, 0L)
         if (now - last < 24L * 60 * 60 * 1000) return
-        prefs.edit().putLong(key, now).apply()
+        prefs.edit { putLong(key, now) }
 
         val mgr = notifManager(ctx) ?: return
         val channelId = "orange_highrisk"
@@ -100,7 +101,7 @@ internal object WarningNotifier {
         val familyNum = FamilyCallback.primaryNumber(ctx) ?: return
         val dialIntent = Intent(Intent.ACTION_DIAL, Uri.parse("tel:$familyNum"))
         val pi = PendingIntent.getActivity(
-            ctx, 0, dialIntent,
+            ctx, 0x0FAB1, dialIntent,
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
         builder.addAction(0, ctx.getString(R.string.police_warn_family), pi)
