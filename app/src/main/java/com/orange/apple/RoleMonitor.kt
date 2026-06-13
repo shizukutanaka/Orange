@@ -79,7 +79,14 @@ class RoleMonitorReceiver : BroadcastReceiver() {
     override fun onReceive(ctx: Context, intent: Intent) {
         when (intent.action) {
             Intent.ACTION_BOOT_COMPLETED,
-            Intent.ACTION_MY_PACKAGE_REPLACED -> RoleMonitor.refresh(ctx)
+            Intent.ACTION_MY_PACKAGE_REPLACED -> {
+                RoleMonitor.refresh(ctx)
+                // AlarmManager clears all alarms on reboot. Reschedule the weekly
+                // digest so it survives a power cycle. setInexactRepeating is
+                // idempotent (FLAG_UPDATE_CURRENT replaces the existing alarm on
+                // package-replace, where the alarm is still live).
+                WeeklyDigest.schedule(ctx)
+            }
         }
     }
 }

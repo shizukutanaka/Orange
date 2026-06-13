@@ -50,8 +50,8 @@ class WeeklyDigest : BroadcastReceiver() {
             if (cal.get(java.util.Calendar.DAY_OF_MONTH) > 7) return
         }
 
-        // Count blocks this week
-        val weekStart = System.currentTimeMillis() - WEEK_MS
+        // Count blocks since the last digest fired (KEY_WEEK_COUNT is reset
+        // by resetWeekCounter() at the end of each digest cycle).
         val weekCount = prefs.getInt(KEY_WEEK_COUNT, 0)
         if (weekCount == 0) {
             // No blocks this week — silence is the product working. No notif.
