@@ -91,14 +91,21 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 ### Security (continued)
 - Spam cache now stores SHA-256 hashes instead of plaintext numbers — the user's blocklist no longer appears in cleartext on disk (defense against malware, forensic imaging, backup leakage). A per-install 128-bit CSPRNG salt defeats cross-user precomputation, and the salt itself is encrypted with a non-exportable AndroidKeyStore AES-256-GCM key so a forensic `/data` image cannot recover it (KeyDroid arXiv:2507.07927). `CallState.spamCached` (Set) became `isSpamCached` (Boolean), keeping the engine pure. See ADR 006, arXiv:2304.02810.
 
-## [1.0.0] — TBD
+## [Unreleased] — v1.2 (patch)
 
-### Highlights
-- 16-point pure decision engine, zero network permission, zero contact access.
-- 47 prefectural police HQ numbers bundled — shows warning (never blocks) with STIR/SHAKEN escalation.
-- Wangiri 2.0 detection (15s threshold), Caribbean NANP premium blocking (22 area codes).
-- Withheld-number blocking (7 carrier patterns), DND honor mode, time-of-day risk signal.
-- Repeat-caller velocity (3 calls / 60min → 4th blocked), OutboundGuard callback warning.
-- PostCallAdvisor: #9110 / 188 / 0120-210-364 shown after >30s unknown calls.
-- FamilyCallback Quick Settings tile (1-tap family dial, no READ_CONTACTS).
-- Weekly → monthly digest. 4 locales (en/ja/zh/ko). 213 unit tests. 8 CI gates.
+### Fixed
+- **FOREIGN_GENERIC (Layer 13)** — `isoOfCountryCode()` only covered 16 countries; calls from Brazil, Thailand, Indonesia, Turkey, etc. rang through. Replaced with direct calling-code comparison via `ScamPrefixSeed.countryCodeOf()` — now covers 150+ countries. See ADR 009.
+- **Post-trust notification channel** — `maybeNotifyPostTrust()` used `orange_trust` ("Blocked calls (first week)") after day 7; now uses `orange_ongoing` ("Blocked calls") so Android notification settings are not misleading.
+- **RestoreReceiver cancel() silent drop** — `(mgr) ?: return .cancel()` never cancelled the notification. Fixed to two-statement pattern.
+- **RepeatCallerTracker off-by-one** — `>= N_THRESHOLD` fired on 3rd call; `> N_THRESHOLD` correctly fires on 4th as documented.
+- **RepeatCallerTracker recording gap** — silenced calls never raised `PHONE_STATE_CHANGED RINGING`; `record()` now called from `SilentBlockerService.screenIncoming()` before the decision check, covering all calls including silenced ones.
+- **CallContext duplicate definition** — orphaned field block (lines 89–99) from a previous edit caused compilation failure.
+- **WangiriTracker empty-number guard** — `record("")` could store `""` as a Wangiri candidate; empty input now rejected.
+- **EmergencyWhitelist incomplete** — added `+81189` (児童相談所), `+81171` (災害用伝言), `+61000` (AU 000) international roaming forms.
+- **ScamPrefixSeed per-call set allocation** — `allCodes` set is now a `val` built once at class load, not on every call.
+- **OrangeWidget PendingIntent request code** — changed from `0` to `0x0BABE` to avoid collision with other PendingIntents using request code 0.
+
+### Tests Added
+- `RepeatCallerTrackerTest` (8 cases) — threshold boundary, window expiry, clear, multi-number isolation.
+- `WangiriTrackerTest` (6 cases) — record/snapshot, 6-hour expiry, empty guard, forget, MAX_ENTRIES bound.
+- `CallDecisionTest` additions — 189/171 domestic and international emergency variants, AU +61000, Brazil/Thailand/Indonesia/Turkey FOREIGN_GENERIC regression tests.

@@ -69,7 +69,7 @@ class OrangeWidget : AppWidgetProvider() {
             addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK)
         }
         val pi = android.app.PendingIntent.getActivity(
-            ctx, 0, openIntent,
+            ctx, 0x0BABE, openIntent,
             android.app.PendingIntent.FLAG_UPDATE_CURRENT or
                 android.app.PendingIntent.FLAG_IMMUTABLE
         )
