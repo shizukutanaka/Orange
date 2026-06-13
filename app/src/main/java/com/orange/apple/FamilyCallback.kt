@@ -36,7 +36,9 @@ object FamilyCallback {
     /** Set a pre-set number at slot (1-based). Rejects empty or non-phone input. */
     fun setNumber(ctx: Context, slot: Int, number: String): Boolean {
         require(slot in 1..MAX_SLOTS)
-        val cleaned = number.filter { it.isDigit() || it == '+' }
+        // Normalize first (folds full-width digits, strips spaces/hyphens/parens)
+        // so full-width input "０９０…" is safely stored as ASCII "090…".
+        val cleaned = PhoneNumbers.normalize(number)
         // Minimum: 3 digits (short codes like 110/119).
         // Maximum: 15 digits (ITU-T E.164 maximum).
         if (cleaned.length !in 3..15) return false
