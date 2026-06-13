@@ -1,10 +1,11 @@
 package com.orange.apple
 
 import android.app.role.RoleManager
+import android.appwidget.AppWidgetManager
 import android.content.BroadcastReceiver
+import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
-import android.content.IntentFilter
 import android.os.Build
 
 /**
@@ -53,12 +54,18 @@ internal object RoleMonitor {
         val previously = prefs.getBoolean(KEY_ROLE_HELD, true)
         if (held != previously) {
             prefs.edit().putBoolean(KEY_ROLE_HELD, held).apply()
-            // Widget reads this flag on next render; we just need to nudge
-            // the AppWidgetManager to redraw.
-            ctx.sendBroadcast(Intent("android.appwidget.action.APPWIDGET_UPDATE").apply {
-                setPackage(ctx.packageName)
-                component = android.content.ComponentName(ctx, OrangeWidget::class.java)
-            })
+            // Nudge the widget to redraw. ACTION_APPWIDGET_UPDATE is only
+            // delivered to onUpdate() when EXTRA_APPWIDGET_IDS is included —
+            // without it, AppWidgetProvider.onReceive() drops the intent.
+            val awm = AppWidgetManager.getInstance(ctx)
+            val ids = awm.getAppWidgetIds(ComponentName(ctx, OrangeWidget::class.java))
+            if (ids.isNotEmpty()) {
+                ctx.sendBroadcast(Intent(AppWidgetManager.ACTION_APPWIDGET_UPDATE).apply {
+                    setPackage(ctx.packageName)
+                    putExtra(AppWidgetManager.EXTRA_APPWIDGET_IDS, ids)
+                    component = ComponentName(ctx, OrangeWidget::class.java)
+                })
+            }
         }
     }
 }

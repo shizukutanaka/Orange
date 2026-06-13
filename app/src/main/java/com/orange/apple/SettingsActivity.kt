@@ -127,7 +127,11 @@ fun SettingsScreen() {
                                 keyboardActions = KeyboardActions(onDone = {
                                     focusManager.clearFocus()
                                     val cleaned = fieldValue.filter { c -> c.isDigit() || c == '+' }
-                                    if (FamilyCallback.setNumber(ctx, slot, cleaned)) {
+                                    if (cleaned.isEmpty()) {
+                                        FamilyCallback.clearNumber(ctx, slot)
+                                        fieldValue = ""
+                                        saved = true
+                                    } else if (FamilyCallback.setNumber(ctx, slot, cleaned)) {
                                         fieldValue = cleaned
                                         saved = true
                                     }
