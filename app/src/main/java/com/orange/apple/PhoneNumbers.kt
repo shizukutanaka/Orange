@@ -35,7 +35,13 @@ internal object PhoneNumbers {
         buildString(raw.length) {
             for (ch in raw) {
                 val c = foldFullWidth(ch)
-                if (c in '0'..'9' || c == '+') append(c)
+                when {
+                    // '+' is valid only as the very first character (E.164 prefix).
+                    // A '+' later in the string is noise (user typed "++81..." or
+                    // a carrier returned a malformed SIP URI fragment).
+                    c == '+' && isEmpty() -> append(c)
+                    c in '0'..'9' -> append(c)
+                }
             }
         }
 
