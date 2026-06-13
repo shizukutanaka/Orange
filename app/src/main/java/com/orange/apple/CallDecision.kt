@@ -282,10 +282,18 @@ internal fun isHighRiskHour(nowMillis: Long): Boolean {
  * Returns true for unknown domestic mobile-origin numbers.
  * Prefix check only — no contact lookup (READ_CONTACTS not permitted).
  * 2025 Tobila Oct report: mobile share of scam numbers rose +11 pp MoM.
+ * Covers both domestic trunk form ("090...") and E.164 form ("+8190..."),
+ * since Android may deliver the same JP mobile number in either format.
  */
-internal fun isUnknownDomesticMobile(number: String): Boolean =
-    number.startsWith("090") || number.startsWith("080") ||
-    number.startsWith("070") || number.startsWith("060")
+internal fun isUnknownDomesticMobile(number: String): Boolean {
+    // Domestic trunk form: 090/080/070/060
+    if (number.startsWith("090") || number.startsWith("080") ||
+        number.startsWith("070") || number.startsWith("060")) return true
+    // E.164 JP mobile: +8190/+8180/+8170/+8160
+    if (number.startsWith("+8190") || number.startsWith("+8180") ||
+        number.startsWith("+8170") || number.startsWith("+8160")) return true
+    return false
+}
 
 /**
  * Maps a callee's ISO country code to the ITU calling code for that country.

@@ -556,4 +556,33 @@ class CallDecisionTest {
         val d = decide(call("0312345678"), emptyState)
         assertNull(d.warnPayload)
     }
+
+    // --- E.164 JP mobile numbers also get the アポ電 high-risk-hour warning ----
+
+    @Test fun e164_jp_mobile_high_risk_hour_gets_warning() {
+        // Android delivers incoming JP mobile numbers in E.164 (+819x...).
+        // isUnknownDomesticMobile must cover +8190/80/70/60 prefixes too.
+        val cal = java.util.Calendar.getInstance(java.util.TimeZone.getTimeZone("Asia/Tokyo"))
+        cal.set(2025, java.util.Calendar.MAY, 6, 10, 30, 0) // Tuesday 10:30 JST
+        cal.set(java.util.Calendar.MILLISECOND, 0)
+        // +819012345678 = E.164 for 09012345678. callerCc="81" = calleeCc → passes Layer 13.
+        val d = decide(
+            CallContext("+819012345678", "JP", cal.timeInMillis),
+            emptyState
+        )
+        assertEquals(Verdict.RING, d.verdict)
+        assertEquals(WarnReason.HIGH_RISK_HOUR_DOMESTIC, d.warning)
+    }
+
+    @Test fun e164_jp_mobile_outside_high_risk_hour_no_warning() {
+        val cal = java.util.Calendar.getInstance(java.util.TimeZone.getTimeZone("Asia/Tokyo"))
+        cal.set(2025, java.util.Calendar.MAY, 6, 17, 0, 0) // Tuesday 17:00 JST — outside window
+        cal.set(java.util.Calendar.MILLISECOND, 0)
+        val d = decide(
+            CallContext("+819012345678", "JP", cal.timeInMillis),
+            emptyState
+        )
+        assertEquals(Verdict.RING, d.verdict)
+        assertNull(d.warning)
+    }
 }
