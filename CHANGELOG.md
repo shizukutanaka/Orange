@@ -94,6 +94,9 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 ## [Unreleased] — v1.2 (patch)
 
 ### Fixed
+- **OnboardingActivity compilation blocker** — `finishToSilent()` launched SettingsActivity via `Intent(...)` but the `android.content.Intent` import had been removed in v1.0.0 and never re-added; the build would fail. Re-added Intent/Context/edit imports.
+- **Trust window anchored at first block instead of role grant** — `KEY_INSTALL_TS` was only set lazily on the first block. A user with no spam in their first week would have the 7-day loud-notification window restart whenever the first block finally landed. Now set once at role grant (protection start).
+- **PostCallAdvisor false alarm on trusted callers** — the comment promised it skips outbound-known + business-bundle callers, but the code only checked outbound-known; a long call from a registered family member or bundled bank would show the "#9110 に相談を" scam sheet. Now checks outbound + family + business bundle, with E.164 variant matching.
 - **FOREIGN_GENERIC (Layer 13)** — `isoOfCountryCode()` only covered 16 countries; calls from Brazil, Thailand, Indonesia, Turkey, etc. rang through. Replaced with direct calling-code comparison via `ScamPrefixSeed.countryCodeOf()` — now covers 150+ countries. See ADR 009.
 - **Post-trust notification channel** — `maybeNotifyPostTrust()` used `orange_trust` ("Blocked calls (first week)") after day 7; now uses `orange_ongoing` ("Blocked calls") so Android notification settings are not misleading.
 - **RestoreReceiver cancel() silent drop** — `(mgr) ?: return .cancel()` never cancelled the notification. Fixed to two-statement pattern.
