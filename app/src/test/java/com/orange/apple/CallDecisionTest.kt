@@ -45,6 +45,21 @@ class CallDecisionTest {
     @Test fun emergency_international_variant_rings() =
         assertEquals(Verdict.RING, decide(call("+81110"), emptyState).verdict)
 
+    @Test fun emergency_jp_189_rings() =
+        assertEquals(Verdict.RING, decide(call("189"), emptyState).verdict)
+
+    @Test fun emergency_jp_171_rings() =
+        assertEquals(Verdict.RING, decide(call("171"), emptyState).verdict)
+
+    @Test fun emergency_jp_189_international_rings() =
+        assertEquals(Verdict.RING, decide(call("+81189"), emptyState).verdict)
+
+    @Test fun emergency_jp_171_international_rings() =
+        assertEquals(Verdict.RING, decide(call("+81171"), emptyState).verdict)
+
+    @Test fun emergency_au_000_international_rings() =
+        assertEquals(Verdict.RING, decide(call("+61000"), emptyState).verdict)
+
     // --- Layer 2: Pause -------------------------------------------------------
 
     @Test fun paused_allows_foreign_call() {

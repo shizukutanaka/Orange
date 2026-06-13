@@ -34,9 +34,13 @@ internal object EmergencyWhitelist {
         add("999")  // UK/HK/IE
         add("000")  // Australia
 
-        // Extended-format variants the OS may deliver
+        // Extended-format variants the OS may deliver when roaming
         add("+81110"); add("+81119"); add("+81118")
-        add("+1911");  add("+44999");  add("+112")
+        add("+81189"); add("+81171")   // 児童相談所 / 災害用伝言 international form
+        add("+1911")                   // US 911 as dialed by some MVNO SIMs
+        add("+44999")                  // UK 999 as dialed by some MVNO SIMs
+        add("+61000")                  // AU 000 international form
+        add("+112")                    // EU 112 bare (no national prefix)
     }
 
     /**
