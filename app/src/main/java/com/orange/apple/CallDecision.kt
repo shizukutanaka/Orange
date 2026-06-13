@@ -306,15 +306,21 @@ internal fun callingCodeOf(iso: String?): String? = when (iso) {
  * repeat call from the same number is silenced instantly by the cheap Layer-6
  * lookup, rather than re-derived through every layer.
  *
- * DND_HONOR is excluded because that silence is CONTEXTUAL — the call was
- * silenced only because the device was in Do Not Disturb, not because the number
- * is spam. Caching it would keep the number silenced even after the user turns
- * DND off, silencing legitimate callers. All other silence reasons reflect a
- * persistent property of the number itself and are safe to cache; the user can
- * always undo a false positive via the Restore action (which clears the cache).
+ * CONTEXTUAL silences are excluded — their block condition is temporary and may
+ * clear on its own without user action:
+ *
+ *  - DND_HONOR: silenced because the device was in Do Not Disturb. Caching
+ *    would keep the number silenced after the user turns DND off.
+ *
+ *  - REPEAT_CALLER: silenced because the same number called N+ times in 60 min.
+ *    The 60-minute window expires naturally. Caching would permanently block a
+ *    legitimate urgent caller (e.g. an elderly parent who couldn't get through)
+ *    even after the velocity window clears; the user would have to Restore manually.
+ *
+ * All other reasons reflect a PERSISTENT property of the number and are safe to cache.
  */
 internal fun isCacheableSilence(reason: BlockReason): Boolean =
-    reason != BlockReason.DND_HONOR
+    reason != BlockReason.DND_HONOR && reason != BlockReason.REPEAT_CALLER
 
 /**
  * Returns the set of equivalent forms of a phone number: the number itself

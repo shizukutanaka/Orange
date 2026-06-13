@@ -264,12 +264,18 @@ class CallDecisionTest {
         assertEquals(false, isCacheableSilence(BlockReason.DND_HONOR))
     }
 
+    @Test fun repeat_caller_silence_is_not_cached() {
+        // Velocity-based silence: 60-min window expires naturally. Caching would
+        // permanently block a legitimate urgent caller after the window clears.
+        assertEquals(false, isCacheableSilence(BlockReason.REPEAT_CALLER))
+    }
+
     @Test fun number_property_silences_are_cached() {
         for (r in listOf(
             BlockReason.SPAM_CACHE, BlockReason.FOREIGN_ELEVATED, BlockReason.FOREIGN_GENERIC,
             BlockReason.DOMESTIC_SPOOF, BlockReason.WANGIRI_CALLBACK,
             BlockReason.CARRIER_VERIFICATION_FAILED, BlockReason.PREMIUM_RATE_INTERNATIONAL,
-            BlockReason.REPEAT_CALLER, BlockReason.WITHHELD_NUMBER,
+            BlockReason.WITHHELD_NUMBER,
         )) {
             assertEquals("$r should be cacheable", true, isCacheableSilence(r))
         }
