@@ -51,6 +51,20 @@ class DomesticSpoofDetectorTest {
     @Test fun international_plus81_with_0_2_is_spoof() =
         assertTrue(DomesticSpoofDetector.isImpossibleJpNumber("+812012345678"))
 
+    // --- Geographic landline length regression (bug: 11-digit geo passed) -----
+    // JP geographic numbers (03, 06, 022, etc.) are always exactly 10 digits
+    // per MIC numbering plan. An 11-digit "03XXXXXXXXXX" cannot exist.
+
+    @Test fun tokyo_landline_11_digits_is_spoof() =
+        // "03" + 9 digits = 11 total. Impossible in the JP plan.
+        assertTrue(DomesticSpoofDetector.isImpossibleJpNumber("03555512345"))
+
+    @Test fun osaka_landline_11_digits_is_spoof() =
+        assertTrue(DomesticSpoofDetector.isImpossibleJpNumber("06123456789"))
+
+    @Test fun sendai_landline_11_digits_is_spoof() =
+        assertTrue(DomesticSpoofDetector.isImpossibleJpNumber("02222116119"))
+
     // --- Legitimate numbers (must not be flagged) -------------------------
 
     @Test fun valid_mobile_090_passes() =
@@ -80,22 +94,8 @@ class DomesticSpoofDetectorTest {
     @Test fun valid_international_plus81_mobile_passes() =
         assertFalse(DomesticSpoofDetector.isImpossibleJpNumber("+819012345678"))
 
-    // --- Non-JP numbers: not our concern, always return false --------------
-
-    @Test fun us_number_is_not_flagged() =
-        assertFalse(DomesticSpoofDetector.isImpossibleJpNumber("+14155551234"))
-
-    @Test fun cn_number_is_not_flagged() =
-        assertFalse(DomesticSpoofDetector.isImpossibleJpNumber("+8613812345678"))
-
-    @Test fun short_code_110_is_not_flagged() =
-        // 110 is under 10 digits, so it's "impossible" as a JP full number,
-        // but EmergencyWhitelist catches it before this detector sees it.
-        // Here we just verify the detector's own behavior for the record.
-        assertTrue(DomesticSpoofDetector.isImpossibleJpNumber("110"))
-}
-
     // --- 060 mobile (allocated Dec 2025) ---
+
     @Test fun valid_060_mobile_11_digits_passes() =
         assertFalse(DomesticSpoofDetector.isImpossibleJpNumber("06012345678"))
 
@@ -122,3 +122,18 @@ class DomesticSpoofDetectorTest {
 
     @Test fun mobile_060_valid_eleven_digit_passes() =
         assertFalse(DomesticSpoofDetector.isImpossibleJpNumber("06012345678"))
+
+    // --- Non-JP numbers: not our concern, always return false --------------
+
+    @Test fun us_number_is_not_flagged() =
+        assertFalse(DomesticSpoofDetector.isImpossibleJpNumber("+14155551234"))
+
+    @Test fun cn_number_is_not_flagged() =
+        assertFalse(DomesticSpoofDetector.isImpossibleJpNumber("+8613812345678"))
+
+    @Test fun short_code_110_is_not_flagged() =
+        // 110 is under 10 digits, so it's "impossible" as a JP full number,
+        // but EmergencyWhitelist catches it before this detector sees it.
+        // Here we just verify the detector's own behavior for the record.
+        assertTrue(DomesticSpoofDetector.isImpossibleJpNumber("110"))
+}

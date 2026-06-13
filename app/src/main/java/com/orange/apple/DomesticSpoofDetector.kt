@@ -27,7 +27,14 @@ internal object DomesticSpoofDetector {
         if (violatesElevenDigitRule(d))  return true   // 050/06x-09x/0800 must be 11
         if (violatesTenDigitRule(d))     return true   // 0120/0570/0990 must be 10
         if (hasEightRepeatingDigits(d))  return true   // robot-dialer artifact
-        if (d.length !in 10..11)         return true   // outside valid domestic range
+        if (d.length < 10)               return true   // too short for any JP number
+        if (d.length > 11)               return true   // too long for any JP number
+        // Geographic landlines (03/06/0X — NOT a special-service prefix) are exactly
+        // 10 digits in the MIC plan. "03XXXXXXXXXX" (11 digits) cannot exist; if a
+        // caller presents it, it's a spoof. Only the numbers already matched by
+        // ELEVEN_DIGIT_PREFIXES are legitimately 11 digits.
+        val isElevenDigitService = ELEVEN_DIGIT_PREFIXES.any { d.startsWith(it) }
+        if (!isElevenDigitService && d.length == 11) return true
         if (d.getOrNull(1) == '0')       return true   // 00x = intl access code
         return false
     }
