@@ -300,3 +300,34 @@ internal fun callingCodeOf(iso: String?): String? = when (iso) {
     "IN" -> "91"; "BR" -> "55"; "TH" -> "66"; "ID" -> "62"
     else -> null
 }
+
+/**
+ * Returns the set of equivalent forms of a phone number: the number itself
+ * plus its domestic↔E.164 counterpart, given the home country's calling code.
+ *
+ * Why this exists: a user dials (or registers) a number in domestic form
+ * ("09012345678"), but Android delivers the matching INCOMING call in E.164
+ * ("+819012345678"). Without variant matching, the outbound-known / family
+ * trusted-set lookup misses, and a number the user explicitly trusts gets
+ * silenced. By checking every variant of the incoming number against the
+ * trusted set, either stored form matches.
+ *
+ * Only the home calling code is expanded — a "0"-led number is treated as a
+ * domestic trunk-prefix number for that country. For null callingCode (unknown
+ * SIM country) only the number itself is returned, the conservative default.
+ */
+internal fun phoneVariants(number: String, callingCode: String?): Set<String> {
+    if (number.isEmpty()) return emptySet()
+    val out = linkedSetOf(number)
+    if (callingCode != null) {
+        when {
+            // domestic trunk form → E.164: "09012345678" → "+819012345678"
+            number.startsWith("0") && !number.startsWith("+") ->
+                out.add("+$callingCode${number.substring(1)}")
+            // E.164 → domestic trunk form: "+819012345678" → "09012345678"
+            number.startsWith("+$callingCode") ->
+                out.add("0${number.removePrefix("+$callingCode")}")
+        }
+    }
+    return out
+}

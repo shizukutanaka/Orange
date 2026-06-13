@@ -74,12 +74,16 @@ class SilentBlockerService : CallScreeningService() {
 
         // Build trusted sets early. Family numbers + outbound-known must never
         // accumulate toward the repeat-caller threshold and must bypass it entirely.
-        // Family numbers are stored in domestic format by the user but arrive as
-        // E.164 from Android — load both forms so they always match.
+        //
+        // A number is dialed/stored in domestic form ("09012345678") but Android
+        // delivers the matching INCOMING call in E.164 ("+819012345678"). Check
+        // every variant of the incoming number against the trusted set so either
+        // stored form matches — without this, a number the user trusts is silenced.
+        val cc = callingCodeOf(simCountryIso())
         val outbound = p.getStringSet(KEY_OUTBOUND, emptySet()).orEmpty()
-        val family = familyNumberSet(p, simCountryIso())
-        val trusted = outbound + family
-        if (number.isNotEmpty() && number in trusted) {
+        val family = familyNumbers(p)
+        val variants = phoneVariants(number, cc)
+        if (number.isNotEmpty() && variants.any { it in outbound || it in family }) {
             return Decision(Verdict.RING)
         }
 
@@ -94,7 +98,7 @@ class SilentBlockerService : CallScreeningService() {
         }
 
         val state = CallState(
-            outboundKnown     = trusted,
+            outboundKnown     = outbound + family,
             isSpamCached      = SpamCache.contains(p, number),
             knownBusinesses   = BusinessDirectoryBundle.load(this).keys,
             pausedUntilMillis = p.getLong(PauseTile.KEY_PAUSED_UNTIL, 0L),
@@ -185,36 +189,17 @@ class SilentBlockerService : CallScreeningService() {
     }
 
     /**
-     * Load registered family numbers and expand each to both its stored form
-     * AND the E.164 equivalent (and vice versa), so a number saved as
-     * "09012345678" matches an incoming "+819012345678" and vice versa.
-     *
-     * Without this, a JP user who stores "09012345678" but hasn't yet dialed
-     * that number would have mom's call silenced — Android delivers incoming
-     * calls in E.164 form, not domestic form.
+     * Load registered family numbers in normalized (ASCII) form. Variant
+     * matching (domestic ↔ E.164) is handled by phoneVariants() at the call
+     * site against the incoming number, so this only needs to surface the
+     * stored forms.
      */
-    private fun familyNumberSet(p: SharedPreferences, simIso: String?): Set<String> {
-        val stored = (1..FamilyCallback.MAX_SLOTS).mapNotNull { i ->
+    private fun familyNumbers(p: SharedPreferences): Set<String> =
+        (1..FamilyCallback.MAX_SLOTS).mapNotNull { i ->
             p.getString("family_$i", null)?.takeIf { it.isNotBlank() }
                 ?.let { PhoneNumbers.normalize(it) }
                 ?.takeIf { it.isNotEmpty() }
-        }
-        if (stored.isEmpty()) return emptySet()
-        val cc = callingCodeOf(simIso) ?: return stored.toSet()
-        val result = mutableSetOf<String>()
-        for (num in stored) {
-            result.add(num)
-            when {
-                // domestic → E.164: "09012345678" → "+819012345678"
-                num.startsWith("0") && !num.startsWith("+") ->
-                    result.add("+$cc${num.substring(1)}")
-                // E.164 → domestic: "+819012345678" → "09012345678"
-                num.startsWith("+$cc") ->
-                    result.add("0${num.removePrefix("+$cc")}")
-            }
-        }
-        return result
-    }
+        }.toSet()
 
     private fun simCountryIso(): String? {
         val tm = getSystemService(TelephonyManager::class.java) ?: return null

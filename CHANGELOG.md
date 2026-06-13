@@ -105,7 +105,9 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - **ScamPrefixSeed per-call set allocation** — `allCodes` set is now a `val` built once at class load, not on every call.
 - **OrangeWidget PendingIntent request code** — changed from `0` to `0x0BABE` to avoid collision with other PendingIntents using request code 0.
 
-- **Family numbers silenced** — registered family numbers (stored as "09012345678") never matched E.164 incoming calls ("+819012345678"). `SilentBlockerService.familyNumberSet()` now expands each stored number to both domestic and E.164 forms using `callingCodeOf(simIso)` so matches always succeed.
+- **Outbound-callback silenced** — the same domestic↔E.164 mismatch affected the WHOLE outbound-known path, not just family numbers: a number the user dialed in domestic form ("09012345678") would have its callback ("+819012345678") silenced. Introduced pure `phoneVariants(number, callingCode)` helper; `SilentBlockerService` now checks every variant of the incoming number against outbound-known + family, so either stored form matches. Efficient O(2) lookup rather than expanding the (up to 10k-entry) outbound set.
+- **`!!` operator reintroduced in CallStateObserver** — `getStringSet(...)!!` violated the documented "all `!!` eliminated" invariant; replaced with `.orEmpty()`.
+- **Family numbers silenced** — registered family numbers (stored as "09012345678") never matched E.164 incoming calls ("+819012345678"). Now handled by the same `phoneVariants()` matching against `familyNumbers(p)`.
 - **Trusted contacts hit by repeat-caller** — outbound-known + family numbers were subject to the repeat-caller velocity check. A family member calling 4+ times in 60 minutes would have their 4th call silenced. Trusted numbers now bypass RepeatCallerTracker entirely.
 - **Roaming SIM country detection** — `networkCountryIso` returns the visited network country while roaming; a JP SIM roaming in the US would have `calleeCountryIso="US"`, silencing all +81 JP calls as FOREIGN_GENERIC. Fixed to use `simCountryIso` (SIM home country) with `networkCountryIso` as fallback.
 - **FamilyCallback full-width digit normalization** — `setNumber()` accepted full-width digits (０９０…) which passed `Char.isDigit()` but stored unfolded, causing `tel:` URI failures in dialPrimary(). Now uses `PhoneNumbers.normalize()` before validation.
@@ -115,3 +117,4 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - `RepeatCallerTrackerTest` (8 cases) — threshold boundary, window expiry, clear, multi-number isolation.
 - `WangiriTrackerTest` (6 cases) — record/snapshot, 6-hour expiry, empty guard, forget, MAX_ENTRIES bound.
 - `CallDecisionTest` additions — 189/171 domestic and international emergency variants, AU +61000, Brazil/Thailand/Indonesia/Turkey FOREIGN_GENERIC regression tests, family E.164/domestic round-trip tests.
+- `PhoneVariantsTest` (9 cases) — domestic↔E.164 expansion, symmetry, null/empty guards, foreign mismatch, US calling code, real outbound-callback scenario.

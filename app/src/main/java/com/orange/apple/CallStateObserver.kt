@@ -115,8 +115,8 @@ class CallStateObserver : BroadcastReceiver() {
 
     private fun addToOutbound(prefs: android.content.SharedPreferences, number: String) {
         if (number.isEmpty()) return
-        val set = prefs.getStringSet(SilentBlockerService.KEY_OUTBOUND, emptySet())!!
-            .toMutableSet()
+        val set = prefs.getStringSet(SilentBlockerService.KEY_OUTBOUND, emptySet())
+            .orEmpty().toMutableSet()
         if (set.add(number)) {
             // Bound at MAX_ENTRIES to prevent unbounded growth from
             // business users who dial hundreds of numbers per week.

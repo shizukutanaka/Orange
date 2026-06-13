@@ -1,0 +1,65 @@
+package com.orange.apple
+
+import org.junit.Assert.*
+import org.junit.Test
+
+/**
+ * Tests for phoneVariants() — the domestic↔E.164 equivalence helper that lets
+ * a number dialed/stored in one form match an incoming call in the other.
+ * Pure function, zero Android dependencies.
+ */
+class PhoneVariantsTest {
+
+    @Test fun `domestic JP number expands to E164`() {
+        val v = phoneVariants("09012345678", "81")
+        assertTrue(v.contains("09012345678"))
+        assertTrue(v.contains("+819012345678"))
+    }
+
+    @Test fun `E164 JP number expands to domestic`() {
+        val v = phoneVariants("+819012345678", "81")
+        assertTrue(v.contains("+819012345678"))
+        assertTrue(v.contains("09012345678"))
+    }
+
+    @Test fun `round-trip is symmetric`() {
+        val fromDomestic = phoneVariants("09012345678", "81")
+        val fromE164 = phoneVariants("+819012345678", "81")
+        assertEquals(fromDomestic, fromE164)
+    }
+
+    @Test fun `null calling code returns only the number itself`() {
+        val v = phoneVariants("09012345678", null)
+        assertEquals(setOf("09012345678"), v)
+    }
+
+    @Test fun `empty number returns empty set`() {
+        assertTrue(phoneVariants("", "81").isEmpty())
+    }
+
+    @Test fun `foreign E164 with mismatched calling code is not expanded`() {
+        // +852 (Hong Kong) number with JP calling code "81" — no domestic form.
+        val v = phoneVariants("+85290001234", "81")
+        assertEquals(setOf("+85290001234"), v)
+    }
+
+    @Test fun `domestic number without leading zero is not expanded`() {
+        // Short codes / non-trunk numbers ("110") aren't domestic-trunk form.
+        val v = phoneVariants("110", "81")
+        assertEquals(setOf("110"), v)
+    }
+
+    @Test fun `US domestic expands with calling code 1`() {
+        val v = phoneVariants("02125551234", "1")
+        assertTrue(v.contains("+12125551234"))
+    }
+
+    @Test fun `outbound callback in E164 matches domestic-dialed number`() {
+        // The real-world scenario: user dialed "09012345678" (stored domestic),
+        // the contact calls back and Android delivers "+819012345678".
+        val outbound = setOf("09012345678")
+        val incoming = "+819012345678"
+        val matched = phoneVariants(incoming, "81").any { it in outbound }
+        assertTrue("E.164 callback must match domestic-dialed number", matched)
+    }
+}
