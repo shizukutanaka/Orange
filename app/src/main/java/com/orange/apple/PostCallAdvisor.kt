@@ -46,11 +46,8 @@ object PostCallAdvisor {
         if (number.isEmpty()) return
 
         val prefs = ctx.getSharedPreferences(SilentBlockerService.PREFS, Context.MODE_PRIVATE)
-        // Rate-limit key uses hashCode to bound key length.
-        // E.164 numbers can be up to 15 digits; "postcall_last_" + 15 chars
-        // is safe but we use hashCode for defensive consistency with
-        // WarningNotifier.showHighRiskHourWarning.
-        val rateKey = "postcall_last_${number.hashCode()}"
+        // Rate-limit key: "postcall_last_" + normalized number (max 16 chars, safe for prefs).
+        val rateKey = "postcall_last_$number"
         val lastShown = prefs.getLong(rateKey, 0L)
         val now = System.currentTimeMillis()
         if (now - lastShown < WINDOW_MS) return   // rate-limit: once per 24h per number

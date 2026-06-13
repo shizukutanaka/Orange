@@ -56,7 +56,7 @@ internal object WarningNotifier {
     fun showHighRiskHourWarning(ctx: Context, number: String) {
         // Rate-limit: once per 24 h per number — same philosophy as PostCallAdvisor.
         val prefs = ctx.getSharedPreferences(SilentBlockerService.PREFS, Context.MODE_PRIVATE)
-        val key = "highrisk_last_${number.hashCode()}"
+        val key = "highrisk_last_$number"
         val now = System.currentTimeMillis()
         val last = prefs.getLong(key, 0L)
         if (now - last < 24L * 60 * 60 * 1000) return
