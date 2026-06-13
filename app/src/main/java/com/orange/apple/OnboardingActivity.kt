@@ -1,8 +1,11 @@
 package com.orange.apple
 
 import android.app.role.RoleManager
+import android.content.Context
+import android.content.Intent
 import android.os.Build
 import android.os.Bundle
+import androidx.core.content.edit
 import android.view.HapticFeedbackConstants
 import android.view.View
 import androidx.activity.ComponentActivity
@@ -94,6 +97,15 @@ class OnboardingActivity : ComponentActivity() {
 
     private fun finishToSilent() {
         window.decorView.postDelayed({
+            // Anchor the trust window + digest schedule to when protection actually
+            // begins (role grant), NOT to the first block. Otherwise a user who gets
+            // no spam for the first week would have the 7-day "loud notification"
+            // window restart on their first block weeks later. Set-once: re-launches
+            // (widget tap, app re-open) must not reset the clock.
+            val prefs = getSharedPreferences(SilentBlockerService.PREFS, Context.MODE_PRIVATE)
+            if (prefs.getLong(TrustNotifier.KEY_INSTALL_TS, 0L) == 0L) {
+                prefs.edit { putLong(TrustNotifier.KEY_INSTALL_TS, System.currentTimeMillis()) }
+            }
             WeeklyDigest.schedule(this)
             // Prompt for family number setup on first launch if not yet prompted.
             if (!FamilyCallback.hasBeenPrompted(this) &&
