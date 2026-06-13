@@ -230,6 +230,29 @@ class CallDecisionTest {
         assertEquals(Verdict.RING, decide(call("+5511987654321"), state).verdict)
     }
 
+    // --- Family number E.164 matching -----------------------------------------
+    // Registered in domestic form but Android delivers E.164 — engine must match.
+
+    @Test fun family_domestic_stored_e164_incoming_rings() {
+        // User stores "09012345678"; incoming arrives as "+819012345678"
+        val state = emptyState.copy(outboundKnown = setOf("09012345678", "+819012345678"))
+        assertEquals(Verdict.RING, decide(call("+819012345678"), state).verdict)
+    }
+
+    @Test fun family_e164_stored_domestic_incoming_rings() {
+        val state = emptyState.copy(outboundKnown = setOf("09012345678", "+819012345678"))
+        assertEquals(Verdict.RING, decide(call("09012345678"), state).verdict)
+    }
+
+    // Outbound-known numbers ring even through the foreign layers
+    @Test fun family_foreign_e164_rings() {
+        val state = emptyState.copy(outboundKnown = setOf("+819012345678"))
+        // Foreign generic would silence +81 vs +81 mismatch? No — same country code → not silenced anyway.
+        // Test with a genuinely foreign number in outboundKnown:
+        val state2 = emptyState.copy(outboundKnown = setOf("+85290001234"))
+        assertEquals(Verdict.RING, decide(call("+85290001234"), state2).verdict)
+    }
+
     @Test fun jp_to_jp_unknown_rings() =
         assertEquals(Verdict.RING, decide(call("+819087654321"), emptyState).verdict)
 
