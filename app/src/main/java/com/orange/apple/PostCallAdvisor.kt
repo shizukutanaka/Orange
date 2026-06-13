@@ -55,12 +55,29 @@ object PostCallAdvisor {
         val now = System.currentTimeMillis()
         if (now - lastShown < WINDOW_MS) return   // rate-limit: once per 24h per number
 
-        // Only fire for numbers not already in trusted sets
+        // Only fire for genuinely unknown callers. Trusted callers — numbers the
+        // user dialed, registered family members, or bundled legitimate businesses
+        // — never need a scam-advice sheet; showing one would be a false alarm on
+        // grandma's bank or her own daughter. Check every domestic↔E.164 variant
+        // so a callback delivered in E.164 still matches a domestic-stored number.
+        val cc = simCallingCode(ctx)
+        val variants = phoneVariants(number, cc)
         val outbound = prefs.getStringSet(SilentBlockerService.KEY_OUTBOUND, emptySet()).orEmpty()
-        if (number in outbound) return
+        val family = FamilyCallback.getNumbers(ctx).map { PhoneNumbers.normalize(it) }.toSet()
+        val businesses = BusinessDirectoryBundle.load(ctx).keys
+        if (variants.any { it in outbound || it in family || it in businesses }) return
 
         prefs.edit { putLong(rateKey, now) }
         show(ctx, number)
+    }
+
+    /** Home-country ITU calling code from the SIM, for E.164 variant matching. */
+    private fun simCallingCode(ctx: Context): String? {
+        val tm = ctx.getSystemService(Context.TELEPHONY_SERVICE)
+            as? android.telephony.TelephonyManager ?: return null
+        val iso = tm.simCountryIso?.takeIf { it.isNotEmpty() }
+            ?: tm.networkCountryIso?.takeIf { it.isNotEmpty() }
+        return callingCodeOf(iso?.uppercase(java.util.Locale.ROOT))
     }
 
     private fun show(ctx: Context, number: String) {
