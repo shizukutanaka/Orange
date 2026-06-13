@@ -57,10 +57,15 @@ class CallStateObserver : BroadcastReceiver() {
     }
 
     private fun onRinging(prefs: android.content.SharedPreferences, number: String?, now: Long) {
-        prefs.edit { putBoolean(KEY_WAS_RINGING, true) }
-        if (!number.isNullOrEmpty()) {
-            val norm = normalize(number)
-            prefs.edit {
+        // Clear state from any previous call that may have been orphaned by a
+        // process death between OFFHOOK and IDLE: a stale KEY_ANSWER_TIME would
+        // cause the next IDLE to compute a huge duration and fire a spurious
+        // PostCallAdvisor notification about a call from hours/days ago.
+        prefs.edit {
+            putBoolean(KEY_WAS_RINGING, true)
+            remove(KEY_ANSWER_TIME)
+            if (!number.isNullOrEmpty()) {
+                val norm = normalize(number)
                 putLong(KEY_RING_START, now)
                 putString(KEY_RING_NUMBER, norm)
             }
