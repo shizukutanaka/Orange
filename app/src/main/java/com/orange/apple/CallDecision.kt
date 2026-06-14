@@ -180,18 +180,17 @@ fun decide(ctx: CallContext, state: CallState): Decision {
         return Decision(Verdict.SILENCE, BlockReason.DOMESTIC_SPOOF)
     }
 
-    // Layer 9: STIR/SHAKEN carrier verification failed.
-    if (ctx.verificationFailed) {
-        return Decision(Verdict.SILENCE, BlockReason.CARRIER_VERIFICATION_FAILED)
-    }
-
-    // Layer 10: Police HQ number impersonation detection.
+    // Layer 9: Police HQ number impersonation detection.
+    // Police numbers MUST ring even when STIR/SHAKEN reports FAILED — a real
+    // officer calling from their HQ phone must not be silenced by Layer 10.
+    // This layer runs BEFORE the STIR/SHAKEN check so that the verification
+    // failure can be used to escalate the warning severity rather than block
+    // the call. If Layer 10 ran first and silenced on verificationFailed, a
+    // real police HQ call with spoofed carrier data would be blocked silently.
+    //
     // 2025 ニセ警察詐欺 (9,642件, ¥831.9億円): scammers spoof real police
-    // HQ representative numbers. We do NOT block these (a real officer
-    // calling from their HQ should ring), but we flag them with a
-    // post-pickup warning: "一度切って #9110 にかけ直してください".
-    // The old 0110-tail heuristic was too broad and missed real spoofs
-    // (most HQ numbers don't end in 0110). Directory exact-match is correct.
+    // HQ representative numbers. We RING with a post-pickup warning instead.
+    // The old 0110-tail heuristic was too broad; directory exact-match is correct.
     // Single lookup — result goes into warnPayload so the adapter
     // does not need a second map traversal.
     if (ctx.calleeCountryIso == "JP") {
@@ -203,6 +202,13 @@ fun decide(ctx: CallContext, state: CallState): Decision {
                 WarnReason.POLICE_IMPERSONATION
             return Decision(Verdict.RING, warning = warnSeverity, warnPayload = hqName)
         }
+    }
+
+    // Layer 10: STIR/SHAKEN carrier verification failed.
+    // Reached only for non-emergency, non-paused, non-withheld, non-outbound,
+    // non-business, non-spam, non-wangiri, non-spoof, non-police numbers.
+    if (ctx.verificationFailed) {
+        return Decision(Verdict.SILENCE, BlockReason.CARRIER_VERIFICATION_FAILED)
     }
 
     // Layer 11: International premium-rate and network numbers.
