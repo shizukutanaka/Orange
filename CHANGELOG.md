@@ -7,12 +7,15 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 ## [Unreleased] — v1.2 (patch)
 
 ### Fixed
+- **Critical: police HQ call silenced by layer ordering bug** — `decide()` ran STIR/SHAKEN check (former Layer 9) before the police-directory check (former Layer 10). A real officer calling from a police HQ phone that also had `verificationFailed=true` was silenced with `CARRIER_VERIFICATION_FAILED` instead of ringing with `POLICE_IMPERSONATION_HIGH`. Police numbers now checked first (new Layer 9) so STIR/SHAKEN failure escalates the warning rather than blocking the call.
+- **Post-trust notification group summary missing** — `setGroup("orange_blocks")` on individual notifications requires an explicit `setGroupSummary(true)` notification for Android to visually collapse them. The summary was never posted; added `postGroupSummary()` which fires after each block and shows the live block count.
 - **HistoryActivity "Allow" UX bug** — tapping Allow now removes the entry from `BlockHistoryStore` persistent storage via new `BlockHistoryStore.remove()` method. Previously the entry was removed from in-memory state only and reappeared after the next app launch.
-- **ADR 010** — `isUnknownDomesticMobile()` now covers E.164 JP mobile prefixes (`+8190/+8180/+8170/+8160`); Layer 15 high-risk-hour warning now fires for carriers that deliver numbers in E.164 form.
+- **E.164 mobile Layer 15** — `isUnknownDomesticMobile()` now covers E.164 JP mobile prefixes (`+8190/+8180/+8170/+8160`); Layer 15 high-risk-hour warning now fires for carriers that deliver numbers in E.164 form.
 - **CHANGELOG** — corrected "7 automated checks" → "9 automated checks" to match current `check_comprehensive.sh`.
 
 ### Added
 - `BlockHistoryStore.remove(prefs, entry)` — synchronized removal of a single entry from block history.
+- `R.string.notif_summary_text` — grouped block count string in all 4 locales (EN/JA/KO/ZH).
 - `docs/adr/010-e164-mobile-layer15.md` — documents the E.164 mobile Layer 15 fix.
 
 ## [1.1.0] — 2026-06-11
