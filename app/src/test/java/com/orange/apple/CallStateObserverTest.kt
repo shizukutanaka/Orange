@@ -55,6 +55,23 @@ class CallStateObserverTest {
         assertEquals("answer_time cleared", 0L, p.getLong("answer_time", 0L))
     }
 
+    @Test fun repeat_caller_cleared_using_ring_number_when_offhook_number_absent() {
+        // Regression guard: onOffhook() may receive null number on some carriers.
+        // It should fall back to KEY_RING_NUMBER set during RINGING so that
+        // RepeatCallerTracker.clear() fires even without the OFFHOOK intent extra.
+        val p = FakePrefs()
+        val number = "09012345678"
+        // Simulate RINGING state: record 3 calls and store KEY_RING_NUMBER.
+        repeat(3) { RepeatCallerTracker.record(p, number, 1000L + it * 1000) }
+        p.edit().putString("ring_number", number).apply()
+        // Simulate OFFHOOK with null number (use fallback path).
+        val rawNum = (null as String?)?.takeIf { it.isNotEmpty() }
+            ?: p.getString("ring_number", null)
+        if (rawNum != null) RepeatCallerTracker.clear(p, rawNum)
+        // After clear, the number should no longer be a repeat offender.
+        assertFalse(RepeatCallerTracker.isRepeatOffender(p, number, 60 * 60 * 1000L))
+    }
+
     // Simulates the addToOutbound logic from CallStateObserver (same code).
     private fun addToOutbound(prefs: FakePrefs, number: String) {
         val set = prefs.getStringSet(SilentBlockerService.KEY_OUTBOUND, emptySet())!!

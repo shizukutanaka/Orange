@@ -130,9 +130,9 @@ class DecisionPriorityTest {
         assertNull(d.warning) // no police warning
     }
 
-    // Layer 9 (STIR/SHAKEN SILENCE) beats layer 10 (police warning)
+    // Layer 9 (police check) must NOT fire here; Layer 10 (STIR/SHAKEN) silences non-police
     @Test fun stir_shaken_failed_domestic_silenced_not_warned() {
-        // Non-police JP number with STIR failed → SILENCE
+        // Non-police JP number with STIR failed → reaches Layer 10 → SILENCE
         val d = decide(
             CallContext("0312345678", "JP", 1_000_000L, verificationFailed = true),
             emptyState

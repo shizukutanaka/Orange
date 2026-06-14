@@ -25,6 +25,7 @@ import androidx.core.content.edit
 internal object WarningNotifier {
 
     private const val CHANNEL_POLICE = "orange_police_warn"
+    private const val CHANNEL_HIGHRISK = "orange_highrisk"
     private const val CHANNEL_OUTBOUND = "orange_outbound_warn"
 
     /** Police HQ impersonation warning. Call RINGS but user sees heads-up.
@@ -63,12 +64,11 @@ internal object WarningNotifier {
         prefs.edit { putLong(key, now) }
 
         val mgr = notifManager(ctx) ?: return
-        val channelId = "orange_highrisk"
-        ensureChannel(ctx, mgr, channelId,
+        ensureChannel(ctx, mgr, CHANNEL_HIGHRISK,
             ctx.getString(R.string.notif_channel_highrisk),
             NotificationManager.IMPORTANCE_DEFAULT)
 
-        val builder = NotificationCompat.Builder(ctx, channelId)
+        val builder = NotificationCompat.Builder(ctx, CHANNEL_HIGHRISK)
             .setSmallIcon(android.R.drawable.stat_sys_warning)
             .setContentTitle(ctx.getString(R.string.highrisk_warn_title))
             .setContentText(ctx.getString(R.string.highrisk_warn_body))
