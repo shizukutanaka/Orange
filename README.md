@@ -46,20 +46,21 @@ Sixteen-point decision engine, in order:
 1. **Emergency bypass** — 110, 118, 119, 911, 112, 999, 000 always ring, no exceptions.
 2. **Pause tile** — if you tapped Quick Settings, everything rings (including withheld) until the hour is up.
 3. **Withheld caller ID** — anonymous / 非通知 / restricted calls silenced.
-4. **Outgoing call** — records dialed numbers; warns if you're calling back a recently-blocked number. (Adapter layer.)
-5. **Outbound-known** — numbers you have dialed always ring.
-6. **Business bundle** — known-legit business numbers ring.
-7. **Spam cache** — numbers you've previously blocked stay silent.
-8. **Wangiri callback** — same number short-rang you (under 15s) in last 6 hours → silenced.
-9. **Domestic spoofing** — JP numbers violating the MIC numbering plan silenced.
-10. **Police HQ impersonation** — 47 prefectural HQ numbers: call **rings** + warning. STIR/SHAKEN FAILED escalates to 🚨 high-severity alert. (Checked before Layer 11 so a real officer's call is never silenced — see ADR 011.)
-11. **Carrier verification failed** — STIR/SHAKEN says caller ID not authentic (API 30+) → silenced.
-12. **International premium rate** — +800/+979/+882/+883 and Caribbean NANP (+1-242, +1-876, etc.) silenced.
-13. **Foreign elevated-risk** — +675/+7/+86/+44/+212/+234/+63/+39 silenced for JP users.
-14. **Foreign generic** — any international call to your country not in outbound history silenced.
-15. **DND honor mode** — device Do Not Disturb active → unknown domestic calls silenced.
-16. **Time-of-day risk** — unknown domestic mobile (090/080/070/060) during アポ電 peak hours (Mon–Fri 09–12/13–16 JST) → RING + soft warning.
-17. **Allow** — everything else rings.
+4. **Outbound-known** — numbers you have dialed always ring.
+5. **Business bundle** — known-legit business numbers ring.
+6. **Spam cache** — numbers you've previously blocked stay silent.
+7. **Wangiri callback** — same number short-rang you (under 15s) in last 6 hours → silenced.
+8. **Domestic spoofing** — JP numbers violating the MIC numbering plan silenced.
+9. **Police HQ impersonation** — 47 prefectural HQ numbers: call **rings** + warning. STIR/SHAKEN FAILED escalates to 🚨 high-severity alert. (Checked before Layer 10 so a real officer's call is never silenced — see ADR 011.)
+10. **Carrier verification failed** — STIR/SHAKEN says caller ID not authentic (API 30+) → silenced.
+11. **International premium rate** — +800/+979/+882/+883 and Caribbean NANP (+1-242, +1-876, etc.) silenced.
+12. **Foreign elevated-risk** — +675/+7/+86/+44/+212/+234/+63/+39 silenced for JP users.
+13. **Foreign generic** — any international call to your country not in outbound history silenced.
+14. **DND honor mode** — device Do Not Disturb active → unknown domestic calls silenced.
+15. **Time-of-day risk** — unknown domestic mobile (090/080/070/060) during アポ電 peak hours (Mon–Fri 09–12/13–16 JST) → RING + soft warning.
+16. **Allow** — everything else rings.
+
+> **Adapter layer:** outgoing calls are also intercepted to record dialled numbers (feeds Layer 4) and to warn if you're calling back a recently-blocked number. This runs in `SilentBlockerService` before the 16-point engine fires on incoming calls.
 
 See `HONESTY_ADDENDUM.md` for what Orange **doesn't** catch.
 
