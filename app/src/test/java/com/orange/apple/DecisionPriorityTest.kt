@@ -118,7 +118,7 @@ class DecisionPriorityTest {
         assertEquals(BlockReason.REPEAT_CALLER, reason)
     }
 
-    // Layer priority: withheld vs police (layer 3 beats layer 10 — withheld rings with no police check)
+    // Layer priority: withheld vs police (layer 3 beats layer 9 — withheld is silenced before police check)
     @Test fun withheld_does_not_reach_police_layer() {
         // A withheld call to 0335814321 (警視庁): withheld fires first
         val d = decide(
