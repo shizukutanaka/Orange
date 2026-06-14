@@ -149,11 +149,11 @@ or its passphrases.
 orange/
 ├── app/
 │   ├── src/main/
-│   │   ├── java/com/orange/apple/  ← Kotlin sources (≈2600 LOC, 25 files)
+│   │   ├── java/com/orange/apple/  ← Kotlin sources (≈3600 LOC, 30 files)
 │   │   ├── res/                    ← Layouts, strings (en/ja/zh/ko), icons
 │   │   ├── assets/business_directory.csv
 │   │   └── AndroidManifest.xml
-│   ├── src/test/                   ← Pure Kotlin unit tests (≈1600 LOC, 213 tests)
+│   ├── src/test/                   ← Pure Kotlin unit tests (≈2300 LOC, 296 tests)
 │   ├── build.gradle.kts
 │   ├── proguard-rules.pro
 │   └── signing.gradle.kts
@@ -197,7 +197,7 @@ orange/
 | `RepeatCallerTracker.kt` | Same number calling N+ times in 60 min → block |
 | `OutboundGuard.kt` | 24h LRU: warns on callback to recently-blocked number |
 | `NotificationRateLimiter.kt` | 5 notifications / 5-minute window |
-| `BusinessDirectoryBundle.kt` | Offline CSV loader (29 verified business numbers) |
+| `BusinessDirectoryBundle.kt` | Offline CSV loader (80+ verified business numbers, v1.1) |
 | `FamilyCallback.kt` | Up to 3 pre-set family numbers + validation |
 | `TrustNotifier.kt` | Per-block trust-window notifications (days 1–7) |
 | `WarningNotifier.kt` | Police impersonation + outbound + high-risk-hour warnings |
