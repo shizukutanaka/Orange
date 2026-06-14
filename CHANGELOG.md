@@ -13,10 +13,15 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - **E.164 mobile Layer 15** — `isUnknownDomesticMobile()` now covers E.164 JP mobile prefixes (`+8190/+8180/+8170/+8160`); Layer 15 high-risk-hour warning now fires for carriers that deliver numbers in E.164 form.
 - **CHANGELOG** — corrected "7 automated checks" → "9 automated checks" to match current `check_comprehensive.sh`.
 
+- **`CallStateObserver.onOffhook()` fallback** — when the OFFHOOK broadcast omits the phone number (carrier-dependent), fall back to `KEY_RING_NUMBER` stored during RINGING so `RepeatCallerTracker.clear()` always fires for answered calls.
+- **`OrangeWidget` resource refs** — replaced `getIdentifier()` string-reflection with direct `R.layout` / `R.id` references; renames now caught at compile time.
+- **`WarningNotifier` channel constant** — extracted inline `"orange_highrisk"` string to `CHANNEL_HIGHRISK` constant, consistent with other channel constants.
+
 ### Added
 - `BlockHistoryStore.remove(prefs, entry)` — synchronized removal of a single entry from block history.
 - `R.string.notif_summary_text` — grouped block count string in all 4 locales (EN/JA/KO/ZH).
 - `docs/adr/010-e164-mobile-layer15.md` — documents the E.164 mobile Layer 15 fix.
+- 3 new unit tests: `BlockHistoryStore.remove()` coverage (2 cases) + `CallStateObserver` KEY_RING_NUMBER fallback.
 
 ## [1.1.0] — 2026-06-11
 
