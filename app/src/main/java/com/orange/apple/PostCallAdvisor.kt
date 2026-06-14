@@ -68,7 +68,13 @@ object PostCallAdvisor {
         show(ctx, number)
     }
 
-    /** Home-country ITU calling code from the SIM, for E.164 variant matching. */
+    /**
+     * Home-country ITU calling code from the SIM, for E.164 variant matching.
+     * On dual-SIM devices this returns the default (SIM1) slot's country only.
+     * A number stored in domestic form via SIM2's country may not match its
+     * E.164 variant — accepted limitation; exact-number restore via block history
+     * remains available.
+     */
     private fun simCallingCode(ctx: Context): String? {
         val tm = ctx.getSystemService(Context.TELEPHONY_SERVICE)
             as? android.telephony.TelephonyManager ?: return null

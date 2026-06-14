@@ -187,9 +187,9 @@ class SilentBlockerService : CallScreeningService() {
     private fun addToOutbound(p: SharedPreferences, number: String) {
         val set = p.getStringSet(KEY_OUTBOUND, emptySet()).orEmpty().toMutableSet()
         if (set.add(number)) {
-            if (set.size > SpamCache.MAX_ENTRIES) {
+            if (set.size > MAX_OUTBOUND_ENTRIES) {
                 val iter = set.iterator()
-                repeat(set.size - SpamCache.MAX_ENTRIES) { iter.next(); iter.remove() }
+                repeat(set.size - MAX_OUTBOUND_ENTRIES) { iter.next(); iter.remove() }
             }
             p.edit { putStringSet(KEY_OUTBOUND, set) }
         }
@@ -239,5 +239,10 @@ class SilentBlockerService : CallScreeningService() {
         const val KEY_OUTBOUND = "outbound"
         const val KEY_SPAM = "spam"
         const val KEY_COUNT = "count"
+        // Bound for the set of numbers the user has dialled (Layer 5 bypass).
+        // Independent of SpamCache.MAX_ENTRIES — different data with different
+        // cardinality expectations. 1,000 covers a realistic lifetime of dialled
+        // contacts while preventing unbounded SharedPreferences growth.
+        const val MAX_OUTBOUND_ENTRIES = 1_000
     }
 }

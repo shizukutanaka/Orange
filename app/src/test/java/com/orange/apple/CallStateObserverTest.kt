@@ -32,11 +32,11 @@ class CallStateObserverTest {
 
     @Test fun outbound_bounded_at_max_entries() {
         val p = FakePrefs()
-        repeat(SpamCache.MAX_ENTRIES + 10) { i ->
+        repeat(SilentBlockerService.MAX_OUTBOUND_ENTRIES + 10) { i ->
             addToOutbound(p, "+$i")
         }
         val set = p.getStringSet(SilentBlockerService.KEY_OUTBOUND, emptySet())!!
-        assertEquals(SpamCache.MAX_ENTRIES, set.size)
+        assertEquals(SilentBlockerService.MAX_OUTBOUND_ENTRIES, set.size)
     }
 
     @Test fun was_ringing_key_constant_matches_callstateobserver() {
@@ -77,9 +77,9 @@ class CallStateObserverTest {
         val set = prefs.getStringSet(SilentBlockerService.KEY_OUTBOUND, emptySet())!!
             .toMutableSet()
         if (set.add(number)) {
-            if (set.size > SpamCache.MAX_ENTRIES) {
+            if (set.size > SilentBlockerService.MAX_OUTBOUND_ENTRIES) {
                 val iter = set.iterator()
-                val excess = set.size - SpamCache.MAX_ENTRIES
+                val excess = set.size - SilentBlockerService.MAX_OUTBOUND_ENTRIES
                 repeat(excess) { iter.next(); iter.remove() }
             }
             prefs.edit().putStringSet(SilentBlockerService.KEY_OUTBOUND, set).apply()
