@@ -16,6 +16,9 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - **`CallStateObserver.onOffhook()` fallback** — when the OFFHOOK broadcast omits the phone number (carrier-dependent), fall back to `KEY_RING_NUMBER` stored during RINGING so `RepeatCallerTracker.clear()` always fires for answered calls.
 - **`OrangeWidget` resource refs** — replaced `getIdentifier()` string-reflection with direct `R.layout` / `R.id` references; renames now caught at compile time.
 - **`WarningNotifier` channel constant** — extracted inline `"orange_highrisk"` string to `CHANNEL_HIGHRISK` constant, consistent with other channel constants.
+- **`FamilyCallbackTile` deprecated API** — `startActivityAndCollapse(Intent)` deprecated in API 34 (Android 14). Added Build.VERSION_CODES.UPSIDE_DOWN_CAKE guard: API 34+ uses `PendingIntent` form; older APIs use `@Suppress DEPRECATION` fallback.
+- **`TrustNotifier` dead code** — removed unused `CHANNEL_DIGEST` constant (the channel is created and owned by `WeeklyDigest.kt`). Fixed misleading doccomment: "Day 8+ no notifications" and "digest stops after month 2" both contradicted the actual behavior (minimal drawer notifications post-trust; digest switches to monthly after 8 weeks, never stops).
+- **`RepeatCallerTracker.clear()` silent no-op** — `clear()` called `snapshot(prefs, System.currentTimeMillis())` which applies the 60-minute window filter. Entries recorded with synthetic test timestamps were filtered out before the remove, leaving the prefs string unchanged. The unit test `clear resets counter` would fail as a result. Fixed to parse the raw storage string directly without window filtering.
 
 ### Added
 - `BlockHistoryStore.remove(prefs, entry)` — synchronized removal of a single entry from block history.
