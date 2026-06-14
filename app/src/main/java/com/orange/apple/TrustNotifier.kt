@@ -117,6 +117,35 @@ object TrustNotifier {
 
         val mgr = ctx.getSystemService(Context.NOTIFICATION_SERVICE) as? NotificationManager ?: return
         mgr.notify(blockedNumber.hashCode(), notif)
+        postGroupSummary(ctx, mgr, historyPi)
+    }
+
+    /**
+     * Android requires an explicit group-summary notification for the group to
+     * visually collapse in the notification shade. Without it, setGroup() is a
+     * no-op from the user's perspective — each block appears as a separate card.
+     * This posts (or updates) a summary every time a new post-trust block fires.
+     */
+    private fun postGroupSummary(
+        ctx: Context,
+        mgr: NotificationManager,
+        historyPi: PendingIntent
+    ) {
+        val count = if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.M) {
+            mgr.activeNotifications.count { it.groupKey?.endsWith("orange_blocks") == true }
+        } else 0
+        val summaryText = ctx.getString(R.string.notif_summary_text, count.coerceAtLeast(1))
+        val summary = NotificationCompat.Builder(ctx, CHANNEL_ONGOING)
+            .setSmallIcon(android.R.drawable.stat_sys_phone_call_forward)
+            .setContentTitle(ctx.getString(R.string.app_name))
+            .setContentText(summaryText)
+            .setContentIntent(historyPi)
+            .setAutoCancel(false)
+            .setGroup("orange_blocks")
+            .setGroupSummary(true)
+            .setPriority(NotificationCompat.PRIORITY_MIN)
+            .build()
+        mgr.notify(NOTIF_ID_SUMMARY, summary)
     }
 
     private fun mask(n: String): String =
@@ -134,6 +163,7 @@ object TrustNotifier {
     }
 
     const val EXTRA_NUMBER = "num"
+    private const val NOTIF_ID_SUMMARY = 0x0B10C5  // "BLOCKS" mnemonic
 }
 
 /**

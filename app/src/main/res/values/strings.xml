@@ -21,6 +21,7 @@
     <string name="notif_action_restore">Restore</string>
     <string name="notif_channel_trust">Blocked calls (first week)</string>
     <string name="notif_channel_ongoing">Blocked calls</string>
+    <string name="notif_summary_text">%d calls silenced — tap to review</string>
 
     <!-- Confirmation after Restore. One sentence, no punctuation games. -->
     <string name="toast_restored">Will ring from now on</string>

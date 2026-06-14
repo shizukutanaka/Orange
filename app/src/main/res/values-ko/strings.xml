@@ -6,6 +6,7 @@
     <string name="notif_action_restore">해제</string>
     <string name="notif_channel_trust">차단된 전화 (첫 7일)</string>
     <string name="notif_channel_ongoing">차단된 전화</string>
+    <string name="notif_summary_text">%d 건의 전화가 차단됨 — 탭하여 확인</string>
     <string name="toast_restored">다음부터 울림</string>
     <string name="widget_caption">차단</string>
     <string name="tile_label_active">Orange</string>

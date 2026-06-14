@@ -19,6 +19,7 @@
     <string name="notif_action_restore">解除</string>
     <string name="notif_channel_trust">ブロック通知（最初の1週間）</string>
     <string name="notif_channel_ongoing">ブロック通知</string>
+    <string name="notif_summary_text">%d 件の通話をサイレントにしました — タップして確認</string>
 
     <string name="toast_restored">次回から鳴る</string>
 
