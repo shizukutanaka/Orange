@@ -43,7 +43,8 @@ internal object NotificationRateLimiter {
         // Use a non-blank sentinel that can never appear in a normalized number.
         val key = number.ifEmpty { "#" }
         val windowStart = prefs.getLong(KEY_WINDOW_START, 0L)
-        val inWindow = nowMs - windowStart < WINDOW_MS
+        // If nowMs < windowStart, the system clock jumped backward. Treat as expired window.
+        val inWindow = nowMs >= windowStart && nowMs - windowStart < WINDOW_MS
 
         val (count, seen) = if (inWindow) {
             prefs.getInt(KEY_WINDOW_COUNT, 0) to

@@ -58,6 +58,23 @@ class NotificationRateLimiterTest {
         assertFalse(NotificationRateLimiter.shouldNotify(p, "", 2000L))
         assertFalse(NotificationRateLimiter.shouldNotify(p, "", 3000L))
     }
+
+    @Test fun backward_clock_jump_resets_window() {
+        // If the system clock jumps backward, the window must reset to avoid
+        // a permanent state where the rate limiter is disabled.
+        val p = FakePrefs()
+        // Fill window at time=1000.
+        repeat(5) { i ->
+            NotificationRateLimiter.shouldNotify(p, "+$i", 1000L + i)
+        }
+        // Next distinct number in same window is silenced (at time=1100).
+        assertFalse(NotificationRateLimiter.shouldNotify(p, "+99", 1100L))
+        // System clock jumps backward to time=500.
+        // The window should reset, allowing notifications again.
+        assertTrue(NotificationRateLimiter.shouldNotify(p, "+99", 500L))
+        // Subsequent notifications in the new window should fire until limit is reached.
+        assertTrue(NotificationRateLimiter.shouldNotify(p, "+98", 501L))
+    }
 }
 
 /**
