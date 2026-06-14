@@ -131,8 +131,10 @@ object TrustNotifier {
         mgr: NotificationManager,
         historyPi: PendingIntent
     ) {
+        // notification.group is the raw group key without Android's package prefix
+        // (groupKey includes the package name, making endsWith() fragile).
         val count = if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.M) {
-            mgr.activeNotifications.count { it.groupKey?.endsWith("orange_blocks") == true }
+            mgr.activeNotifications.count { it.notification.group == "orange_blocks" }
         } else 0
         val summaryText = ctx.getString(R.string.notif_summary_text, count.coerceAtLeast(1))
         val summary = NotificationCompat.Builder(ctx, CHANNEL_ONGOING)
