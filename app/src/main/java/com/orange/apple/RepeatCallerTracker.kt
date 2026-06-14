@@ -92,7 +92,7 @@ internal object RepeatCallerTracker {
             val num = parts[0]
             val times = parts.drop(1)
                 .mapNotNull { it.toLongOrNull() }
-                .filter { nowMs - it < WINDOW_MS }
+                .filter { nowMs >= it && nowMs - it < WINDOW_MS }
             if (times.isNotEmpty()) out[num] = times.toMutableList()
         }
         return out

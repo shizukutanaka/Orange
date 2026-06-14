@@ -171,7 +171,7 @@ fun decide(ctx: CallContext, state: CallState): Decision {
 
     // Layer 7: Wangiri callback. Same number + recent short-ring = pattern.
     val recentRingAt = state.recentShortRings[ctx.number]
-    if (recentRingAt != null && ctx.nowMillis - recentRingAt < WANGIRI_WINDOW_MS) {
+    if (recentRingAt != null && ctx.nowMillis >= recentRingAt && ctx.nowMillis - recentRingAt < WANGIRI_WINDOW_MS) {
         return Decision(Verdict.SILENCE, BlockReason.WANGIRI_CALLBACK)
     }
 

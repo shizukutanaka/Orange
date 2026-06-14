@@ -64,7 +64,7 @@ internal object OutboundGuard {
             if (colon <= 0) return@forEach
             val num = entry.substring(0, colon)
             val ts = entry.substring(colon + 1).toLongOrNull() ?: return@forEach
-            if (nowMs - ts < WINDOW_MS) out[num] = ts
+            if (nowMs >= ts && nowMs - ts < WINDOW_MS) out[num] = ts
         }
         return out
     }
