@@ -47,7 +47,10 @@ class WeeklyDigest : BroadcastReceiver() {
             // Monthly mode: only fire on the first Sunday of each month.
             // Uses device timezone (not UTC) so JP users get 09:00 JST.
             val cal = java.util.Calendar.getInstance(java.util.TimeZone.getDefault())
-            if (cal.get(java.util.Calendar.DAY_OF_MONTH) > 7) return
+            val dayOfMonth = cal.get(java.util.Calendar.DAY_OF_MONTH)
+            val dayOfWeek = cal.get(java.util.Calendar.DAY_OF_WEEK)
+            // Fire only if day ≤ 7 AND it's a Sunday.
+            if (dayOfMonth > 7 || dayOfWeek != java.util.Calendar.SUNDAY) return
         }
 
         // Count blocks since the last digest fired (KEY_WEEK_COUNT is reset
@@ -126,14 +129,20 @@ class WeeklyDigest : BroadcastReceiver() {
                 PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
             )
 
-            // Next Sunday 09:00 local
+            // Next Sunday 09:00 local.
+            // Explicit calculation: if today is Sunday and we're before 09:00, use today;
+            // otherwise, use next Sunday.
             val cal = Calendar.getInstance().apply {
-                set(Calendar.DAY_OF_WEEK, Calendar.SUNDAY)
+                val currentDay = get(Calendar.DAY_OF_WEEK)
+                val daysUntilSunday = (Calendar.SUNDAY - currentDay + 7) % 7
+                if (daysUntilSunday > 0) {
+                    add(Calendar.DAY_OF_MONTH, daysUntilSunday)
+                }
                 set(Calendar.HOUR_OF_DAY, 9)
                 set(Calendar.MINUTE, 0)
                 set(Calendar.SECOND, 0)
                 if (timeInMillis <= System.currentTimeMillis()) {
-                    add(Calendar.WEEK_OF_YEAR, 1)
+                    add(Calendar.DAY_OF_MONTH, 7)
                 }
             }
 

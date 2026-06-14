@@ -34,7 +34,11 @@ internal object NotificationRateLimiter {
     /**
      * @return true if a notification SHOULD be shown for this number right now.
      *         Side-effect: records the decision in the rolling window.
+     *         Synchronized to prevent races: multiple threads checking the window
+     *         simultaneously must not create stale counts (thread A and B both
+     *         reading count=2, both incrementing to 3, losing one increment).
      */
+    @Synchronized
     fun shouldNotify(prefs: SharedPreferences, number: String, nowMs: Long): Boolean {
         // Withheld (非通知) calls arrive with number = "". An empty string survives
         // set.add() and set.contains() but is dropped by filter { isNotBlank() }
