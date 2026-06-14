@@ -44,6 +44,11 @@ class PoliceStationDirectoryTest {
             assertTrue("$num is not 10 digits", num.length == 10 && num.all { it.isDigit() })
         }
     }
+
+    @Test fun double_zero_international_format_resolves() {
+        // Some systems deliver +810335814321 (with leading 0 after country code)
+        assertEquals("警視庁", PoliceStationDirectory.lookup("+810335814321"))
+    }
 }
 
 class CaribbeanPremiumNANPTest {
@@ -150,11 +155,6 @@ class FamilyCallbackTest {
     }
 }
 
-    @Test fun double_zero_international_format_resolves() {
-        // Some systems deliver +810335814321 (with leading 0 after country code)
-        assertEquals("警視庁", PoliceStationDirectory.lookup("+810335814321"))
-    }
-
 class PhoneNumbersTest {
 
     @Test fun strips_dashes_and_spaces() =
@@ -188,7 +188,7 @@ class PhoneNumbersTest {
     }
 }
 
-class RepeatCallerTrackerTest {
+class RepeatCallerTrackerComponentTest {
 
     @Test fun first_two_calls_not_flagged() {
         val p = FakePrefs()
@@ -227,7 +227,6 @@ class RepeatCallerTrackerTest {
         RepeatCallerTracker.record(p, "", 1000L)
         assertFalse(RepeatCallerTracker.isRepeatOffender(p, "", 2000L))
     }
-}
 
     @Test fun clear_removes_entries() {
         val p = FakePrefs()
@@ -240,3 +239,4 @@ class RepeatCallerTrackerTest {
         RepeatCallerTracker.clear(p, "+111")
         assertFalse(RepeatCallerTracker.isRepeatOffender(p, "+111", RepeatCallerTracker.N_THRESHOLD * 1000L + 2))
     }
+}
