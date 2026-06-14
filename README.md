@@ -52,8 +52,8 @@ Sixteen-point decision engine, in order:
 7. **Spam cache** — numbers you've previously blocked stay silent.
 8. **Wangiri callback** — same number short-rang you (under 15s) in last 6 hours → silenced.
 9. **Domestic spoofing** — JP numbers violating the MIC numbering plan silenced.
-10. **Carrier verification failed** — STIR/SHAKEN says caller ID not authentic (API 30+) → silenced.
-11. **Police HQ impersonation** — 47 prefectural HQ numbers: call **rings** + warning. STIR/SHAKEN FAILED escalates to 🚨 high-severity alert.
+10. **Police HQ impersonation** — 47 prefectural HQ numbers: call **rings** + warning. STIR/SHAKEN FAILED escalates to 🚨 high-severity alert. (Checked before Layer 11 so a real officer's call is never silenced — see ADR 011.)
+11. **Carrier verification failed** — STIR/SHAKEN says caller ID not authentic (API 30+) → silenced.
 12. **International premium rate** — +800/+979/+882/+883 and Caribbean NANP (+1-242, +1-876, etc.) silenced.
 13. **Foreign elevated-risk** — +675/+7/+86/+44/+212/+234/+63/+39 silenced for JP users.
 14. **Foreign generic** — any international call to your country not in outbound history silenced.
