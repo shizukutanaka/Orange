@@ -75,11 +75,11 @@ class CallStateObserver : BroadcastReceiver() {
     private fun onOffhook(prefs: android.content.SharedPreferences, number: String?) {
         val wasRinging = prefs.getBoolean(KEY_WAS_RINGING, false)
         if (wasRinging) {
-            // User answered an incoming call. Remove this number from the
-            // repeat-caller buffer: a number the user chose to answer is
-            // not hostile, and counting answered calls would mis-fire if
-            // the same caller rings back legitimately within 60 minutes.
-            val norm = if (!number.isNullOrEmpty()) normalize(number) else null
+            // Prefer the number from the intent; fall back to the number captured
+            // during RINGING if the OFFHOOK intent doesn't carry it (carrier-dependent).
+            val rawNum = number?.takeIf { it.isNotEmpty() }
+                ?: prefs.getString(KEY_RING_NUMBER, null)
+            val norm = rawNum?.let { normalize(it) }
             if (norm != null) RepeatCallerTracker.clear(prefs, norm)
             val answerTime = System.currentTimeMillis()
             prefs.edit {

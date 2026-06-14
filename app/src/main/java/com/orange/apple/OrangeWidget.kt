@@ -44,22 +44,17 @@ class OrangeWidget : AppWidgetProvider() {
     }
 
     private fun buildViews(ctx: Context, count: Int, roleHeld: Boolean): RemoteViews {
-        val layoutId = ctx.resources.getIdentifier(
-            "widget_orange", "layout", ctx.packageName
-        )
-        val views = RemoteViews(ctx.packageName, layoutId)
-        val numberId = ctx.resources.getIdentifier("w_number", "id", ctx.packageName)
-        val captionId = ctx.resources.getIdentifier("w_caption", "id", ctx.packageName)
+        val views = RemoteViews(ctx.packageName, R.layout.widget_orange)
 
         if (roleHeld) {
-            views.setTextViewText(numberId, count.toString())
-            views.setTextViewText(captionId, ctx.getString(R.string.widget_caption))
-            views.setContentDescription(numberId,
+            views.setTextViewText(R.id.w_number, count.toString())
+            views.setTextViewText(R.id.w_caption, ctx.getString(R.string.widget_caption))
+            views.setContentDescription(R.id.w_number,
                 "$count ${ctx.getString(R.string.widget_caption)}")
         } else {
-            views.setTextViewText(numberId, "·")
-            views.setTextViewText(captionId, "")
-            views.setContentDescription(numberId,
+            views.setTextViewText(R.id.w_number, "·")
+            views.setTextViewText(R.id.w_caption, "")
+            views.setContentDescription(R.id.w_number,
                 ctx.getString(R.string.widget_a11y_role_lost))
         }
 
@@ -73,11 +68,10 @@ class OrangeWidget : AppWidgetProvider() {
             android.app.PendingIntent.FLAG_UPDATE_CURRENT or
                 android.app.PendingIntent.FLAG_IMMUTABLE
         )
-        val rootId = ctx.resources.getIdentifier("widget_root", "id", ctx.packageName)
-        if (rootId != 0) views.setOnClickPendingIntent(rootId, pi)
+        views.setOnClickPendingIntent(R.id.widget_root, pi)
 
-        views.setTextColor(numberId, Color.WHITE)
-        views.setTextColor(captionId, Color.parseColor("#FFE4CC"))
+        views.setTextColor(R.id.w_number, Color.WHITE)
+        views.setTextColor(R.id.w_caption, Color.parseColor("#FFE4CC"))
         return views
     }
 }

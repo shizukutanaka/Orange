@@ -23,7 +23,9 @@ package com.orange.apple
 internal object PoliceStationDirectory {
 
     /**
-     * Map of normalized E.164 → display name (prefecture police HQ).
+     * Map of domestic 10-digit number → display name (prefecture police HQ).
+     * Keys are stored in domestic form ("0335814321", not "+81335814321").
+     * lookup() accepts both forms and converts as needed.
      * If an incoming call matches, the decision engine returns RING
      * (we do NOT block police) but flags it for post-pickup warning.
      */
