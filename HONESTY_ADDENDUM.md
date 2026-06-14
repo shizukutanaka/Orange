@@ -113,7 +113,16 @@ Calls that will still ring through:
     Add the number to your outbound history by dialing them once and Orange will
     never apply the repeat-caller rule to them again.
 
-12. **The #9110 post-call advisory appears for all unknown callers, not just fraud** —
+12. **"Allow" from block history uses last-4-digit matching** — history entries
+    show only the last 4 digits (e.g. ****5678). When you tap Allow, Orange
+    permanently allows any future caller whose number ends in those 4 digits —
+    not just the specific number. A scammer who learns your allowed suffix can
+    craft a number ending in those digits and ring through. We accept this
+    trade-off because storing or displaying the full number would expose a
+    plaintext PII list. Exact-number Restore is available only via the per-block
+    "Restore" notification during the first 7 days (full hash available then).
+
+13. **The #9110 post-call advisory appears for all unknown callers, not just fraud** —
     after any call longer than 30 seconds from an unknown number, Orange posts a
     low-priority notification with #9110 / 188 / 0120-210-364. This fires for
     legitimate survey calls, charity solicitations, and anything else where the

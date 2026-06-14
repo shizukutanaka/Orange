@@ -23,17 +23,19 @@ import java.io.BufferedReader
  *  - Future: a TrustNotifier enrichment ("Silenced: SMBC Card Center").
  *
  * The bundle ships as assets/business_directory.csv with format:
- *     E164,ShortName
- *     +81357577001,三井住友カード
- *     +81570039192,ヤマト運輸
+ *     E164-or-shortcode,ShortName
+ *     +81352535111,総務省
+ *     188,消費者ホットライン
  *     ...
  *
- * We DO NOT ship with a bundled file preloaded in this commit because that
- * would violate the "no speculative features" rule. The loader below is the
- * scaffolding; a curated CSV will follow once we identify a permissive
- * public source (candidates: iタウンページ public business listings under
- * their terms, JPX-listed company IR phone numbers, 公共機関 public
- * contacts from ministry sites). Licensing review required before shipping.
+ * v1.1 (2026-06): ~80 entries covering central ministries, carriers, major banks,
+ * credit cards, logistics, transit, and official consultation hotlines. All numbers
+ * sourced from each organisation's OWN public page — no third-party aggregators.
+ * Source: 総務省 soumu.go.jp/main_content/000612566.pdf (公開) + 各機関公式サイト.
+ *
+ * Update policy: only numbers from official public sources; never mobile numbers;
+ * never third-party listing sites. Accuracy > coverage (a mis-labelled number
+ * becomes a spear-phishing vector — an attacker could spoof a trusted name).
  */
 internal object BusinessDirectoryBundle {
 
