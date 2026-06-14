@@ -131,6 +131,8 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - **Rate-limit key hashCode collision in `PostCallAdvisor` and `WarningNotifier`** — `"postcall_last_${number.hashCode()}"` and `"highrisk_last_${number.hashCode()}"` used 32-bit `hashCode()` as the SharedPreferences key. Two different phone numbers with the same hash would share a rate-limit slot, suppressing PostCallAdvisor/high-risk-hour notifications for the second number. Phone numbers are at most 16 chars; replaced with the number itself as the key.
 - **Layer 15 (アポ電 warning) silently skipped E.164 JP mobile numbers** — `isUnknownDomesticMobile()` only checked domestic trunk prefixes (`090/080/070/060`). Android typically delivers incoming calls in E.164 format (`+819012345678`), so the high-risk-hour warning never fired in practice. Added `+8190/+8180/+8170/+8160` prefix checks. Regression tests added.
 - **WarningNotifier PendingIntent request code** — `addFamilyAction()` used request code `0`; changed to `0x0FAB1`.
+- **`KEY_WAS_RINGING` visibility** — `private const val` in `CallStateObserver.companion` was referenced by `CallStateObserverTest`, causing a compilation error. Changed to `internal`.
+- **Dead writes `KEY_LAST_TS` / `KEY_LAST_NUM`** — `SilentBlockerService.recordBlock()` wrote these two prefs keys on every silence verdict but no code ever read them. Removed the writes, the parameter, and the constant declarations.
 
 ### Tests Added
 - `RepeatCallerTrackerTest` (8 cases) — threshold boundary, window expiry, clear, multi-number isolation.
