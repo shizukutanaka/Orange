@@ -60,7 +60,8 @@ for cls in EmergencyWhitelist DomesticSpoofDetector ScamPrefixSeed BusinessDirec
            SilentBlockerService OnboardingActivity OrangeWidget CallStateObserver WeeklyDigest \
            FamilyCallback FamilyCallbackTile PoliceStationDirectory EngineWarmup \
            CaribbeanPremiumNANP OutboundGuard WarningNotifier PhoneNumbers \
-           RepeatCallerTracker PostCallAdvisor SaltVault; do
+           RepeatCallerTracker PostCallAdvisor SaltVault \
+           AllowSuffixStore BlockHistoryStore HistoryActivity SettingsActivity; do
     if ! grep -rq "object $cls\|class $cls" "$MAIN/"*.kt 2>/dev/null; then
         echo "FAIL: $cls referenced but not defined"; FAIL=1
     fi

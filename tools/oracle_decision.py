@@ -72,6 +72,13 @@ def is_impossible_jp(n: str) -> bool:
         return True
     if len(d) > 1 and d[1] == "0":
         return True
+    # Geographic landlines (03/06/etc.) are always exactly 10 digits per MIC plan.
+    # An 11-digit number with a non-eleven-digit-service prefix is a spoof.
+    # Mirrors: val isElevenDigitService = ELEVEN_DIGIT_PREFIXES.any { d.startsWith(it) }
+    #          if (!isElevenDigitService && d.length == 11) return true
+    is_eleven_digit_service = any(d.startswith(p) for p in ELEVEN_DIGIT_PREFIXES)
+    if not is_eleven_digit_service and len(d) == 11:
+        return True
     return False
 
 
@@ -107,6 +114,10 @@ CASES = [
     ("0311111111", True, "03 landline with 8 repeating 1s"),
     # landline
     ("0312345678", False, "03 Tokyo landline valid 10-digit"),
+    # 11-digit geographic landlines are spoofs (MIC plan: geographic = exactly 10 digits)
+    ("03123456789", True, "03 Tokyo 11-digit — spoof"),
+    ("06123456789", True, "06 Osaka 11-digit — spoof"),
+    ("0222123456789", True, "022 Sendai 13-digit — spoof"),
     # 00x intl access used domestically
     ("00123456789", True, "00x intl-access prefix domestic"),
     # non-JP — out of scope, never flagged
