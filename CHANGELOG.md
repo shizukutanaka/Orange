@@ -133,6 +133,7 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - **WarningNotifier PendingIntent request code** — `addFamilyAction()` used request code `0`; changed to `0x0FAB1`.
 - **`KEY_WAS_RINGING` visibility** — `private const val` in `CallStateObserver.companion` was referenced by `CallStateObserverTest`, causing a compilation error. Changed to `internal`.
 - **Dead writes `KEY_LAST_TS` / `KEY_LAST_NUM`** — `SilentBlockerService.recordBlock()` wrote these two prefs keys on every silence verdict but no code ever read them. Removed the writes, the parameter, and the constant declarations.
+- **CI oracle drift** — `oracle_decision.py` was missing the geographic-landline 11-digit spoof check added to `DomesticSpoofDetector` in v1.0. Oracle claimed 26/26 passing but would not catch a regression in that rule. Added Python logic and 3 new cases (Tokyo/Osaka 11-digit spoof). Also added `AllowSuffixStore`, `BlockHistoryStore`, `HistoryActivity`, `SettingsActivity` to step 7 class-reference check.
 
 ### Tests Added
 - `RepeatCallerTrackerTest` (8 cases) — threshold boundary, window expiry, clear, multi-number isolation.
