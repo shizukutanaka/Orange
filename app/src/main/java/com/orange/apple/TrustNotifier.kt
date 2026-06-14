@@ -153,7 +153,7 @@ object TrustNotifier {
     }
 
     private fun mask(n: String): String =
-        if (n.length <= 4) n else "****" + n.takeLast(4)
+        if (n.length <= 4) "****" else "****" + n.takeLast(4)
 
     private fun ensureChannel(ctx: Context, id: String, name: String, importance: Int) {
         val mgr = ctx.getSystemService(Context.NOTIFICATION_SERVICE) as? NotificationManager ?: return
