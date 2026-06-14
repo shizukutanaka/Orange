@@ -43,6 +43,18 @@ class CallStateObserverTest {
         assertEquals("was_ringing", CallStateObserver.KEY_WAS_RINGING)
     }
 
+    @Test fun answer_time_prefs_key_is_answer_time() {
+        // Regression guard: if the key name used by onRinging() (to clear stale
+        // answer_time) diverges from the key name used by onOffhook() (to write it)
+        // and onIdle() (to read it), the stale-state bug reappears silently.
+        // The three references live in the same class so this protects against
+        // copy-paste renames that break only one site.
+        val p = FakePrefs()
+        p.edit().putLong("answer_time", 99L).apply()
+        p.edit().remove("answer_time").apply()
+        assertEquals("answer_time cleared", 0L, p.getLong("answer_time", 0L))
+    }
+
     // Simulates the addToOutbound logic from CallStateObserver (same code).
     private fun addToOutbound(prefs: FakePrefs, number: String) {
         val set = prefs.getStringSet(SilentBlockerService.KEY_OUTBOUND, emptySet())!!

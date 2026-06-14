@@ -137,7 +137,7 @@ class CallStateObserver : BroadcastReceiver() {
     private fun normalize(raw: String): String = PhoneNumbers.normalize(raw)
 
     companion object {
-        private const val KEY_WAS_RINGING = "was_ringing"
+        internal const val KEY_WAS_RINGING = "was_ringing"
         private const val KEY_RING_START  = "ring_start"
         private const val KEY_RING_NUMBER = "ring_number"
         private const val KEY_ANSWER_TIME = "answer_time"
