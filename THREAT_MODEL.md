@@ -129,6 +129,28 @@ All of the above can be verified by a reviewer grepping the unpacked APK.
 |------|--------|-----------|
 | S | Legitimate caller from Bahamas/Jamaica blocked | Outbound-known layer takes precedence; user who dialed +1-242 before will always ring. False positive risk is acknowledged in HONESTY_ADDENDUM. |
 
+### AllowSuffixStore (4-digit suffix allow-list from history)
+| Axis | Threat | Mitigation |
+|------|--------|-----------|
+| S | Scammer crafts a number ending in the same 4 digits as an allowed suffix → permanently bypasses screener | Known accepted trade-off. History stores only last 4 digits (privacy). Exact-number restore is available via per-block notification during the 7-day trust window. Documented in HONESTY_ADDENDUM §12. |
+| T | Attacker with root overwrites the suffix list to add scam numbers | ROOT access is out of scope for this threat model. MODE_PRIVATE restricts to this package. |
+| I | Suffix list reveals which callers the user has whitelisted | Last-4-digit suffixes are low-entropy but not full numbers. Excluded from backup. Uninstall wipes. |
+| D | Overflow of MAX=100 entries evicts oldest legitimate suffixes | FIFO eviction at 100 entries. 100 distinct allowed suffixes is a realistic upper bound for an individual user's contacts. |
+
+### BlockHistoryStore (50-entry masked block log)
+| Axis | Threat | Mitigation |
+|------|--------|-----------|
+| I | Block history reveals which numbers were blocked (timing + reason) | Full numbers never stored; only last-4 digits + reason + timestamp. Excluded from backup. Uninstall wipes. |
+| T | Tampered history shows false entries (social engineering — "look, your bank called") | Requires root. Out of scope. |
+| D | History grows unbounded | Capped at 50 entries, 30-day TTL auto-prune on load. |
+
+### RepeatCallerTracker (velocity heuristic)
+| Axis | Threat | Mitigation |
+|------|--------|-----------|
+| D | Scammer dials once per hour from the same number, staying below the N_THRESHOLD=3 per 60-min window, avoiding the velocity block | Accepted. Lower thresholds would silence legitimate callers (elderly relative trying repeatedly). |
+| D | Scammer floods with N+1 calls from rotating numbers | Out of scope for velocity tracking; handled by Wangiri+DomesticSpoof+SpamCache layers. |
+| S | Number in RepeatCallerTracker mistakenly cleared when unrelated answered call has same number | clear() matches by full number, not suffix. Collision requires exact number match. |
+
 ## Explicitly accepted risks
 
 1. **Spoofed emergency numbers ring.** A scammer presenting caller ID as 110
@@ -156,7 +178,9 @@ the process in `SECURITY.md`.
 
 ## Changelog
 
-- 2026-04: initial publication. STRIDE enumeration covers the current
-  v1.0.0 surface.
+- 2026-04: initial publication. STRIDE enumeration covers the v1.0.0 surface.
+- 2026-06: added STRIDE analysis for AllowSuffixStore, BlockHistoryStore,
+  RepeatCallerTracker (all added in v1.1). AllowSuffix 4-digit spoofing attack
+  explicitly acknowledged as accepted risk (also documented in HONESTY_ADDENDUM §12).
 - 2026-05: added STRIDE analysis for PoliceStationDirectory,
   FamilyCallback, WarningNotifier, OutboundGuard, CaribbeanPremiumNANP.
