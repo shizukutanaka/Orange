@@ -60,4 +60,27 @@ class BlockHistoryStoreTest {
         val entries = BlockHistoryStore.load(prefs, now + 2000)
         assertEquals(BlockReason.REPEAT_CALLER, entries[0].reason)
     }
+
+    @Test
+    fun `remove deletes entry from persistent storage`() {
+        val now = 1_700_000_000_000L
+        BlockHistoryStore.record(prefs, "09012345678", BlockReason.SPAM_CACHE, now)
+        BlockHistoryStore.record(prefs, "08087654321", BlockReason.REPEAT_CALLER, now + 1000)
+        val entries = BlockHistoryStore.load(prefs, now + 2000)
+        assertEquals(2, entries.size)
+        BlockHistoryStore.remove(prefs, entries[0])
+        val afterRemove = BlockHistoryStore.load(prefs, now + 2000)
+        assertEquals(1, afterRemove.size)
+        assertEquals(entries[1], afterRemove[0])
+    }
+
+    @Test
+    fun `remove of absent entry is a no-op`() {
+        val now = 1_700_000_000_000L
+        BlockHistoryStore.record(prefs, "09012345678", BlockReason.SPAM_CACHE, now)
+        val phantom = BlockHistoryStore.Entry("****9999", now, BlockReason.FOREIGN_GENERIC)
+        BlockHistoryStore.remove(prefs, phantom)
+        val entries = BlockHistoryStore.load(prefs, now + 1000)
+        assertEquals(1, entries.size)
+    }
 }
