@@ -75,6 +75,19 @@ class BlockHistoryStoreTest {
     }
 
     @Test
+    fun `stored entry never contains plaintext full number`() {
+        val now = 1_700_000_000_000L
+        val number = "09012345678"
+        BlockHistoryStore.record(prefs, number, BlockReason.SPAM_CACHE, now)
+        // Read the raw SharedPreferences string — the full number must not appear.
+        val raw = prefs.getString("block_history", "") ?: ""
+        assertFalse("full number must not be stored in prefs", raw.contains(number))
+        // The stored representation must only contain the last-4-digit mask.
+        assertTrue("masked form must be present", raw.contains("5678"))
+        assertFalse("digits 0–6 of number must not appear verbatim", raw.contains("090123"))
+    }
+
+    @Test
     fun `remove of absent entry is a no-op`() {
         val now = 1_700_000_000_000L
         BlockHistoryStore.record(prefs, "09012345678", BlockReason.SPAM_CACHE, now)

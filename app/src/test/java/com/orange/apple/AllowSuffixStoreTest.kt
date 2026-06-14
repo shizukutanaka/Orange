@@ -59,4 +59,14 @@ class AllowSuffixStoreTest {
         AllowSuffixStore.allow(prefs, "****1234")
         assertTrue(AllowSuffixStore.isAllowed(prefs, "09012341234"))
     }
+
+    @Test
+    fun `allow with masked short number is a silent no-op`() {
+        // BlockHistoryStore masks numbers ≤4 digits as "****" (no digit suffix).
+        // allow("****") must not store anything — the suffix would be empty and
+        // every 4-digit-or-shorter number would match, which is too broad.
+        AllowSuffixStore.allow(prefs, "****")
+        assertFalse(AllowSuffixStore.isAllowed(prefs, "0110"))
+        assertFalse(AllowSuffixStore.isAllowed(prefs, "09012345678"))
+    }
 }
