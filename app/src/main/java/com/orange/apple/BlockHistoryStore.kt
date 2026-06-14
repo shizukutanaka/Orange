@@ -56,6 +56,13 @@ internal object BlockHistoryStore {
             }
     }
 
+    @Synchronized
+    fun remove(prefs: SharedPreferences, entry: Entry) {
+        val nowMs = System.currentTimeMillis()
+        val entries = load(prefs, nowMs).toMutableList()
+        if (entries.remove(entry)) save(prefs, entries)
+    }
+
     private fun save(prefs: SharedPreferences, entries: List<Entry>) {
         val raw = entries.joinToString("\n") { "${it.maskedNumber}\t${it.timestampMs}\t${it.reason}" }
         prefs.edit { putString(KEY, raw) }

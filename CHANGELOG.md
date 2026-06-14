@@ -4,6 +4,17 @@ All notable changes to Orange will be documented in this file.
 Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased] — v1.2 (patch)
+
+### Fixed
+- **HistoryActivity "Allow" UX bug** — tapping Allow now removes the entry from `BlockHistoryStore` persistent storage via new `BlockHistoryStore.remove()` method. Previously the entry was removed from in-memory state only and reappeared after the next app launch.
+- **ADR 010** — `isUnknownDomesticMobile()` now covers E.164 JP mobile prefixes (`+8190/+8180/+8170/+8160`); Layer 15 high-risk-hour warning now fires for carriers that deliver numbers in E.164 form.
+- **CHANGELOG** — corrected "7 automated checks" → "9 automated checks" to match current `check_comprehensive.sh`.
+
+### Added
+- `BlockHistoryStore.remove(prefs, entry)` — synchronized removal of a single entry from block history.
+- `docs/adr/010-e164-mobile-layer15.md` — documents the E.164 mobile Layer 15 fix.
+
 ## [1.1.0] — 2026-06-11
 
 ### Added
@@ -60,7 +71,7 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - No hardcoded user-facing strings; all R.string-referenced.
 - Privacy guard CI gate (`check_no_network.sh`) blocks any network code.
 - APK size budget CI gate (`check_apk_size.sh`), ≤1 MiB ceiling.
-- Comprehensive static analysis (`check_comprehensive.sh`): 7 automated checks.
+- Comprehensive static analysis (`check_comprehensive.sh`): 9 automated checks.
 
 ### Changed
 - Wangiri threshold: 6s → 15s (catches "Wangiri 2.0" recorded-message variant).

@@ -89,10 +89,8 @@ private fun HistoryScreen() {
                     HistoryCard(
                         entry = entry,
                         onAllow = {
-                            // Mark as allowable: family/user-allow path
-                            // Since numbers are masked we can't do SpamCache.remove(),
-                            // but we can persist an explicit "allow-suffix" entry.
                             AllowSuffixStore.allow(prefs, entry.maskedNumber)
+                            BlockHistoryStore.remove(prefs, entry)
                             entries = entries.filter { it !== entry }
                         }
                     )
