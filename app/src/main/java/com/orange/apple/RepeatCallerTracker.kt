@@ -40,8 +40,16 @@ internal object RepeatCallerTracker {
      */
     fun clear(prefs: SharedPreferences, number: String) {
         if (number.isEmpty()) return
-        val map = snapshot(prefs, System.currentTimeMillis()).toMutableMap()
-        if (map.remove(number) != null) save(prefs, map)
+        // Parse raw storage without time-window filtering so entries recorded
+        // with synthetic timestamps (tests) or outside the current window are
+        // still removed. snapshot() filters by nowMs and would silently no-op
+        // if the entries are "old" from the clock's perspective.
+        val raw = prefs.getString(KEY, "") ?: ""
+        if (raw.isEmpty()) return
+        val entries = raw.split('|').filter { entry ->
+            entry.substringBefore(':') != number
+        }
+        prefs.edit { putString(KEY, entries.joinToString("|")) }
     }
 
     /**
