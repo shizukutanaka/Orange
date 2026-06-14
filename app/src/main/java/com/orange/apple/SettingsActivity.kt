@@ -215,7 +215,7 @@ fun SettingsScreen() {
 @Composable
 private fun SectionHeader(text: String) {
     Text(
-        text.uppercase(),
+        text.uppercase(java.util.Locale.getDefault()),
         fontSize = 11.sp,
         fontWeight = FontWeight.Bold,
         color = Color.Gray,

@@ -16,11 +16,10 @@ import java.io.BufferedReader
  * does not permit third-party apps to mutate that UI. This IS:
  *
  *  - A lookup used by SilentBlockerService to decide whether an unknown
- *    caller is actually a known legitimate business, which AUTO-WHITELISTS
- *    the call so it rings through the foreign-unsolicited rule.
- *  - A source of the display string on the Wear OS complication and the
- *    home-screen widget when showing the most-recent-blocked number.
- *  - Future: a TrustNotifier enrichment ("Silenced: SMBC Card Center").
+ *    caller is actually a known legitimate business (Layer 6), which
+ *    AUTO-WHITELISTS the call so it rings through without being screened.
+ *  - A trusted-caller check in PostCallAdvisor — business-bundle numbers
+ *    do not trigger the post-call #9110 advisory (they're not scam suspects).
  *
  * The bundle ships as assets/business_directory.csv with format:
  *     E164-or-shortcode,ShortName

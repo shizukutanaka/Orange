@@ -115,7 +115,7 @@ All of the above can be verified by a reviewer grepping the unpacked APK.
 ### WarningNotifier (police impersonation + outbound warning notifications)
 | Axis | Threat | Mitigation |
 |------|--------|-----------|
-| D | Notification spam from repeated police-HQ-spoofed calls | NotificationRateLimiter already caps at 5/window; police warnings use their own channel but same debounce. |
+| D | Notification spam from repeated police-HQ-spoofed calls | Police warnings are NOT gated by NotificationRateLimiter (which only guards SILENCE notifications via TrustNotifier). Natural bound: only 47 known HQ numbers can trigger police warnings. Repeated calls from the same HQ number reuse the same notification ID (number.hashCode() + constant), so mgr.notify() updates in-place rather than creating new notifications. Net maximum: 47 concurrent police-warning notifications. |
 | S | Scammer spoofs a number NOT in the directory → no warning shown | Accepted risk. Directory covers 47 prefectural HQs; individual police stations (~1,200) are a future expansion. |
 
 ### OutboundGuard (24h flagged-number tracker)
