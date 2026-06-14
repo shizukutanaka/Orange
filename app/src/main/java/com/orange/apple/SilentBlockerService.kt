@@ -130,7 +130,7 @@ class SilentBlockerService : CallScreeningService() {
         p: SharedPreferences, decision: Decision, number: String, now: Long
     ) {
         if (decision.verdict == Verdict.SILENCE) {
-            recordBlock(number)
+            recordBlock()
             if (number.isNotEmpty()) OutboundGuard.record(p, number, now)
             if (decision.reason == BlockReason.WANGIRI_CALLBACK) {
                 WangiriTracker.forget(p, number)
@@ -221,15 +221,13 @@ class SilentBlockerService : CallScreeningService() {
 
     private fun normalize(raw: String): String = PhoneNumbers.normalize(raw)
 
-    private fun recordBlock(n: String) {
+    private fun recordBlock() {
         val p = prefs
         val count = p.getInt(KEY_COUNT, 0) + 1
         val weekCount = p.getInt(WeeklyDigest.KEY_WEEK_COUNT, 0) + 1
         p.edit {
             putInt(KEY_COUNT, count)
             putInt(WeeklyDigest.KEY_WEEK_COUNT, weekCount)
-            putLong(KEY_LAST_TS, System.currentTimeMillis())
-            putString(KEY_LAST_NUM, n)
         }
     }
 
@@ -241,7 +239,5 @@ class SilentBlockerService : CallScreeningService() {
         const val KEY_OUTBOUND = "outbound"
         const val KEY_SPAM = "spam"
         const val KEY_COUNT = "count"
-        const val KEY_LAST_TS = "last_ts"
-        const val KEY_LAST_NUM = "last_num"
     }
 }
