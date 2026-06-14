@@ -14,9 +14,12 @@ import androidx.core.content.edit
  *
  * Days 1–7: every block shows a silent notification with one action — "Restore."
  *           Tap = number added to outbound-known set, future calls allowed.
- * Day 8+:   no notifications. A weekly digest appears Sunday 09:00 local:
- *           "Orange silenced 12 unwanted calls this week." No tap action.
- *           Digest stops after month 2 unless user opens the widget.
+ * Day 8+:   minimal drawer-only notification (no sound, no heads-up) with
+ *           "Restore" action; collapses into a group summary after 3 blocks.
+ *           A weekly digest fires Sunday 09:00 local: "Orange silenced 12
+ *           unwanted calls this week." After 8 weeks, switches to monthly
+ *           (first Sunday of each month) — never stops, because fraud
+ *           awareness decays in 6–8 week cycles (LY Corp 2023).
  *
  * This mirrors how AirPods pair: flashy the first time, invisible after.
  *
@@ -31,7 +34,6 @@ object TrustNotifier {
 
     private const val CHANNEL_TRUST = "orange_trust"
     private const val CHANNEL_ONGOING = "orange_ongoing"
-    private const val CHANNEL_DIGEST = "orange_digest"
     const val TRUST_PERIOD_MS = 7L * 24 * 60 * 60 * 1000
     const val KEY_INSTALL_TS = "install_ts"
 

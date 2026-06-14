@@ -1,8 +1,10 @@
 package com.orange.apple
 
+import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
+import android.os.Build
 import android.service.quicksettings.TileService
 import androidx.core.content.edit
 
@@ -93,11 +95,19 @@ class FamilyCallbackTile : TileService() {
         super.onClick()
         if (!FamilyCallback.dialPrimary(this)) {
             // No number configured — open Settings for family number entry.
-            startActivityAndCollapse(
-                Intent(this, SettingsActivity::class.java).apply {
+            val intent = Intent(this, SettingsActivity::class.java).apply {
                     addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
                 }
-            )
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+                val pi = PendingIntent.getActivity(
+                    this, 0, intent,
+                    PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+                )
+                startActivityAndCollapse(pi)
+            } else {
+                @Suppress("DEPRECATION")
+                startActivityAndCollapse(intent)
+            }
         }
     }
 }
