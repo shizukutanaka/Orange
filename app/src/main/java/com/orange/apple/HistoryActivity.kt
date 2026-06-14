@@ -8,11 +8,13 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
@@ -55,6 +57,7 @@ private fun HistoryScreen() {
     var entries by remember {
         mutableStateOf(BlockHistoryStore.load(prefs, System.currentTimeMillis()))
     }
+    val lazyListState = rememberLazyListState()
 
     Scaffold(
         topBar = {
@@ -82,6 +85,7 @@ private fun HistoryScreen() {
         } else {
             LazyColumn(
                 Modifier.fillMaxSize().padding(padding),
+                state = lazyListState,
                 contentPadding = PaddingValues(horizontal = 16.dp, vertical = 12.dp),
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
@@ -144,7 +148,12 @@ private fun HistoryCard(entry: BlockHistoryStore.Entry, onAllow: () -> Unit) {
             }
             if (canAllow) {
                 Spacer(Modifier.width(12.dp))
-                TextButton(onClick = onAllow) {
+                TextButton(
+                    onClick = onAllow,
+                    modifier = Modifier.semantics {
+                        contentDescription = "${stringResource(R.string.history_action_allow)} ${entry.maskedNumber}"
+                    }
+                ) {
                     Text(
                         stringResource(R.string.history_action_allow),
                         color = Color(0xFFFF8C42),

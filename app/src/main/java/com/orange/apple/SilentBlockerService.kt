@@ -229,6 +229,9 @@ class SilentBlockerService : CallScreeningService() {
             putInt(KEY_COUNT, count)
             putInt(WeeklyDigest.KEY_WEEK_COUNT, weekCount)
         }
+        // Notify widget of the updated count so it reflects changes immediately
+        // instead of waiting for the 30-minute automatic refresh timer.
+        OrangeWidget.notifyUpdate(this)
     }
 
     private val prefs: SharedPreferences

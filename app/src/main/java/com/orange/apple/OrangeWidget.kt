@@ -3,6 +3,7 @@ package com.orange.apple
 import android.app.PendingIntent
 import android.appwidget.AppWidgetManager
 import android.appwidget.AppWidgetProvider
+import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
 import android.graphics.Color
@@ -73,6 +74,20 @@ class OrangeWidget : AppWidgetProvider() {
         views.setTextColor(R.id.w_number, Color.WHITE)
         views.setTextColor(R.id.w_caption, Color.parseColor("#FFE4CC"))
         return views
+    }
+
+    companion object {
+        /**
+         * Trigger immediate widget update. Called from SilentBlockerService
+         * whenever the block count changes, so the widget reflects changes
+         * immediately instead of waiting for the 30-minute refresh timer.
+         */
+        fun notifyUpdate(ctx: Context) {
+            val mgr = AppWidgetManager.getInstance(ctx) ?: return
+            val cn = ComponentName(ctx, OrangeWidget::class.java)
+            val ids = mgr.getAppWidgetIds(cn).takeIf { it.isNotEmpty() } ?: return
+            mgr.notifyAppWidgetUpdate(ids)
+        }
     }
 }
 
