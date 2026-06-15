@@ -50,7 +50,8 @@ object TrustNotifier {
             }
         }
 
-        val withinTrustWindow = System.currentTimeMillis() - installTs < TRUST_PERIOD_MS
+        val now = System.currentTimeMillis()
+        val withinTrustWindow = now >= installTs && now - installTs < TRUST_PERIOD_MS
         if (!withinTrustWindow) {
             // After the trust window: show a minimal background notification with
             // a "Restore" action so users can still recover false positives.
