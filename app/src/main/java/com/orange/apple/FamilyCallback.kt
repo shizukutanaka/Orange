@@ -38,17 +38,28 @@ object FamilyCallback {
     /** Set a pre-set number at slot (1-based). Rejects empty, non-phone, or out-of-range slot. */
     fun setNumber(ctx: Context, slot: Int, number: String): Boolean {
         if (slot !in 1..MAX_SLOTS) return false
+        val cleaned = normalizeAndValidate(number) ?: return false
+        ctx.getSharedPreferences(SilentBlockerService.PREFS, Context.MODE_PRIVATE)
+            .edit { putString("$KEY_PREFIX$slot", cleaned) }
+        return true
+    }
+
+    /**
+     * Pure validation: normalize [number] and return the cleaned string if valid,
+     * or null if the number is structurally unusable as a family contact.
+     *
+     * Exposed as internal so unit tests can call this without a Context.
+     */
+    internal fun normalizeAndValidate(number: String): String? {
         // Normalize first (folds full-width digits, strips spaces/hyphens/parens)
         // so full-width input "０９０…" is safely stored as ASCII "090…".
         val cleaned = PhoneNumbers.normalize(number)
         // Minimum: 3 digits (short codes like 110/119).
         // Maximum: 15 digits (ITU-T E.164 maximum).
-        if (cleaned.length !in 3..15) return false
+        if (cleaned.length !in 3..15) return null
         // Must contain at least one digit (not just "+")
-        if (cleaned.count { it.isDigit() } == 0) return false
-        ctx.getSharedPreferences(SilentBlockerService.PREFS, Context.MODE_PRIVATE)
-            .edit { putString("$KEY_PREFIX$slot", cleaned) }
-        return true
+        if (cleaned.count { it.isDigit() } == 0) return null
+        return cleaned
     }
 
     /** Remove a slot. No-op for out-of-range slot. */

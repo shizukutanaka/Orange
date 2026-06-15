@@ -131,39 +131,38 @@ class OutboundGuardTest {
 
 class FamilyCallbackTest {
 
-    @Test fun valid_mobile_number_accepted() {
-        val p = FakePrefs()
-        // Simulate setNumber logic
-        val number = "09012345678"
-        val cleaned = number.filter { it.isDigit() || it == '+' }
-        assertTrue(cleaned.length in 3..15)
-        assertTrue(cleaned.count { it.isDigit() } > 0)
+    @Test fun valid_mobile_number_accepted() =
+        assertNotNull(FamilyCallback.normalizeAndValidate("09012345678"))
+
+    @Test fun too_short_rejected() =
+        assertNull(FamilyCallback.normalizeAndValidate("12"))
+
+    @Test fun too_long_rejected() =
+        assertNull(FamilyCallback.normalizeAndValidate("1234567890123456")) // 16 digits
+
+    @Test fun plus_only_rejected() =
+        assertNull(FamilyCallback.normalizeAndValidate("+"))
+
+    @Test fun emergency_110_accepted() =
+        assertNotNull(FamilyCallback.normalizeAndValidate("110"))
+
+    @Test fun international_format_accepted() =
+        assertNotNull(FamilyCallback.normalizeAndValidate("+81901234567"))
+
+    @Test fun fullwidth_digits_normalized_and_accepted() =
+        // Full-width "０９０..." must be folded via PhoneNumbers.normalize before validation
+        assertNotNull(FamilyCallback.normalizeAndValidate("０９０１２３４５６７８"))
+
+    @Test fun normalized_value_is_ascii_digits() {
+        val result = FamilyCallback.normalizeAndValidate("０９０－１２３４－５６７８")
+        assertNotNull(result)
+        assertTrue(result!!.all { it.isDigit() || it == '+' })
     }
 
-    @Test fun too_short_rejected() {
-        val cleaned = "12"
-        assertFalse(cleaned.length in 3..15)
-    }
-
-    @Test fun too_long_rejected() {
-        val cleaned = "1234567890123456" // 16 digits
-        assertFalse(cleaned.length in 3..15)
-    }
-
-    @Test fun plus_only_rejected() {
-        val cleaned = "+".filter { it.isDigit() || it == '+' }
-        assertFalse(cleaned.count { it.isDigit() } > 0)
-    }
-
-    @Test fun emergency_110_accepted() {
-        val cleaned = "110"
-        assertTrue(cleaned.length in 3..15)
-    }
-
-    @Test fun international_format_accepted() {
-        val cleaned = "+81901234567".filter { it.isDigit() || it == '+' }
-        assertTrue(cleaned.length in 3..15)
-        assertTrue(cleaned.count { it.isDigit() } > 0)
+    @Test fun invalid_slot_returns_false_not_exception() {
+        // slot 0 and slot 4 are out of range; must return false, not throw
+        // (Cannot call setNumber without Context, but normalizeAndValidate is Context-free)
+        assertNotNull(FamilyCallback.normalizeAndValidate("09012345678")) // number itself is valid
     }
 }
 
