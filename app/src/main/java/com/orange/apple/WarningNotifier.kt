@@ -91,7 +91,8 @@ internal object WarningNotifier {
         val prefs = ctx.getSharedPreferences(SilentBlockerService.PREFS, Context.MODE_PRIVATE)
         val rateKey = "outbound_warn_ts_${number.takeLast(8)}"
         val now = System.currentTimeMillis()
-        if (now - prefs.getLong(rateKey, 0L) < OUTBOUND_WARN_WINDOW_MS) return
+        val last = prefs.getLong(rateKey, 0L)
+        if (now >= last && now - last < OUTBOUND_WARN_WINDOW_MS) return
         prefs.edit { putLong(rateKey, now) }
 
         val mgr = notifManager(ctx) ?: return
