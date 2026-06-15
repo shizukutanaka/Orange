@@ -85,8 +85,8 @@ class DomesticSpoofDetectorTest {
     @Test fun valid_toll_free_0120_passes() =
         assertFalse(DomesticSpoofDetector.isImpossibleJpNumber("0120123456"))
 
-    @Test fun valid_toll_free_0800_passes() =
-        assertFalse(DomesticSpoofDetector.isImpossibleJpNumber("0800123456"))
+    @Test fun invalid_0800_ten_digits_is_spoof() =
+        assertTrue(DomesticSpoofDetector.isImpossibleJpNumber("0800123456"))  // must be 11 digits
 
     @Test fun valid_ip_050_passes() =
         assertFalse(DomesticSpoofDetector.isImpossibleJpNumber("05012345678"))

@@ -54,7 +54,8 @@ internal object ScamPrefixSeed {
         "53",   // Cuba — high-cost termination
         "682",  // Cook Islands — Pacific IPRN range
         "676",  // Tonga — Pacific IPRN range
-        "678"   // Vanuatu — Pacific IPRN range
+        "678",  // Vanuatu — Pacific IPRN range
+        "855"   // Cambodia — documented scam-center corridor (2025-2026)
     )
 
     /**
