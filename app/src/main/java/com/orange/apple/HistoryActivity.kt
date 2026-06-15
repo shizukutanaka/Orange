@@ -32,15 +32,17 @@ import java.util.Locale
  * entry. No search, no filters, no export — those would imply the history
  * is a feature, not a safety net.
  *
- * Numbers are shown masked (****1234). The "Allow" action adds the number
- * to the outbound-known set (same as the trust-week Restore action) so
- * future calls from that pattern ring through.
+ * Numbers are shown masked (****1234). The "Allow" action stores the
+ * 4-digit suffix in AllowSuffixStore so future calls matching that suffix
+ * ring through (SilentBlockerService checks AllowSuffixStore before any
+ * blocking layer). This differs from TrustNotifier's "Restore" action
+ * (RestoreReceiver): Restore has the full number and can remove the exact
+ * SpamCache hash; Allow cannot because only the masked suffix is on disk.
  *
- * Note: because we only store masked numbers for privacy, "Allow" works
- * by prefix matching against SpamCache — it cannot undo a block caused by
- * structural rules (DOMESTIC_SPOOF, FOREIGN_GENERIC) since those have no
- * stored number to clear. The UI reflects this: "Allow" only appears for
- * SPAM_CACHE and REPEAT_CALLER entries where user action actually matters.
+ * The UI limits Allow to reasons where suffix-matching is meaningful:
+ * SPAM_CACHE, REPEAT_CALLER, WANGIRI_CALLBACK, FOREIGN_GENERIC,
+ * FOREIGN_ELEVATED. Structural spoofs (DOMESTIC_SPOOF) are excluded —
+ * an impossible number cannot become possible, so Allow would be misleading.
  */
 class HistoryActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {

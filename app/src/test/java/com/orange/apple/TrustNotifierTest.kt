@@ -29,20 +29,29 @@ class TrustNotifierTest {
     @Test fun within_trust_window() {
         val installTs = 1_000_000L
         val now = installTs + TrustNotifier.TRUST_PERIOD_MS - 1000L
-        assertTrue(now - installTs < TrustNotifier.TRUST_PERIOD_MS)
+        assertTrue(now >= installTs && now - installTs < TrustNotifier.TRUST_PERIOD_MS)
     }
 
     @Test fun past_trust_window() {
         val installTs = 1_000_000L
         val now = installTs + TrustNotifier.TRUST_PERIOD_MS + 1000L
-        assertFalse(now - installTs < TrustNotifier.TRUST_PERIOD_MS)
+        assertFalse(now >= installTs && now - installTs < TrustNotifier.TRUST_PERIOD_MS)
     }
 
     @Test fun trust_period_boundary_exact() {
         val installTs = 1_000_000L
         val now = installTs + TrustNotifier.TRUST_PERIOD_MS
         // Boundary: == is past (strict less-than comparison in engine)
-        assertFalse(now - installTs < TrustNotifier.TRUST_PERIOD_MS)
+        assertFalse(now >= installTs && now - installTs < TrustNotifier.TRUST_PERIOD_MS)
+    }
+
+    @Test fun backward_clock_exits_trust_window_safely() {
+        // If clock goes backward after install, now < installTs → now >= installTs is false
+        // → trust window evaluates to false (conservative: skip heads-up notifications
+        //   rather than staying indefinitely in the elevated-alert trust phase).
+        val installTs = 2_000_000L
+        val now = installTs - 1000L   // clock went backward
+        assertFalse(now >= installTs && now - installTs < TrustNotifier.TRUST_PERIOD_MS)
     }
 
     @Test fun notif_id_for_is_deterministic() {
