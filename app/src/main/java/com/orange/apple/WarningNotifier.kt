@@ -61,6 +61,9 @@ internal object WarningNotifier {
         val now = System.currentTimeMillis()
         val last = prefs.getLong(key, 0L)
         if (now >= last && now - last < 24L * 60 * 60 * 1000) return
+        // Lazy cleanup: expired key removed before overwrite so if the number
+        // never calls again the stale key doesn't linger in prefs indefinitely.
+        if (last > 0L) prefs.edit { remove(key) }
         prefs.edit { putLong(key, now) }
 
         val mgr = notifManager(ctx) ?: return
@@ -89,7 +92,10 @@ internal object WarningNotifier {
      */
     fun showOutboundWarning(ctx: Context, number: String) {
         val prefs = ctx.getSharedPreferences(SilentBlockerService.PREFS, Context.MODE_PRIVATE)
-        val rateKey = "outbound_warn_ts_${number.takeLast(8)}"
+        // Key includes the full number so numbers that differ only in early digits don't
+        // share a rate-limit bucket. takeLast(8) caused collisions (e.g., "+8190123456789"
+        // and "+8190987656789" both end in "56789..." — different numbers, same key).
+        val rateKey = "outbound_warn_ts_$number"
         val now = System.currentTimeMillis()
         val last = prefs.getLong(rateKey, 0L)
         if (now >= last && now - last < OUTBOUND_WARN_WINDOW_MS) return

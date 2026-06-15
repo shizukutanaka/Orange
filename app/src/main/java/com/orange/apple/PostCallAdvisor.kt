@@ -51,6 +51,9 @@ object PostCallAdvisor {
         val lastShown = prefs.getLong(rateKey, 0L)
         val now = System.currentTimeMillis()
         if (now >= lastShown && now - lastShown < WINDOW_MS) return   // rate-limit: once per 24h per number
+        // Rate-limit expired (or first call). Remove the stale key now so numbers that
+        // never call again don't leave abandoned prefs keys accumulating indefinitely.
+        if (lastShown > 0L) prefs.edit { remove(rateKey) }
 
         // Only fire for genuinely unknown callers. Trusted callers — numbers the
         // user dialed, registered family members, or bundled legitimate businesses

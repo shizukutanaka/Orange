@@ -79,8 +79,8 @@ data class CallContext(
     val numberWithheld: Boolean = false,
 
     /**
-     * True when the device DND (Do Not Disturb) filter is TOTAL SILENCE or
-     * PRIORITY. Injected from NotificationManager.getCurrentInterruptionFilter()
+     * True when the device DND (Do Not Disturb) filter is TOTAL SILENCE,
+     * PRIORITY, or ALARMS ONLY. Injected from NotificationManager.getCurrentInterruptionFilter()
      * in SilentBlockerService. Allows Orange to be more aggressive during
      * user-intentional quiet hours.
      */
