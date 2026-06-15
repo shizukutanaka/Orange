@@ -50,11 +50,14 @@ internal object BusinessDirectoryBundle {
             ctx.assets.open(ASSET).bufferedReader().use { r ->
                 parseInto(r, result)
             }
+            // Cache only on success. A transient open failure (e.g., asset extractor
+            // not yet complete on first launch) must not permanently empty the directory
+            // for the process lifetime — leave cache=null so the next call retries.
+            cache = result
         } catch (_: Exception) {
-            // No asset shipped yet — that's fine. Empty directory degrades
-            // gracefully (callers are still screened by the three-rule engine).
+            // Asset not present or unreadable. Degrade gracefully: callers are still
+            // screened by the three-layer engine; don't set cache so we retry next call.
         }
-        cache = result
         return result
     }
 

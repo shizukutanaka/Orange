@@ -6,7 +6,7 @@ package com.orange.apple
  *
  * Source rationale (2026-04):
  *  - 警察庁 SOS47 特殊詐欺対策: 国際発信を偽装した詐欺の増加
- *  - トビラシステムズ/NTT公開資料の傾向: +675 (パラオ線経由偽装), +1 (北米経由),
+ *  - トビラシステムズ/NTT公開資料の傾向: +675 (パプアニューギニア経由偽装), +1 (北米経由),
  *    +7 (ロシア/カザフ経由), +44 (英経由), +39 (伊経由), +86 (中) がJP着信で
  *    異常に高い比率で詐欺関連
  *  - 認知件数 令和7年 27,758件, 被害額 1,414.2億円 (日本国内)
@@ -32,7 +32,7 @@ internal object ScamPrefixSeed {
      * and the number is international and the number is not in outbound-known.
      */
     val elevatedRiskCountryCodes: Set<String> = setOf(
-        "675",  // Palau-routed spoofing corridor
+        "675",  // Papua New Guinea — Wangiri/IRSF corridor (Palau is +680)
         "7",    // Russia/Kazakhstan transit
         "86",   // Mainland China
         "44",   // UK (heavily spoofed for JP targets)
