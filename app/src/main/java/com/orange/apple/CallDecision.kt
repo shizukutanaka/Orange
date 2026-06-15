@@ -333,8 +333,22 @@ internal fun callingCodeOf(iso: String?): String? = when (iso) {
  *
  * All other reasons reflect a PERSISTENT property of the number and are safe to cache.
  */
-internal fun isCacheableSilence(reason: BlockReason): Boolean =
-    reason != BlockReason.DND_HONOR && reason != BlockReason.REPEAT_CALLER
+internal fun isCacheableSilence(reason: BlockReason): Boolean = when (reason) {
+    // Contextual silences — must NOT be cached (see block comment above).
+    BlockReason.DND_HONOR       -> false
+    BlockReason.REPEAT_CALLER   -> false
+    // Persistent-property silences — safe to cache so repeat calls are fast-pathed.
+    BlockReason.SPAM_CACHE                  -> true
+    BlockReason.FOREIGN_ELEVATED            -> true
+    BlockReason.FOREIGN_GENERIC             -> true
+    BlockReason.DOMESTIC_SPOOF              -> true
+    BlockReason.WANGIRI_CALLBACK            -> true
+    BlockReason.CARRIER_VERIFICATION_FAILED -> true
+    BlockReason.WITHHELD_NUMBER             -> true
+    BlockReason.PREMIUM_RATE_INTERNATIONAL  -> true
+    // NOTE: adding a new BlockReason enum entry will cause a compile error here,
+    // forcing the author to decide whether it should be cached or not.
+}
 
 /**
  * Returns the set of equivalent forms of a phone number: the number itself

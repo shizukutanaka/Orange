@@ -144,7 +144,12 @@ class SilentBlockerService : CallScreeningService() {
             }
             decision.reason?.let { BlockHistoryStore.record(p, number, it, now) }
             if (NotificationRateLimiter.shouldNotify(p, number, now)) {
-                TrustNotifier.maybeNotify(this, number)
+                try {
+                    TrustNotifier.maybeNotify(this, number)
+                } catch (_: Exception) {
+                    // Notification failure must not prevent the block from being counted,
+                    // the block history from being recorded, or the widget from refreshing.
+                }
             }
             // Refresh Quick Settings tiles after block (requestListeningState).
             refreshTiles()
