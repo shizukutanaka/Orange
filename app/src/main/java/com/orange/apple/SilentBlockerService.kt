@@ -123,7 +123,8 @@ class SilentBlockerService : CallScreeningService() {
         val mgr = getSystemService(android.app.NotificationManager::class.java) ?: return false
         val filter = mgr.currentInterruptionFilter
         return filter == android.app.NotificationManager.INTERRUPTION_FILTER_NONE ||
-               filter == android.app.NotificationManager.INTERRUPTION_FILTER_PRIORITY
+               filter == android.app.NotificationManager.INTERRUPTION_FILTER_PRIORITY ||
+               filter == android.app.NotificationManager.INTERRUPTION_FILTER_ALARMS
     }
 
     private fun handleDecision(
@@ -190,6 +191,7 @@ class SilentBlockerService : CallScreeningService() {
     }
 
     private fun addToOutbound(p: SharedPreferences, number: String) {
+        if (number.isEmpty()) return
         val set = p.getStringSet(KEY_OUTBOUND, emptySet()).orEmpty().toMutableSet()
         if (set.add(number)) {
             if (set.size > MAX_OUTBOUND_ENTRIES) {

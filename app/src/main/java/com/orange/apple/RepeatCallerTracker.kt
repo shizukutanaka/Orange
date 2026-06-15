@@ -47,7 +47,8 @@ internal object RepeatCallerTracker {
         val raw = prefs.getString(KEY, "") ?: ""
         if (raw.isEmpty()) return
         val entries = raw.split('|').filter { entry ->
-            entry.substringBefore(':') != number
+            // Drop malformed entries (no ':') consistent with snapshot()'s parts.size < 2 guard.
+            entry.contains(':') && entry.substringBefore(':') != number
         }
         prefs.edit { putString(KEY, entries.joinToString("|")) }
     }

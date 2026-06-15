@@ -199,6 +199,50 @@ class PhoneNumbersTest {
     }
 }
 
+class BlockHistoryStoreTest {
+
+    @Test fun normal_entry_loaded() {
+        val p = FakePrefs()
+        val now = 1_000_000L
+        BlockHistoryStore.record(p, "09012345678", BlockReason.SPAM_CACHE, now)
+        val entries = BlockHistoryStore.load(p, now + 1000L)
+        assertEquals(1, entries.size)
+        assertEquals(BlockReason.SPAM_CACHE, entries[0].reason)
+    }
+
+    @Test fun entry_beyond_ttl_dropped() {
+        val p = FakePrefs()
+        val now = 1_000_000L
+        BlockHistoryStore.record(p, "09012345678", BlockReason.SPAM_CACHE, now)
+        val afterTtl = now + 31L * 24 * 60 * 60 * 1000
+        val entries = BlockHistoryStore.load(p, afterTtl)
+        assertTrue("TTL-expired entry must be dropped", entries.isEmpty())
+    }
+
+    @Test fun future_timestamp_not_shown_clock_skew() {
+        // Clock moved backward after the entry was written: ts > nowMs.
+        // Without the guard, nowMs - ts underflows to a huge positive Long and
+        // passes the TTL check — the entry would appear for eons.
+        val p = FakePrefs()
+        val recordedAt = 2_000_000L
+        BlockHistoryStore.record(p, "09012345678", BlockReason.FOREIGN_GENERIC, recordedAt)
+        // nowMs is before the entry's timestamp (clock skew)
+        val nowBeforeEntry = recordedAt - 1000L
+        val entries = BlockHistoryStore.load(p, nowBeforeEntry)
+        assertTrue("Future-timestamp entry must be hidden on clock-skew", entries.isEmpty())
+    }
+
+    @Test fun bounded_at_max_entries() {
+        val p = FakePrefs()
+        val base = 1_000_000L
+        repeat(BlockHistoryStore.MAX_ENTRIES + 5) { i ->
+            BlockHistoryStore.record(p, "0901234567$i", BlockReason.REPEAT_CALLER, base + i)
+        }
+        val entries = BlockHistoryStore.load(p, base + BlockHistoryStore.MAX_ENTRIES + 10)
+        assertEquals(BlockHistoryStore.MAX_ENTRIES, entries.size)
+    }
+}
+
 class RepeatCallerTrackerComponentTest {
 
     @Test fun first_two_calls_not_flagged() {
@@ -237,6 +281,16 @@ class RepeatCallerTrackerComponentTest {
         val p = FakePrefs()
         RepeatCallerTracker.record(p, "", 1000L)
         assertFalse(RepeatCallerTracker.isRepeatOffender(p, "", 2000L))
+    }
+
+    @Test fun clear_drops_malformed_entries() {
+        // Entries without ':' are malformed; clear() must not retain them.
+        val p = FakePrefs()
+        // Inject a malformed entry directly into prefs
+        p.edit().putString("repeat_caller", "malformed_no_colon|+111:1000").apply()
+        RepeatCallerTracker.clear(p, "+111")
+        val raw = p.getString("repeat_caller", "") ?: ""
+        assertFalse("Malformed entry must be dropped by clear()", raw.contains("malformed_no_colon"))
     }
 
     @Test fun clear_removes_entries() {

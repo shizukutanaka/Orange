@@ -49,7 +49,7 @@ internal object BlockHistoryStore {
                 val parts = line.split('\t')
                 if (parts.size != 3) return@mapNotNull null
                 val ts = parts[1].toLongOrNull() ?: return@mapNotNull null
-                if (nowMs - ts > TTL_MS) return@mapNotNull null
+                if (nowMs < ts || nowMs - ts > TTL_MS) return@mapNotNull null
                 val reason = runCatching { BlockReason.valueOf(parts[2]) }.getOrNull()
                     ?: return@mapNotNull null
                 Entry(parts[0], ts, reason)
