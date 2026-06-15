@@ -35,9 +35,9 @@ object FamilyCallback {
         }
     }
 
-    /** Set a pre-set number at slot (1-based). Rejects empty or non-phone input. */
+    /** Set a pre-set number at slot (1-based). Rejects empty, non-phone, or out-of-range slot. */
     fun setNumber(ctx: Context, slot: Int, number: String): Boolean {
-        require(slot in 1..MAX_SLOTS)
+        if (slot !in 1..MAX_SLOTS) return false
         // Normalize first (folds full-width digits, strips spaces/hyphens/parens)
         // so full-width input "０９０…" is safely stored as ASCII "090…".
         val cleaned = PhoneNumbers.normalize(number)
@@ -51,9 +51,9 @@ object FamilyCallback {
         return true
     }
 
-    /** Remove a slot. */
+    /** Remove a slot. No-op for out-of-range slot. */
     fun clearNumber(ctx: Context, slot: Int) {
-        require(slot in 1..MAX_SLOTS)
+        if (slot !in 1..MAX_SLOTS) return
         ctx.getSharedPreferences(SilentBlockerService.PREFS, Context.MODE_PRIVATE)
             .edit { remove("$KEY_PREFIX$slot") }
     }
@@ -63,10 +63,17 @@ object FamilyCallback {
         ctx.getSharedPreferences(SilentBlockerService.PREFS, Context.MODE_PRIVATE)
             .getString("${KEY_PREFIX}1", null)?.takeIf { it.isNotBlank() }
 
-    /** Launch the dialer with the primary number. No CALL_PHONE permission
-     *  needed — ACTION_DIAL opens the dialer, the user confirms. */
+    /**
+     * Launch the dialer with the first configured slot. No CALL_PHONE permission
+     * needed — ACTION_DIAL opens the dialer, the user confirms.
+     * Checks slots in order (1, 2, 3) and dials the first non-empty one so
+     * users who skipped slot 1 but filled slot 2 can still use the tile.
+     */
     fun dialPrimary(ctx: Context): Boolean {
-        val num = primaryNumber(ctx) ?: return false
+        val prefs = ctx.getSharedPreferences(SilentBlockerService.PREFS, Context.MODE_PRIVATE)
+        val num = (1..MAX_SLOTS)
+            .mapNotNull { i -> prefs.getString("$KEY_PREFIX$i", null)?.takeIf { it.isNotBlank() } }
+            .firstOrNull() ?: return false
         val intent = Intent(Intent.ACTION_DIAL, Uri.parse("tel:$num")).apply {
             addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
         }

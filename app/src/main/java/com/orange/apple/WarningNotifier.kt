@@ -79,8 +79,21 @@ internal object WarningNotifier {
         mgr.notify(number.hashCode() + 0x0A70E, builder.build())
     }
 
-    /** Warning when user dials a recently-blocked number. */
+    /**
+     * Warning when user dials a recently-blocked number.
+     *
+     * Deduplicated per-number with a 1-hour window: the OutboundGuard window is
+     * 24 hours, meaning repeated dials to the same number within a day would
+     * generate a new heads-up notification each time. One warning per hour is
+     * enough — the user has already been told.
+     */
     fun showOutboundWarning(ctx: Context, number: String) {
+        val prefs = ctx.getSharedPreferences(SilentBlockerService.PREFS, Context.MODE_PRIVATE)
+        val rateKey = "outbound_warn_ts_${number.takeLast(8)}"
+        val now = System.currentTimeMillis()
+        if (now - prefs.getLong(rateKey, 0L) < OUTBOUND_WARN_WINDOW_MS) return
+        prefs.edit { putLong(rateKey, now) }
+
         val mgr = notifManager(ctx) ?: return
         ensureChannel(ctx, mgr, CHANNEL_OUTBOUND,
             ctx.getString(R.string.notif_channel_outbound_warn),
@@ -96,6 +109,8 @@ internal object WarningNotifier {
         addFamilyAction(ctx, builder)
         mgr.notify(number.hashCode() + 0x0CAFE, builder.build())
     }
+
+    private const val OUTBOUND_WARN_WINDOW_MS = 60L * 60 * 1000  // 1 hour dedup window
 
     private fun addFamilyAction(ctx: Context, builder: NotificationCompat.Builder) {
         val familyNum = FamilyCallback.primaryNumber(ctx) ?: return
