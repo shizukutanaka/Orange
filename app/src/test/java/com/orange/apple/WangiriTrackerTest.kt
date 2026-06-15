@@ -46,6 +46,22 @@ class WangiriTrackerTest {
         assertNull(snap[number])
     }
 
+    @Test fun `forget prunes expired entries as side effect`() {
+        // Record two numbers: one expired, one current.
+        val expired = "+819099999999"
+        WangiriTracker.record(prefs, expired, t0)
+        WangiriTracker.record(prefs, number, t0)
+        // Advance time past the window for the first entry, but forget() is called
+        // for a time that sees both. The old raw-string forget() left expired entries;
+        // the snapshot()-based forget() prunes them.
+        val nowPastWindow = t0 + WANGIRI_WINDOW_MS + 1
+        WangiriTracker.forget(prefs, number)
+        // After forget, snapshot at nowPastWindow should not contain either number.
+        val snap = WangiriTracker.snapshot(prefs, nowPastWindow)
+        assertNull("forgotten number must be gone", snap[number])
+        assertNull("expired number must be pruned", snap[expired])
+    }
+
     @Test fun `max entries bound respected`() {
         repeat(WangiriTracker.MAX_ENTRIES + 10) { i ->
             WangiriTracker.record(prefs, "+8190${i.toString().padStart(8, '0')}", t0 + i)

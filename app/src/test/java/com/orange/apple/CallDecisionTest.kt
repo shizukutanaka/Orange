@@ -277,10 +277,17 @@ class CallDecisionTest {
             BlockReason.SPAM_CACHE, BlockReason.FOREIGN_ELEVATED, BlockReason.FOREIGN_GENERIC,
             BlockReason.DOMESTIC_SPOOF, BlockReason.WANGIRI_CALLBACK,
             BlockReason.CARRIER_VERIFICATION_FAILED, BlockReason.PREMIUM_RATE_INTERNATIONAL,
-            BlockReason.WITHHELD_NUMBER,
         )) {
             assertEquals("$r should be cacheable", true, isCacheableSilence(r))
         }
+    }
+
+    @Test fun withheld_silence_is_not_cached() {
+        // WITHHELD_NUMBER always has number="". SHA-256("salt"+"") is the same for every
+        // withheld call, so one false-positive Restore would permanently unblock ALL
+        // withheld numbers. The isNotEmpty() guard in SilentBlockerService already prevents
+        // caching, but isCacheableSilence must also return false to make the invariant explicit.
+        assertEquals(false, isCacheableSilence(BlockReason.WITHHELD_NUMBER))
     }
 
     // --- Layer 10: Allow default ----------------------------------------------

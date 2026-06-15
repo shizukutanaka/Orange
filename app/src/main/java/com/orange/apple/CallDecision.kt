@@ -344,7 +344,12 @@ internal fun isCacheableSilence(reason: BlockReason): Boolean = when (reason) {
     BlockReason.DOMESTIC_SPOOF              -> true
     BlockReason.WANGIRI_CALLBACK            -> true
     BlockReason.CARRIER_VERIFICATION_FAILED -> true
-    BlockReason.WITHHELD_NUMBER             -> true
+    // WITHHELD_NUMBER: number is always "" for withheld calls, and the guard
+    // `number.isNotEmpty()` in SilentBlockerService already prevents caching.
+    // If that guard were ever relaxed, all withheld calls would hash identically
+    // (SHA-256 of just the salt), permanently blocking ALL withheld numbers after
+    // one false-positive Restore. Explicitly false to make the invariant visible.
+    BlockReason.WITHHELD_NUMBER             -> false
     BlockReason.PREMIUM_RATE_INTERNATIONAL  -> true
     // NOTE: adding a new BlockReason enum entry will cause a compile error here,
     // forcing the author to decide whether it should be cached or not.
