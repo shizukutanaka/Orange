@@ -44,4 +44,25 @@ class TrustNotifierTest {
         // Boundary: == is past (strict less-than comparison in engine)
         assertFalse(now - installTs < TrustNotifier.TRUST_PERIOD_MS)
     }
+
+    @Test fun notif_id_for_is_deterministic() {
+        // Same number must produce the same ID across calls.
+        val n = "+819012345678"
+        assertEquals(TrustNotifier.notifIdFor(n), TrustNotifier.notifIdFor(n))
+    }
+
+    @Test fun notif_id_for_is_positive() {
+        // Android notification IDs must not be negative.
+        assertTrue(TrustNotifier.notifIdFor("+819012345678") >= 0)
+        assertTrue(TrustNotifier.notifIdFor("") >= 0)
+        assertTrue(TrustNotifier.notifIdFor("110") >= 0)
+    }
+
+    @Test fun notif_id_for_differs_across_numbers() {
+        // Different numbers should (with high probability) produce different IDs.
+        val a = TrustNotifier.notifIdFor("+819012345678")
+        val b = TrustNotifier.notifIdFor("+819087654321")
+        // This is a probabilistic check — collision would be a bug in the mix function.
+        assertFalse("notifIdFor collision for distinct numbers", a == b)
+    }
 }

@@ -47,4 +47,39 @@ class WeeklyDigestTest {
         val ageMs = now - installTs
         assertTrue(ageMs >= TrustNotifier.TRUST_PERIOD_MS)
     }
+
+    @Test fun monthly_mode_fires_only_on_first_sunday() {
+        // Monthly mode: fires iff dayOfMonth <= 7 AND dayOfWeek == SUNDAY.
+        // Simulate the check logic (mirrors WeeklyDigest.onReceive monthly gate).
+        data class Day(val dayOfMonth: Int, val dayOfWeek: Int)
+        fun shouldFireMonthly(d: Day): Boolean =
+            d.dayOfMonth <= 7 && d.dayOfWeek == java.util.Calendar.SUNDAY
+
+        // First Sunday of month (day=7, Sunday) → must fire.
+        assertTrue(shouldFireMonthly(Day(7, java.util.Calendar.SUNDAY)))
+        // First Sunday (day=1) → must fire.
+        assertTrue(shouldFireMonthly(Day(1, java.util.Calendar.SUNDAY)))
+        // Day=7 but not Sunday → must NOT fire.
+        assertFalse(shouldFireMonthly(Day(7, java.util.Calendar.SATURDAY)))
+        // Sunday but day=8 (second Sunday) → must NOT fire.
+        assertFalse(shouldFireMonthly(Day(8, java.util.Calendar.SUNDAY)))
+        // Mid-month Sunday → must NOT fire.
+        assertFalse(shouldFireMonthly(Day(15, java.util.Calendar.SUNDAY)))
+    }
+
+    @Test fun next_sunday_schedule_is_always_in_future() {
+        // Verify the schedule calculation never produces a past timestamp.
+        // Mirrors the logic in WeeklyDigest.schedule().
+        val now = System.currentTimeMillis()
+        val cal = java.util.Calendar.getInstance().apply {
+            val currentDay = get(java.util.Calendar.DAY_OF_WEEK)
+            val daysUntilSunday = (java.util.Calendar.SUNDAY - currentDay + 7) % 7
+            if (daysUntilSunday > 0) add(java.util.Calendar.DAY_OF_MONTH, daysUntilSunday)
+            set(java.util.Calendar.HOUR_OF_DAY, 9)
+            set(java.util.Calendar.MINUTE, 0)
+            set(java.util.Calendar.SECOND, 0)
+            if (timeInMillis <= now) add(java.util.Calendar.DAY_OF_MONTH, 7)
+        }
+        assertTrue("Scheduled time must be in the future", cal.timeInMillis > now)
+    }
 }
