@@ -129,6 +129,11 @@ ls -lh app/build/outputs/apk/release/
 bash tools/check_apk_size.sh
 ```
 
+The APK size guard enforces a hard ceiling of **1 MiB** (1,048,576 bytes). Target is
+<200 KB; breach the ceiling and the check fails in CI. Keeping the APK small is
+deliberate — it reduces install friction on low-storage devices and makes the
+"no network, no third-party SDKs" promise auditable at a glance.
+
 ### Sign a release APK locally
 
 ```bash

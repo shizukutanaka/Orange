@@ -80,4 +80,22 @@ class SpamCacheTest {
         assertFalse(SpamCache.contains(p, "+4"))
         assertTrue(SpamCache.contains(p, "+${SpamCache.MAX_ENTRIES + 4}"))
     }
+
+    @Test fun concurrent_add_does_not_corrupt_cache() {
+        // Verifies that @Synchronized prevents lost-update races when two
+        // threads add different numbers simultaneously.  Without the annotation
+        // both threads could read the same snapshot, produce divergent writes,
+        // and the second write would silently clobber the first.
+        val p = FakePrefs()
+        val numbers = (1..20).map { "+$it" }
+        val threads = numbers.map { n ->
+            Thread { SpamCache.add(p, n) }.also { it.start() }
+        }
+        threads.forEach { it.join(2_000) }
+
+        // All 20 distinct numbers must be present (none lost to a race).
+        numbers.forEach { n ->
+            assertTrue("$n missing after concurrent adds", SpamCache.contains(p, n))
+        }
+    }
 }
