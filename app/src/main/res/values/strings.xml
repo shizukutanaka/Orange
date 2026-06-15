@@ -79,6 +79,7 @@
     <string name="settings_family_placeholder">+81901234567</string>
     <string name="settings_save">Save</string>
     <string name="settings_saved">Saved</string>
+    <string name="settings_invalid_number">Invalid number</string>
     <string name="settings_section_history">Call history</string>
     <string name="settings_view_history">View blocked calls</string>
     <string name="settings_footer">Orange stores no data outside this device. Numbers in history are masked. No account, no sync, no ads.</string>

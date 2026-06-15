@@ -53,6 +53,7 @@
     <string name="settings_family_placeholder">+8613812345678</string>
     <string name="settings_save">保存</string>
     <string name="settings_saved">已保存</string>
+    <string name="settings_invalid_number">无效号码</string>
     <string name="settings_section_history">通话记录</string>
     <string name="settings_view_history">查看拦截记录</string>
     <string name="settings_footer">Orange 所有数据仅存储在本设备上。号码只显示末 4 位。无账号、无同步、无广告。</string>

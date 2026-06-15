@@ -53,6 +53,7 @@
     <string name="settings_family_placeholder">01012345678</string>
     <string name="settings_save">저장</string>
     <string name="settings_saved">저장됨</string>
+    <string name="settings_invalid_number">유효하지 않은 번호</string>
     <string name="settings_section_history">통화 기록</string>
     <string name="settings_view_history">차단 기록 보기</string>
     <string name="settings_footer">Orange의 모든 데이터는 이 기기에만 저장됩니다. 번호는 마지막 4자리만 표시. 계정 없음, 동기화 없음, 광고 없음.</string>

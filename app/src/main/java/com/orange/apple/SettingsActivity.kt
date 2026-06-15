@@ -92,6 +92,7 @@ fun SettingsScreen() {
                     mutableStateOf(prefs.getString("family_$slot", "") ?: "")
                 }
                 var saved by remember { mutableStateOf(false) }
+                var saveError by remember { mutableStateOf(false) }
                 val focusRequester = remember { FocusRequester() }
 
                 Card(
@@ -117,6 +118,7 @@ fun SettingsScreen() {
                                 onValueChange = {
                                     fieldValue = it.filter { c -> c.isDigit() || c == '+' || c == '-' }
                                     saved = false
+                                    saveError = false
                                 },
                                 modifier = Modifier.weight(1f).focusRequester(focusRequester),
                                 placeholder = { Text(stringResource(R.string.settings_family_placeholder)) },
@@ -131,9 +133,13 @@ fun SettingsScreen() {
                                         FamilyCallback.clearNumber(ctx, slot)
                                         fieldValue = ""
                                         saved = true
+                                        saveError = false
                                     } else if (FamilyCallback.setNumber(ctx, slot, cleaned)) {
                                         fieldValue = cleaned
                                         saved = true
+                                        saveError = false
+                                    } else {
+                                        saveError = true
                                     }
                                 }),
                                 singleLine = true,
@@ -150,9 +156,13 @@ fun SettingsScreen() {
                                         FamilyCallback.clearNumber(ctx, slot)
                                         fieldValue = ""
                                         saved = true
+                                        saveError = false
                                     } else if (FamilyCallback.setNumber(ctx, slot, cleaned)) {
                                         fieldValue = cleaned
                                         saved = true
+                                        saveError = false
+                                    } else {
+                                        saveError = true
                                     }
                                 },
                                 colors = ButtonDefaults.buttonColors(
@@ -169,6 +179,14 @@ fun SettingsScreen() {
                                 stringResource(R.string.settings_saved),
                                 fontSize = 12.sp,
                                 color = Color(0xFF34C759)
+                            )
+                        }
+                        if (saveError) {
+                            Spacer(Modifier.height(4.dp))
+                            Text(
+                                stringResource(R.string.settings_invalid_number),
+                                fontSize = 12.sp,
+                                color = Color(0xFFFF3B30)
                             )
                         }
                     }

@@ -74,6 +74,7 @@
     <string name="settings_family_placeholder">090-1234-5678</string>
     <string name="settings_save">保存</string>
     <string name="settings_saved">保存済み</string>
+    <string name="settings_invalid_number">無効な番号です</string>
     <string name="settings_section_history">着信履歴</string>
     <string name="settings_view_history">ブロック履歴を見る</string>
     <string name="settings_footer">Orangeはすべてのデータを端末内にのみ保存します。番号は末尾4桁のみ表示。アカウント不要・同期なし・広告なし。</string>
