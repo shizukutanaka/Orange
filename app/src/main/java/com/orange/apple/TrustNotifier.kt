@@ -39,10 +39,15 @@ object TrustNotifier {
 
     fun maybeNotify(ctx: Context, blockedNumber: String) {
         val prefs = ctx.getSharedPreferences(SilentBlockerService.PREFS, Context.MODE_PRIVATE)
-        val installTs = prefs.getLong(KEY_INSTALL_TS, 0L).let {
-            if (it == 0L) System.currentTimeMillis().also { now ->
-                prefs.edit { putLong(KEY_INSTALL_TS, now) }
-            } else it
+        // Synchronized on the object to prevent a TOCTOU race where two threads
+        // both read installTs=0, both write different timestamps, and the second
+        // write silently shifts the trust-window start forward.
+        val installTs = synchronized(this) {
+            prefs.getLong(KEY_INSTALL_TS, 0L).let {
+                if (it == 0L) System.currentTimeMillis().also { now ->
+                    prefs.edit { putLong(KEY_INSTALL_TS, now) }
+                } else it
+            }
         }
 
         val withinTrustWindow = System.currentTimeMillis() - installTs < TRUST_PERIOD_MS
@@ -60,8 +65,9 @@ object TrustNotifier {
         val restoreIntent = Intent(ctx, RestoreReceiver::class.java).apply {
             putExtra(EXTRA_NUMBER, blockedNumber)
         }
+        val notifId = notifIdFor(blockedNumber)
         val restorePi = PendingIntent.getBroadcast(
-            ctx, blockedNumber.hashCode(), restoreIntent,
+            ctx, notifId, restoreIntent,
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
 
@@ -76,7 +82,7 @@ object TrustNotifier {
             .build()
 
         val mgr = ctx.getSystemService(Context.NOTIFICATION_SERVICE) as? NotificationManager ?: return
-        mgr.notify(blockedNumber.hashCode(), notif)
+        mgr.notify(notifId, notif)
     }
 
     /**
@@ -100,8 +106,9 @@ object TrustNotifier {
         val restoreIntent = Intent(ctx, RestoreReceiver::class.java).apply {
             putExtra(EXTRA_NUMBER, blockedNumber)
         }
+        val notifId = notifIdFor(blockedNumber)
         val restorePi = PendingIntent.getBroadcast(
-            ctx, blockedNumber.hashCode(), restoreIntent,
+            ctx, notifId, restoreIntent,
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
 
@@ -118,7 +125,7 @@ object TrustNotifier {
             .build()
 
         val mgr = ctx.getSystemService(Context.NOTIFICATION_SERVICE) as? NotificationManager ?: return
-        mgr.notify(blockedNumber.hashCode(), notif)
+        mgr.notify(notifId, notif)
         postGroupSummary(ctx, mgr, historyPi)
     }
 
@@ -150,6 +157,20 @@ object TrustNotifier {
             .setPriority(NotificationCompat.PRIORITY_MIN)
             .build()
         mgr.notify(NOTIF_ID_SUMMARY, summary)
+    }
+
+    /**
+     * Deterministic notification ID for a given number. Uses a 31-bit mix of
+     * the number's characters to reduce PendingIntent request-code collisions.
+     * Plain String.hashCode() collides in theory; the XOR-shift step reduces
+     * the probability while remaining deterministic and stable per number.
+     */
+    fun notifIdFor(number: String): Int {
+        var h = number.hashCode()
+        h = h xor (h ushr 16)
+        h *= -0x45d9f3b
+        h = h xor (h ushr 16)
+        return h and Int.MAX_VALUE  // keep positive for notification IDs
     }
 
     private fun mask(n: String): String =
@@ -190,7 +211,7 @@ class RestoreReceiver : BroadcastReceiver() {
         // outbound-warning ("recently flagged") must not fire when the user calls back.
         OutboundGuard.forget(prefs, n, System.currentTimeMillis())
         val mgr = ctx.getSystemService(Context.NOTIFICATION_SERVICE) as? NotificationManager ?: return
-        mgr.cancel(n.hashCode())
+        mgr.cancel(TrustNotifier.notifIdFor(n))
 
         // Confirmation toast — closes the loop competitors (Hiya, Whoscall)
         // leave open. User tapped Restore; they should see the receipt.
