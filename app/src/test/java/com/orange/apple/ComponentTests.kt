@@ -45,6 +45,12 @@ class PoliceStationDirectoryTest {
         }
     }
 
+    @Test fun all_47_entries_are_reachable_by_lookup() {
+        PoliceStationDirectory.entries.forEach { (number, name) ->
+            assertEquals("lookup($number) should return $name", name, PoliceStationDirectory.lookup(number))
+        }
+    }
+
     @Test fun double_zero_international_format_resolves() {
         // Some systems deliver +810335814321 (with leading 0 after country code)
         assertEquals("警視庁", PoliceStationDirectory.lookup("+810335814321"))

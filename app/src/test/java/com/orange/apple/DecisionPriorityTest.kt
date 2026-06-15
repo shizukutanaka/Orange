@@ -58,6 +58,21 @@ class DecisionPriorityTest {
         assertEquals(Verdict.RING, decide(call("+81570200000"), state).verdict)
     }
 
+    // 4 > 13: bundled business beats DND — explicit trust from the directory
+    // overrides device do-not-disturb state (Layer 4 fires before Layer 13)
+    @Test fun bundled_business_beats_dnd() {
+        val state = emptyState.copy(
+            knownBusinesses = setOf("+81570200000")
+        )
+        val ctx = CallContext(
+            number = "+81570200000",
+            calleeCountryIso = "JP",
+            nowMillis = 1_000_000L,
+            dndActive = true
+        )
+        assertEquals(Verdict.RING, decide(ctx, state).verdict)
+    }
+
     // 5 > 6: spam-cache beats wangiri (spam cache is a stronger signal — explicit user intent)
     @Test fun spam_cache_beats_wangiri() {
         val now = 1_000_000L
