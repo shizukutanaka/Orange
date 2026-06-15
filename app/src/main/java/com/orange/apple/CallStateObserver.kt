@@ -123,11 +123,10 @@ class CallStateObserver : BroadcastReceiver() {
         val set = prefs.getStringSet(SilentBlockerService.KEY_OUTBOUND, emptySet())
             .orEmpty().toMutableSet()
         if (set.add(number)) {
-            // Bound at MAX_ENTRIES to prevent unbounded growth from
-            // business users who dial hundreds of numbers per week.
-            if (set.size > SpamCache.MAX_ENTRIES) {
+            // Bound at MAX_OUTBOUND_ENTRIES (same cap as SilentBlockerService.addToOutbound)
+            if (set.size > SilentBlockerService.MAX_OUTBOUND_ENTRIES) {
                 val iter = set.iterator()
-                val excess = set.size - SpamCache.MAX_ENTRIES
+                val excess = set.size - SilentBlockerService.MAX_OUTBOUND_ENTRIES
                 repeat(excess) { iter.next(); iter.remove() }
             }
             prefs.edit { putStringSet(SilentBlockerService.KEY_OUTBOUND, set) }
