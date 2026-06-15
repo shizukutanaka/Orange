@@ -1,7 +1,9 @@
 package com.orange.apple
 
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
 import org.junit.Test
 
 /**
@@ -584,5 +586,40 @@ class CallDecisionTest {
         )
         assertEquals(Verdict.RING, d.verdict)
         assertNull(d.warning)
+    }
+
+    // --- callingCodeOf --------------------------------------------------------
+
+    @Test fun calling_code_of_jp_is_81() = assertEquals("81", callingCodeOf("JP"))
+    @Test fun calling_code_of_us_is_1()  = assertEquals("1",  callingCodeOf("US"))
+    @Test fun calling_code_of_kr_is_82() = assertEquals("82", callingCodeOf("KR"))
+    @Test fun calling_code_of_null_is_null() = assertNull(callingCodeOf(null))
+    @Test fun calling_code_of_unknown_iso_is_null() = assertNull(callingCodeOf("ZZ"))
+
+    // --- phoneVariants --------------------------------------------------------
+
+    @Test fun phone_variants_domestic_expands_to_e164() {
+        val v = phoneVariants("09012345678", "81")
+        assertTrue(v.contains("09012345678"))
+        assertTrue(v.contains("+819012345678"))
+    }
+
+    @Test fun phone_variants_e164_expands_to_domestic() {
+        val v = phoneVariants("+819012345678", "81")
+        assertTrue(v.contains("+819012345678"))
+        assertTrue(v.contains("09012345678"))
+    }
+
+    @Test fun phone_variants_empty_is_empty() = assertTrue(phoneVariants("", "81").isEmpty())
+
+    @Test fun phone_variants_null_calling_code_returns_singleton() {
+        val v = phoneVariants("09012345678", null)
+        assertEquals(setOf("09012345678"), v)
+    }
+
+    @Test fun phone_variants_does_not_cross_country_codes() {
+        // A +1 number should NOT expand to a "0..." domestic when calling code is "81"
+        val v = phoneVariants("+12125551234", "81")
+        assertFalse(v.any { it.startsWith("0") && !it.startsWith("+") })
     }
 }
