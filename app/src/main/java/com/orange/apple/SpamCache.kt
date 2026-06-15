@@ -103,7 +103,10 @@ internal object SpamCache {
 
     private fun orderList(prefs: SharedPreferences): ArrayDeque<String> {
         val raw = prefs.getString(KEY_ORDER, "") ?: ""
-        return if (raw.isEmpty()) ArrayDeque()
-        else ArrayDeque(raw.split(' ').filter { it.isNotBlank() })
+        if (raw.isEmpty()) return ArrayDeque()
+        // Cross-reference with KEY_SET to drop any stale hashes that survived a partial
+        // write (e.g., process kill between putStringSet and putString on an older OS).
+        val known = prefs.getStringSet(KEY_SET, emptySet()).orEmpty()
+        return ArrayDeque(raw.split(' ').filter { it.isNotBlank() && it in known })
     }
 }
