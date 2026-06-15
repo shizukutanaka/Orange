@@ -29,7 +29,7 @@ class PauseTile : TileService() {
         val now = System.currentTimeMillis()
         val pausedUntil = prefs.getLong(KEY_PAUSED_UNTIL, 0L)
 
-        if (pausedUntil > now) {
+        if (pausedUntil > now && pausedUntil - now <= MAX_PAUSE_MS) {
             // Resume immediately on tap.
             prefs.edit { putLong(KEY_PAUSED_UNTIL, 0L) }
         } else {
@@ -41,8 +41,7 @@ class PauseTile : TileService() {
 
     private fun refresh() {
         val prefs = getSharedPreferences(SilentBlockerService.PREFS, MODE_PRIVATE)
-        val pausedUntil = prefs.getLong(KEY_PAUSED_UNTIL, 0L)
-        val paused = pausedUntil > System.currentTimeMillis()
+        val paused = isPaused(prefs)
         qsTile?.apply {
             state = if (paused) Tile.STATE_INACTIVE else Tile.STATE_ACTIVE
             label = getString(
@@ -56,8 +55,16 @@ class PauseTile : TileService() {
     companion object {
         const val KEY_PAUSED_UNTIL = "paused_until"
 
+        private const val MAX_PAUSE_MS = 2L * 60 * 60 * 1000 // 2× the nominal 1-hour pause
+
         /** Called from SilentBlockerService before each screening decision. */
-        fun isPaused(prefs: android.content.SharedPreferences): Boolean =
-            prefs.getLong(KEY_PAUSED_UNTIL, 0L) > System.currentTimeMillis()
+        fun isPaused(prefs: android.content.SharedPreferences): Boolean {
+            val now = System.currentTimeMillis()
+            val pausedUntil = prefs.getLong(KEY_PAUSED_UNTIL, 0L)
+            // Cap: if pausedUntil is more than 2h in the future the clock was
+            // set backward after the pause was set — treat as expired to avoid
+            // a permanent-pause deadlock where the clock never catches up.
+            return pausedUntil > now && pausedUntil - now <= MAX_PAUSE_MS
+        }
     }
 }

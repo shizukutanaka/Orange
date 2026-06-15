@@ -101,7 +101,7 @@ class SilentBlockerService : CallScreeningService() {
             outboundKnown     = outbound + family,
             isSpamCached      = SpamCache.contains(p, number),
             knownBusinesses   = BusinessDirectoryBundle.load(this).keys,
-            pausedUntilMillis = p.getLong(PauseTile.KEY_PAUSED_UNTIL, 0L),
+            pausedUntilMillis = if (PauseTile.isPaused(p)) p.getLong(PauseTile.KEY_PAUSED_UNTIL, 0L) else 0L,
             recentShortRings  = WangiriTracker.snapshot(p, now),
         )
 
