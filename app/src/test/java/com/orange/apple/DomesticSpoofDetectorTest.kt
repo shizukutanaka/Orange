@@ -36,8 +36,10 @@ class DomesticSpoofDetectorTest {
     @Test fun ip_050_too_short_is_spoof() =
         assertTrue(DomesticSpoofDetector.isImpossibleJpNumber("0501234567"))
 
-    @Test fun premium_0990_calling_out_is_spoof() =
-        assertTrue(DomesticSpoofDetector.isImpossibleJpNumber("0990123456"))
+    @Test fun premium_0990_wrong_length_eleven_is_spoof() =
+        // 0990 is a teledome premium-rate service requiring exactly 10 digits.
+        // An 11-digit "0990" number is structurally impossible per MIC plan.
+        assertTrue(DomesticSpoofDetector.isImpossibleJpNumber("09901234567"))
 
     @Test fun eight_consecutive_identical_digits_is_spoof() =
         assertTrue(DomesticSpoofDetector.isImpossibleJpNumber("09011111111"))
