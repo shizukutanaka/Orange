@@ -86,9 +86,16 @@ class OnboardingActivity : ComponentActivity() {
             if (rm?.isRoleAvailable(RoleManager.ROLE_CALL_SCREENING) == true &&
                 !rm.isRoleHeld(RoleManager.ROLE_CALL_SCREENING)
             ) {
-                fadingOut.value = true
-                roleLauncher.launch(rm.createRequestRoleIntent(RoleManager.ROLE_CALL_SCREENING))
-                return
+                try {
+                    fadingOut.value = true
+                    roleLauncher.launch(rm.createRequestRoleIntent(RoleManager.ROLE_CALL_SCREENING))
+                    return
+                } catch (_: Exception) {
+                    // createRequestRoleIntent can throw if the role becomes unavailable
+                    // between the isRoleAvailable check and the launch. Reset fade so the
+                    // user sees the retry button rather than a permanently blank screen.
+                    fadingOut.value = false
+                }
             }
         }
         fadingOut.value = true
@@ -96,7 +103,10 @@ class OnboardingActivity : ComponentActivity() {
     }
 
     private fun finishToSilent() {
-        window.decorView.postDelayed({
+        // Use Handler(mainLooper) rather than decorView.postDelayed so the delayed
+        // Runnable is anchored to the main thread's Looper — safe even when called
+        // from onCreate() before setContent() attaches the decorView to a window.
+        android.os.Handler(android.os.Looper.getMainLooper()).postDelayed({
             // Anchor the trust window + digest schedule to when protection actually
             // begins (role grant), NOT to the first block. Otherwise a user who gets
             // no spam for the first week would have the 7-day "loud notification"

@@ -83,9 +83,11 @@ class NotificationRateLimiterTest {
  */
 internal class FakePrefs : SharedPreferences {
 
-    private val store = mutableMapOf<String, Any?>()
+    // Synchronized so concurrent-access tests (e.g. SpamCacheTest.concurrent_add)
+    // exercise the class under test rather than undefined HashMap behaviour.
+    private val store = java.util.Collections.synchronizedMap(mutableMapOf<String, Any?>())
 
-    override fun getAll(): MutableMap<String, *> = store.toMutableMap()
+    override fun getAll(): MutableMap<String, *> = synchronized(store) { store.toMutableMap() }
     override fun getString(k: String?, d: String?): String? = store[k] as? String ?: d
     override fun getStringSet(k: String?, d: MutableSet<String>?) =
         (store[k] as? Set<String>)?.toMutableSet() ?: d
@@ -114,9 +116,11 @@ internal class FakePrefs : SharedPreferences {
         override fun clear() = apply { clearAll = true }
         override fun apply() { commit() }
         override fun commit(): Boolean {
-            if (clearAll) store.clear()
-            removals.forEach(store::remove)
-            store.putAll(pending)
+            synchronized(store) {
+                if (clearAll) store.clear()
+                removals.forEach(store::remove)
+                store.putAll(pending)
+            }
             return true
         }
     }
