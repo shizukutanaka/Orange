@@ -16,8 +16,13 @@ Calls blocked before the ring:
    架空料金請求詐欺 in Japan.
 2. **International calls from non-home countries to JP users** — unless the
    number is in the user's own outbound history or the bundled business
-   directory. Highest-risk corridors (675, 7, 86, 44, 212, 234, 63, 39)
-   are blocked even when the callee is outside Japan.
+   directory. Highest-risk corridors (675, 7, 86, 44, 212, 234, 63, 39,
+   371, 370, 239, 232, 252, 53, 682, 676, 678, 855) are treated as
+   elevated-risk and blocked even when the callee is outside Japan.
+   The IRSF/Wangiri corridors (371 Latvia, 370 Lithuania, 239 São Tomé,
+   232 Sierra Leone, 252 Somalia, 53 Cuba, 682 Cook Islands, 676 Tonga,
+   678 Vanuatu) are blocked on NDSS 2021 / CFCA research. 855 Cambodia
+   is added as a documented scam-center corridor (2025-2026 NPA reports).
 3. **Numbers the user previously blocked** — stored only on the device,
    never transmitted.
 4. **Wangiri callback pattern (classic + 2.0)** — if a number rang for
