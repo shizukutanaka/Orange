@@ -50,4 +50,7 @@ class WhitelistAndSeedTest {
     @Test fun irsf_corridor_resolves_country_code() =
         assertEquals("371", ScamPrefixSeed.countryCodeOf("+3711234567"))
     @Test fun not_elevated_jp() = assertFalse("81" in ScamPrefixSeed.elevatedRiskCountryCodes)
+    @Test fun elevated_cambodia() = assertTrue("855" in ScamPrefixSeed.elevatedRiskCountryCodes)
+    @Test fun cambodia_resolves_country_code() =
+        assertEquals("855", ScamPrefixSeed.countryCodeOf("+85512345678"))
 }
