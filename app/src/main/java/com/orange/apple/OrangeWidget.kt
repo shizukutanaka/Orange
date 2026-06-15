@@ -86,7 +86,12 @@ class OrangeWidget : AppWidgetProvider() {
             val mgr = AppWidgetManager.getInstance(ctx) ?: return
             val cn = ComponentName(ctx, OrangeWidget::class.java)
             val ids = mgr.getAppWidgetIds(cn).takeIf { it.isNotEmpty() } ?: return
-            mgr.notifyAppWidgetUpdate(ids)
+            // ACTION_APPWIDGET_UPDATE must include EXTRA_APPWIDGET_IDS; without it
+            // AppWidgetProvider.onReceive() silently drops the intent (no onUpdate call).
+            ctx.sendBroadcast(Intent(AppWidgetManager.ACTION_APPWIDGET_UPDATE).apply {
+                component = cn
+                putExtra(AppWidgetManager.EXTRA_APPWIDGET_IDS, ids)
+            })
         }
     }
 }
