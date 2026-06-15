@@ -50,7 +50,7 @@ object PostCallAdvisor {
         val rateKey = "postcall_last_$number"
         val lastShown = prefs.getLong(rateKey, 0L)
         val now = System.currentTimeMillis()
-        if (now - lastShown < WINDOW_MS) return   // rate-limit: once per 24h per number
+        if (now >= lastShown && now - lastShown < WINDOW_MS) return   // rate-limit: once per 24h per number
 
         // Only fire for genuinely unknown callers. Trusted callers — numbers the
         // user dialed, registered family members, or bundled legitimate businesses
@@ -124,6 +124,6 @@ object PostCallAdvisor {
             .addAction(0, ctx.getString(R.string.postcall_action_9110), dial9110)
             .build()
 
-        mgr.notify(number.hashCode() + 0x09110, notif)
+        mgr.notify(TrustNotifier.notifIdFor(number) xor 0x09110, notif)
     }
 }

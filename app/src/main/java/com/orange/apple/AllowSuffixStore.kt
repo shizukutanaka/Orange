@@ -41,7 +41,8 @@ internal object AllowSuffixStore {
     @Synchronized
     fun isAllowed(prefs: SharedPreferences, number: String): Boolean {
         if (number.length < 4) return false
-        val suffix = number.takeLast(4)
+        val suffix = number.filter { it.isDigit() }.takeLast(4)
+        if (suffix.length < 4) return false
         return suffix in loadOrdered(prefs)
     }
 

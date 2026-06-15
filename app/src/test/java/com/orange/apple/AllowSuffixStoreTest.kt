@@ -61,6 +61,14 @@ class AllowSuffixStoreTest {
     }
 
     @Test
+    fun `e164 number matches same suffix as domestic form`() {
+        // After fix: isAllowed strips non-digits before taking last 4.
+        // +819012345678 and 09012345678 both end in digits "5678".
+        AllowSuffixStore.allow(prefs, "****5678")
+        assertTrue(AllowSuffixStore.isAllowed(prefs, "+819012345678"))
+    }
+
+    @Test
     fun `allow with masked short number is a silent no-op`() {
         // BlockHistoryStore masks numbers ≤4 digits as "****" (no digit suffix).
         // allow("****") must not store anything — the suffix would be empty and

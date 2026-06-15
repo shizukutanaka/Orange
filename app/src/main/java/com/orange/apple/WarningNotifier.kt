@@ -50,7 +50,7 @@ internal object WarningNotifier {
             .setCategory(NotificationCompat.CATEGORY_ALARM)
 
         addFamilyAction(ctx, builder)
-        mgr.notify(number.hashCode() + 0x0BADE, builder.build())
+        mgr.notify(TrustNotifier.notifIdFor(number) xor 0x0BADE, builder.build())
     }
 
     /** Soft warning for unknown domestic mobile during アポ電 peak hours. */
@@ -60,7 +60,7 @@ internal object WarningNotifier {
         val key = "highrisk_last_$number"
         val now = System.currentTimeMillis()
         val last = prefs.getLong(key, 0L)
-        if (now - last < 24L * 60 * 60 * 1000) return
+        if (now >= last && now - last < 24L * 60 * 60 * 1000) return
         prefs.edit { putLong(key, now) }
 
         val mgr = notifManager(ctx) ?: return
@@ -76,7 +76,7 @@ internal object WarningNotifier {
             .setAutoCancel(true)
 
         addFamilyAction(ctx, builder)
-        mgr.notify(number.hashCode() + 0x0A70E, builder.build())
+        mgr.notify(TrustNotifier.notifIdFor(number) xor 0x0A70E, builder.build())
     }
 
     /**
@@ -107,7 +107,7 @@ internal object WarningNotifier {
             .setAutoCancel(true)
 
         addFamilyAction(ctx, builder)
-        mgr.notify(number.hashCode() + 0x0CAFE, builder.build())
+        mgr.notify(TrustNotifier.notifIdFor(number) xor 0x0CAFE, builder.build())
     }
 
     private const val OUTBOUND_WARN_WINDOW_MS = 60L * 60 * 1000  // 1 hour dedup window
