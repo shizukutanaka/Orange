@@ -73,6 +73,12 @@ class CaribbeanPremiumNANPTest {
 
     @Test fun too_short_is_not_premium() =
         assertFalse(CaribbeanPremiumNANP.isPremiumNANP("+12"))
+
+    @Test fun us_202_dc_is_not_premium() =
+        assertFalse(CaribbeanPremiumNANP.isPremiumNANP("+12025551234"))
+
+    @Test fun us_212_nyc_is_not_premium() =
+        assertFalse(CaribbeanPremiumNANP.isPremiumNANP("+12125551234"))
 }
 
 class OutboundGuardTest {

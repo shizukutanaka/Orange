@@ -43,7 +43,7 @@ and two small screens exist for when you need them:
 
 Sixteen-point decision engine, in order:
 
-1. **Emergency bypass** — 110, 118, 119, 911, 112, 999, 000 always ring, no exceptions.
+1. **Emergency bypass** — 110, 118, 119, 189, 171, 911, 112, 999, 000 always ring, no exceptions. (189 = 児童相談所; 171 = 災害用伝言ダイヤル)
 2. **Pause tile** — if you tapped Quick Settings, everything rings (including withheld) until the hour is up.
 3. **Withheld caller ID** — anonymous / 非通知 / restricted calls silenced.
 4. **Outbound-known** — numbers you have dialed always ring.

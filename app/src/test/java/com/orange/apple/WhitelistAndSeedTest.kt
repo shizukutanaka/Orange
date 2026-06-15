@@ -14,10 +14,14 @@ class WhitelistAndSeedTest {
     @Test fun emergency_jp_110() = assertTrue(EmergencyWhitelist.isEmergency("110"))
     @Test fun emergency_jp_119() = assertTrue(EmergencyWhitelist.isEmergency("119"))
     @Test fun emergency_jp_118() = assertTrue(EmergencyWhitelist.isEmergency("118"))
+    @Test fun emergency_jp_189() = assertTrue(EmergencyWhitelist.isEmergency("189"))  // 児童相談所
+    @Test fun emergency_jp_171() = assertTrue(EmergencyWhitelist.isEmergency("171"))  // 災害用伝言ダイヤル
     @Test fun emergency_us_911() = assertTrue(EmergencyWhitelist.isEmergency("911"))
     @Test fun emergency_eu_112() = assertTrue(EmergencyWhitelist.isEmergency("112"))
     @Test fun emergency_uk_999() = assertTrue(EmergencyWhitelist.isEmergency("999"))
     @Test fun emergency_au_000() = assertTrue(EmergencyWhitelist.isEmergency("000"))
+    @Test fun emergency_jp_189_intl_form() = assertTrue(EmergencyWhitelist.isEmergency("+81189"))
+    @Test fun emergency_jp_171_intl_form() = assertTrue(EmergencyWhitelist.isEmergency("+81171"))
     @Test fun not_emergency_regular_number() =
         assertFalse(EmergencyWhitelist.isEmergency("09012345678"))
     @Test fun not_emergency_empty() = assertFalse(EmergencyWhitelist.isEmergency(""))
