@@ -30,7 +30,7 @@ import android.net.Uri
 class EngineWarmup : ContentProvider() {
 
     override fun onCreate(): Boolean {
-        val ctx = context ?: return true
+        val ctx = context ?: return false
         // Pre-load caches. Both are lazy-init singletons; calling load() here
         // ensures subsequent reads are O(1) HashMap lookups.
         BusinessDirectoryBundle.load(ctx)

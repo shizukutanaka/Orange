@@ -114,7 +114,6 @@ class DecisionPriorityTest {
         val d = decide(call("+67512345678"), emptyState)
         assertEquals(BlockReason.FOREIGN_ELEVATED, d.reason)
     }
-}
 
     // 2 > 3: pause beats withheld (new ordering fix)
     @Test fun pause_beats_withheld() {
@@ -201,3 +200,4 @@ class DecisionPriorityTest {
         assertEquals(Verdict.RING, d.verdict)
     }
 }
+
