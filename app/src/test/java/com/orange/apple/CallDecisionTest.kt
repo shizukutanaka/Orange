@@ -300,7 +300,6 @@ class CallDecisionTest {
         val d = decide(call("+99900000000", iso = null), emptyState)
         assertEquals(Verdict.RING, d.verdict)
     }
-}
 
     // --- Layer 7.5: STIR/SHAKEN carrier verification failed ----------------
 
