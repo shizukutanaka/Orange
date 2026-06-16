@@ -103,7 +103,7 @@ class SilentBlockerService : CallScreeningService() {
         val state = CallState(
             outboundKnown     = outbound + family,
             isSpamCached      = SpamCache.contains(p, number),
-            knownBusinesses   = BusinessDirectoryBundle.load(this).keys,
+            knownBusinesses   = businesses,
             pausedUntilMillis = if (PauseTile.isPaused(p)) p.getLong(PauseTile.KEY_PAUSED_UNTIL, 0L) else 0L,
             recentShortRings  = WangiriTracker.snapshot(p, now),
         )
