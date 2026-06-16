@@ -61,15 +61,24 @@ class CallStateObserverTest {
         // RepeatCallerTracker.clear() fires even without the OFFHOOK intent extra.
         val p = FakePrefs()
         val number = "09012345678"
-        // Simulate RINGING state: record 3 calls and store KEY_RING_NUMBER.
-        repeat(3) { RepeatCallerTracker.record(p, number, 1000L + it * 1000) }
+        val now = 1000L
+        // Simulate RINGING state: record N_THRESHOLD+1 calls to actually trigger offender status.
+        // (N_THRESHOLD = 3 means 4th call triggers; recording only 3 is a no-op for clear() testing
+        // because isRepeatOffender is already false at 3 calls regardless of clear().)
+        repeat(RepeatCallerTracker.N_THRESHOLD + 1) {
+            RepeatCallerTracker.record(p, number, now + it * 1000)
+        }
         p.edit().putString("ring_number", number).apply()
+        // Verify the number IS a repeat offender BEFORE clear — if this fails, the test
+        // has no discriminating power.
+        assertTrue("must be offender before clear",
+            RepeatCallerTracker.isRepeatOffender(p, number, now + RepeatCallerTracker.N_THRESHOLD * 1000L + 100))
         // Simulate OFFHOOK with null number (use fallback path).
         val rawNum = (null as String?)?.takeIf { it.isNotEmpty() }
             ?: p.getString("ring_number", null)
         if (rawNum != null) RepeatCallerTracker.clear(p, rawNum)
-        // After clear, the number should no longer be a repeat offender.
-        assertFalse(RepeatCallerTracker.isRepeatOffender(p, number, 60 * 60 * 1000L))
+        // After clear, the number must no longer be a repeat offender.
+        assertFalse(RepeatCallerTracker.isRepeatOffender(p, number, now + RepeatCallerTracker.N_THRESHOLD * 1000L + 200))
     }
 
     // Simulates the addToOutbound logic from CallStateObserver (same code).

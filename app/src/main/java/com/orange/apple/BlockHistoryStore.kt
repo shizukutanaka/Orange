@@ -57,8 +57,9 @@ internal object BlockHistoryStore {
     }
 
     @Synchronized
-    fun remove(prefs: SharedPreferences, entry: Entry) {
-        val nowMs = System.currentTimeMillis()
+    fun remove(prefs: SharedPreferences, entry: Entry, nowMs: Long = System.currentTimeMillis()) {
+        // nowMs defaults to wall clock for production callers; inject in tests so hardcoded
+        // historical timestamps are not evicted by the TTL check inside load().
         val entries = load(prefs, nowMs).toMutableList()
         if (entries.remove(entry)) save(prefs, entries)
     }
