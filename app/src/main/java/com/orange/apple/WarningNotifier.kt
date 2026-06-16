@@ -96,9 +96,6 @@ internal object WarningNotifier {
         val now = System.currentTimeMillis()
         val last = prefs.getLong(rateKey, 0L)
         if (now >= last && now - last < OUTBOUND_WARN_WINDOW_MS) return
-        // Lazy cleanup: expired key removed so numbers that are never dialled again
-        // don't leave stale "outbound_warn_ts_*" keys accumulating in prefs.
-        if (last > 0L) prefs.edit { remove(rateKey) }
         prefs.edit { putLong(rateKey, now) }
 
         val mgr = notifManager(ctx) ?: return
