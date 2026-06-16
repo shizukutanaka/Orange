@@ -72,18 +72,21 @@ class SilentBlockerService : CallScreeningService() {
             return Decision(Verdict.RING)
         }
 
-        // Build trusted sets early. Family numbers + outbound-known must never
-        // accumulate toward the repeat-caller threshold and must bypass it entirely.
+        // Build trusted sets early. Family numbers + outbound-known + bundled businesses
+        // must never accumulate toward the repeat-caller threshold and must bypass it.
         //
         // A number is dialed/stored in domestic form ("09012345678") but Android
-        // delivers the matching INCOMING call in E.164 ("+819012345678"). Check
-        // every variant of the incoming number against the trusted set so either
-        // stored form matches — without this, a number the user trusts is silenced.
+        // delivers the matching INCOMING call in E.164 ("+819012345678"), and vice versa
+        // for bundled businesses (CSV stores E.164 but carrier may deliver domestic form).
+        // Check every variant of the incoming number against all trusted sets so either
+        // stored form matches — without this, a number the user or directory trusts is
+        // silenced (or triggers a false PostCallAdvisor advisory after a legit call).
         val cc = callingCodeOf(simCountryIso())
         val outbound = p.getStringSet(KEY_OUTBOUND, emptySet()).orEmpty()
         val family = familyNumbers(p)
+        val businesses = BusinessDirectoryBundle.load(this).keys
         val variants = phoneVariants(number, cc)
-        if (number.isNotEmpty() && variants.any { it in outbound || it in family }) {
+        if (number.isNotEmpty() && variants.any { it in outbound || it in family || it in businesses }) {
             return Decision(Verdict.RING)
         }
 

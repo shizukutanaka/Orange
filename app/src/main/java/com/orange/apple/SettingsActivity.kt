@@ -95,6 +95,24 @@ fun SettingsScreen() {
                 var saveError by remember { mutableStateOf(false) }
                 val focusRequester = remember { FocusRequester() }
 
+                // Extracted to avoid duplicating the save logic between IME Done and Save button.
+                val saveSlot = {
+                    focusManager.clearFocus()
+                    val cleaned = fieldValue.filter { c -> c.isDigit() || c == '+' }
+                    if (cleaned.isEmpty()) {
+                        FamilyCallback.clearNumber(ctx, slot)
+                        fieldValue = ""
+                        saved = true
+                        saveError = false
+                    } else if (FamilyCallback.setNumber(ctx, slot, cleaned)) {
+                        fieldValue = cleaned
+                        saved = true
+                        saveError = false
+                    } else {
+                        saveError = true
+                    }
+                }
+
                 Card(
                     shape = RoundedCornerShape(12.dp),
                     colors = CardDefaults.cardColors(containerColor = Color.White),
@@ -126,22 +144,7 @@ fun SettingsScreen() {
                                     keyboardType = KeyboardType.Phone,
                                     imeAction = ImeAction.Done
                                 ),
-                                keyboardActions = KeyboardActions(onDone = {
-                                    focusManager.clearFocus()
-                                    val cleaned = fieldValue.filter { c -> c.isDigit() || c == '+' }
-                                    if (cleaned.isEmpty()) {
-                                        FamilyCallback.clearNumber(ctx, slot)
-                                        fieldValue = ""
-                                        saved = true
-                                        saveError = false
-                                    } else if (FamilyCallback.setNumber(ctx, slot, cleaned)) {
-                                        fieldValue = cleaned
-                                        saved = true
-                                        saveError = false
-                                    } else {
-                                        saveError = true
-                                    }
-                                }),
+                                keyboardActions = KeyboardActions(onDone = { saveSlot() }),
                                 singleLine = true,
                                 colors = OutlinedTextFieldDefaults.colors(
                                     focusedBorderColor = Color(0xFFFF8C42),
@@ -149,22 +152,7 @@ fun SettingsScreen() {
                                 )
                             )
                             Button(
-                                onClick = {
-                                    focusManager.clearFocus()
-                                    val cleaned = fieldValue.filter { c -> c.isDigit() || c == '+' }
-                                    if (cleaned.isEmpty()) {
-                                        FamilyCallback.clearNumber(ctx, slot)
-                                        fieldValue = ""
-                                        saved = true
-                                        saveError = false
-                                    } else if (FamilyCallback.setNumber(ctx, slot, cleaned)) {
-                                        fieldValue = cleaned
-                                        saved = true
-                                        saveError = false
-                                    } else {
-                                        saveError = true
-                                    }
-                                },
+                                onClick = { saveSlot() },
                                 colors = ButtonDefaults.buttonColors(
                                     containerColor = Color(0xFFFF8C42)
                                 ),

@@ -62,4 +62,25 @@ class PhoneVariantsTest {
         val matched = phoneVariants(incoming, "81").any { it in outbound }
         assertTrue("E.164 callback must match domestic-dialed number", matched)
     }
+
+    @Test fun `business directory E164 entry matched when carrier delivers domestic form`() {
+        // Regression: BusinessDirectoryBundle stores "+81352535111" (総務省 E.164).
+        // Some JP carriers deliver the same number as "0352535111" (domestic).
+        // Without variant expansion, Layer 5 misses and the call may get a false
+        // PostCallAdvisor advisory. screenIncoming() now checks variants.
+        val directoryKeys = setOf("+81352535111")  // E.164 as stored in CSV
+        val incomingDomestic = "0352535111"         // as delivered by carrier
+        val matched = phoneVariants(incomingDomestic, "81").any { it in directoryKeys }
+        assertTrue("domestic-form delivery must match E.164 business directory entry", matched)
+    }
+
+    @Test fun `business directory domestic shortcode matched in E164 delivery`() {
+        // Shortcodes (e.g., "188" 消費者ホットライン) are stored as-is in the CSV.
+        // They don't have a domestic/E.164 dual form, so phoneVariants returns only
+        // the shortcode itself, and the match works by exact string comparison.
+        val directoryKeys = setOf("188")
+        val incoming = "188"
+        val matched = phoneVariants(incoming, "81").any { it in directoryKeys }
+        assertTrue("shortcode must match directly", matched)
+    }
 }
