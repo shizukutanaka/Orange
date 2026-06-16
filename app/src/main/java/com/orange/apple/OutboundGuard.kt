@@ -29,6 +29,7 @@ internal object OutboundGuard {
 
     /** Record a number that was blocked or warned.
      * Silently ignores empty strings (withheld calls have number=""). */
+    @Synchronized
     fun record(prefs: SharedPreferences, number: String, nowMs: Long) {
         if (number.isEmpty()) return   // defensive: never store empty key
         val current = snapshot(prefs, nowMs).toMutableMap()
@@ -45,10 +46,12 @@ internal object OutboundGuard {
     }
 
     /** Check if a number was recently blocked/warned. */
+    @Synchronized
     fun wasRecentlyFlagged(prefs: SharedPreferences, number: String, nowMs: Long): Boolean =
         snapshot(prefs, nowMs).containsKey(number)
 
     /** Remove a number from the guard (called when user restores a false positive). */
+    @Synchronized
     fun forget(prefs: SharedPreferences, number: String, nowMs: Long) {
         if (number.isEmpty()) return
         val current = snapshot(prefs, nowMs).toMutableMap()

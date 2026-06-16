@@ -38,6 +38,7 @@ internal object RepeatCallerTracker {
      * repeat-caller rule from firing on a legitimate return call within
      * the same 60-minute window.
      */
+    @Synchronized
     fun clear(prefs: SharedPreferences, number: String) {
         if (number.isEmpty()) return
         // Parse raw storage without time-window filtering so entries recorded
@@ -57,6 +58,7 @@ internal object RepeatCallerTracker {
      * Record an incoming ring attempt from [number] at [nowMs].
      * Call BEFORE the decision engine so the count is current.
      */
+    @Synchronized
     fun record(prefs: SharedPreferences, number: String, nowMs: Long) {
         if (number.isEmpty()) return
         val map = snapshot(prefs, nowMs).toMutableMap()
@@ -77,6 +79,7 @@ internal object RepeatCallerTracker {
     /**
      * Returns true if [number] has rung N_THRESHOLD+ times within WINDOW_MS.
      */
+    @Synchronized
     fun isRepeatOffender(prefs: SharedPreferences, number: String, nowMs: Long): Boolean {
         if (number.isEmpty()) return false
         val calls = snapshot(prefs, nowMs)[number] ?: return false

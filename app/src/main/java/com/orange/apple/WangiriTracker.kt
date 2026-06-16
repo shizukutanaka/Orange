@@ -49,6 +49,7 @@ internal object WangiriTracker {
 
     private const val KEY = "wangiri_candidates"  // serialized "num1:ts1 num2:ts2 ..."
 
+    @Synchronized
     fun snapshot(prefs: SharedPreferences, nowMs: Long): Map<String, Long> {
         val raw = prefs.getString(KEY, "") ?: ""
         if (raw.isEmpty()) return emptyMap()
@@ -64,6 +65,7 @@ internal object WangiriTracker {
     }
 
     /** Record a short-ring candidate. Prunes expired entries as a side effect. */
+    @Synchronized
     fun record(prefs: SharedPreferences, number: String, nowMs: Long) {
         if (number.isEmpty()) return
         val current = snapshot(prefs, nowMs).toMutableMap()
@@ -79,6 +81,7 @@ internal object WangiriTracker {
     }
 
     /** Remove after a Wangiri callback has been handled (so we don't block twice). */
+    @Synchronized
     fun forget(prefs: SharedPreferences, number: String) {
         // Route through snapshot() so expired entries are pruned at the same time.
         // The previous raw-string approach left stale entries accumulating between
