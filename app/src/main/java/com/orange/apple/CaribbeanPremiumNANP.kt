@@ -56,7 +56,9 @@ internal object CaribbeanPremiumNANP {
     fun isPremiumNANP(normalized: String): Boolean {
         if (!normalized.startsWith("+1")) return false
         val local = normalized.removePrefix("+1")
-        if (local.length < 3) return false
+        // NANP local numbers are exactly 10 digits. Reject shorter to avoid
+        // matching partial/invalid numbers like "+1242" (3-digit local).
+        if (local.length < 10) return false
         return local.substring(0, 3) in areaCodesAtRisk
     }
 }

@@ -43,6 +43,9 @@ internal object WangiriTracker {
      * in the JP market.
      */
     const val SHORT_RING_THRESHOLD_MS = 15_000L
+    // How long a short-ring candidate stays eligible to block a callback.
+    // Defined here (not in CallDecision) so WangiriTracker is self-contained.
+    const val WANGIRI_WINDOW_MS = 6L * 60 * 60 * 1000
 
     private const val KEY = "wangiri_candidates"  // serialized "num1:ts1 num2:ts2 ..."
 

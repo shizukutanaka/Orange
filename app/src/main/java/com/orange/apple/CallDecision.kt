@@ -268,7 +268,7 @@ fun decide(ctx: CallContext, state: CallState): Decision {
     return Decision(Verdict.RING)
 }
 
-internal const val WANGIRI_WINDOW_MS = 6L * 60 * 60 * 1000
+internal val WANGIRI_WINDOW_MS get() = WangiriTracker.WANGIRI_WINDOW_MS
 
 /**
  * Returns true during アポ電 peak hours: Mon-Fri 09:00-12:00 and 13:00-16:00 JST.

@@ -53,4 +53,20 @@ class WhitelistAndSeedTest {
     @Test fun elevated_cambodia() = assertTrue("855" in ScamPrefixSeed.elevatedRiskCountryCodes)
     @Test fun cambodia_resolves_country_code() =
         assertEquals("855", ScamPrefixSeed.countryCodeOf("+85512345678"))
+
+    // Caribbean premium NANP ---------------------------------------------------
+
+    @Test fun caribbean_bahamas_is_premium() =
+        assertTrue(CaribbeanPremiumNANP.isPremiumNANP("+12421234567"))
+    @Test fun caribbean_jamaica_is_premium() =
+        assertTrue(CaribbeanPremiumNANP.isPremiumNANP("+18761234567"))
+    @Test fun caribbean_us_not_premium() =
+        assertFalse(CaribbeanPremiumNANP.isPremiumNANP("+12125551234"))  // NYC
+    @Test fun caribbean_non_nanp_not_premium() =
+        assertFalse(CaribbeanPremiumNANP.isPremiumNANP("+447911123456"))
+    // Regression: partial NANP number must NOT match (old length < 3 let "+1242" through)
+    @Test fun caribbean_partial_nanp_not_premium() =
+        assertFalse(CaribbeanPremiumNANP.isPremiumNANP("+1242"))
+    @Test fun caribbean_too_short_local_not_premium() =
+        assertFalse(CaribbeanPremiumNANP.isPremiumNANP("+1242123"))  // 7-digit local
 }
