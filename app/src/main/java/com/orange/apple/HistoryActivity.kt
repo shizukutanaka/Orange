@@ -121,8 +121,13 @@ private fun HistoryCard(entry: BlockHistoryStore.Entry, onAllow: () -> Unit) {
     val fmt = remember { SimpleDateFormat("MM/dd HH:mm", Locale.getDefault()) }
     val dateStr = fmt.format(Date(entry.timestampMs))
     val reasonStr = entry.reason.toDisplayString(ctx)
-    val canAllow = entry.reason in setOf(BlockReason.SPAM_CACHE, BlockReason.REPEAT_CALLER,
-        BlockReason.WANGIRI_CALLBACK, BlockReason.FOREIGN_GENERIC, BlockReason.FOREIGN_ELEVATED)
+    // Only exclude reasons where suffix-Allow is meaningless or misleading:
+    //  WITHHELD_NUMBER  — number is "" so AllowSuffixStore.allow() would be a no-op
+    //  DOMESTIC_SPOOF   — structurally impossible number; Allow cannot make it possible
+    // All other reasons represent a caller the user may legitimately want to unblock
+    // (e.g. CARRIER_VERIFICATION_FAILED for a carrier with STIR/SHAKEN issues, or
+    //  PREMIUM_RATE_INTERNATIONAL for a family member calling from the Caribbean).
+    val canAllow = entry.reason !in setOf(BlockReason.WITHHELD_NUMBER, BlockReason.DOMESTIC_SPOOF)
 
     Card(
         shape = RoundedCornerShape(12.dp),

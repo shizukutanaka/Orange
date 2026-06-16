@@ -27,13 +27,9 @@ class PauseTile : TileService() {
         super.onClick()
         val prefs = getSharedPreferences(SilentBlockerService.PREFS, MODE_PRIVATE)
         val now = System.currentTimeMillis()
-        val pausedUntil = prefs.getLong(KEY_PAUSED_UNTIL, 0L)
-
-        if (pausedUntil > now && pausedUntil - now <= MAX_PAUSE_MS) {
-            // Resume immediately on tap.
+        if (isPaused(prefs)) {
             prefs.edit { putLong(KEY_PAUSED_UNTIL, 0L) }
         } else {
-            // Pause for exactly one hour.
             prefs.edit { putLong(KEY_PAUSED_UNTIL, now + 60 * 60 * 1000L) }
         }
         refresh()
