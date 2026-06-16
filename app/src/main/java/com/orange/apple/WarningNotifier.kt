@@ -61,10 +61,7 @@ internal object WarningNotifier {
         val now = System.currentTimeMillis()
         val last = prefs.getLong(key, 0L)
         if (now >= last && now - last < 24L * 60 * 60 * 1000) return
-        // Lazy cleanup: expired key removed before overwrite so if the number
-        // never calls again the stale key doesn't linger in prefs indefinitely.
-        if (last > 0L) prefs.edit { remove(key) }
-        prefs.edit { putLong(key, now) }
+        prefs.edit { putLong(key, now) }  // putLong overwrites in place — no need to remove first
 
         val mgr = notifManager(ctx) ?: return
         ensureChannel(ctx, mgr, CHANNEL_HIGHRISK,
@@ -99,6 +96,9 @@ internal object WarningNotifier {
         val now = System.currentTimeMillis()
         val last = prefs.getLong(rateKey, 0L)
         if (now >= last && now - last < OUTBOUND_WARN_WINDOW_MS) return
+        // Lazy cleanup: expired key removed so numbers that are never dialled again
+        // don't leave stale "outbound_warn_ts_*" keys accumulating in prefs.
+        if (last > 0L) prefs.edit { remove(rateKey) }
         prefs.edit { putLong(rateKey, now) }
 
         val mgr = notifManager(ctx) ?: return
