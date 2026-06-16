@@ -69,7 +69,9 @@ class EngineInvariantTest {
         )
         val hostileStates = listOf(
             baseState().copy(isSpamCached = true),
-            baseState().copy(pausedUntilMillis = 0L),
+            // pausedUntilMillis must be > nowMillis (1_700_000_000_000L) to actually
+            // activate the pause path. 0L is epoch (past), identical to baseState().
+            baseState().copy(pausedUntilMillis = Long.MAX_VALUE),
             baseState().copy(recentShortRings = mapOf("110" to 1L)),
         )
         for (num in emergencies) {

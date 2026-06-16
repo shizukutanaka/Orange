@@ -69,10 +69,19 @@ object FamilyCallback {
             .edit { remove("$KEY_PREFIX$slot") }
     }
 
-    /** Returns the primary (slot 1) number, or null. */
-    fun primaryNumber(ctx: Context): String? =
-        ctx.getSharedPreferences(SilentBlockerService.PREFS, Context.MODE_PRIVATE)
-            .getString("${KEY_PREFIX}1", null)?.takeIf { it.isNotBlank() }
+    /**
+     * Returns the first configured number across all slots, or null if none are set.
+     * Scans slots 1..MAX_SLOTS in order so a user who skipped slot 1 but filled slot 2
+     * still gets a "Call Family" action in WarningNotifier — consistent with dialPrimary().
+     * The old slot-1-only implementation returned null for sparse configurations even
+     * when dialPrimary() would have succeeded.
+     */
+    fun primaryNumber(ctx: Context): String? {
+        val prefs = ctx.getSharedPreferences(SilentBlockerService.PREFS, Context.MODE_PRIVATE)
+        return (1..MAX_SLOTS)
+            .mapNotNull { i -> prefs.getString("$KEY_PREFIX$i", null)?.takeIf { it.isNotBlank() } }
+            .firstOrNull()
+    }
 
     /**
      * Launch the dialer with the first configured slot. No CALL_PHONE permission
