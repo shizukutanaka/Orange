@@ -57,8 +57,9 @@ object FamilyCallback {
         // Minimum: 3 digits (short codes like 110/119).
         // Maximum: 15 digits (ITU-T E.164 maximum).
         if (cleaned.length !in 3..15) return null
-        // Must contain at least one digit (not just "+")
-        if (cleaned.count { it.isDigit() } == 0) return null
+        // Must contain at least 3 digits: short codes are 3 digits (110/119),
+        // and an E.164 prefix alone like "+81" (only 2 digits) is not dialable.
+        if (cleaned.count { it.isDigit() } < 3) return null
         return cleaned
     }
 

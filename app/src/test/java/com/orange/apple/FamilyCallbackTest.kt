@@ -60,4 +60,14 @@ class FamilyCallbackTest {
         assertEquals("09012345678", validate("090 1234 5678"))
         assertEquals("09012345678", validate("090-1234-5678"))
     }
+
+    @Test fun `calling code only rejected`() {
+        // "+81" has only 2 digits — not a dialable number
+        assertNull(validate("+81"))
+    }
+
+    @Test fun `two digits rejected`() {
+        // 2 digits is below the 3-digit minimum
+        assertNull(validate("81"))
+    }
 }
