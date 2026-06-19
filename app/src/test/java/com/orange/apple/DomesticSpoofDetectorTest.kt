@@ -133,9 +133,9 @@ class DomesticSpoofDetectorTest {
     @Test fun cn_number_is_not_flagged() =
         assertFalse(DomesticSpoofDetector.isImpossibleJpNumber("+8613812345678"))
 
-    @Test fun short_code_110_is_not_flagged() =
-        // 110 is under 10 digits, so it's "impossible" as a JP full number,
-        // but EmergencyWhitelist catches it before this detector sees it.
-        // Here we just verify the detector's own behavior for the record.
+    @Test fun short_code_110_is_flagged_as_impossible_by_detector() =
+        // 110 is under 10 digits — impossible as a JP full number. The detector
+        // correctly flags it; EmergencyWhitelist at Layer 1 prevents it from
+        // ever reaching this detector in the live engine.
         assertTrue(DomesticSpoofDetector.isImpossibleJpNumber("110"))
 }

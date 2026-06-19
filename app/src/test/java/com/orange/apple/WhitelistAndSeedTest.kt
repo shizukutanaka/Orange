@@ -30,14 +30,14 @@ class WhitelistAndSeedTest {
 
     @Test fun cc_jp_81() = assertEquals("81", ScamPrefixSeed.countryCodeOf("+819012345678"))
     @Test fun cc_us_1() = assertEquals("1", ScamPrefixSeed.countryCodeOf("+14155551234"))
-    @Test fun cc_palau_675() = assertEquals("675", ScamPrefixSeed.countryCodeOf("+67512345678"))
+    @Test fun cc_png_675() = assertEquals("675", ScamPrefixSeed.countryCodeOf("+67512345678"))
     @Test fun cc_russia_7() = assertEquals("7", ScamPrefixSeed.countryCodeOf("+79121234567"))
     @Test fun cc_domestic_null() = assertNull(ScamPrefixSeed.countryCodeOf("09012345678"))
     @Test fun cc_unknown_null() = assertNull(ScamPrefixSeed.countryCodeOf("+99900000000"))
 
     // Elevated-risk set --------------------------------------------------------
 
-    @Test fun elevated_palau() = assertTrue("675" in ScamPrefixSeed.elevatedRiskCountryCodes)
+    @Test fun elevated_png() = assertTrue("675" in ScamPrefixSeed.elevatedRiskCountryCodes)
     @Test fun elevated_morocco() = assertTrue("212" in ScamPrefixSeed.elevatedRiskCountryCodes)
     @Test fun elevated_russia() = assertTrue("7" in ScamPrefixSeed.elevatedRiskCountryCodes)
     @Test fun not_elevated_au() = assertFalse("61" in ScamPrefixSeed.elevatedRiskCountryCodes)
