@@ -82,12 +82,11 @@ internal object WangiriTracker {
 
     /** Remove after a Wangiri callback has been handled (so we don't block twice). */
     @Synchronized
-    fun forget(prefs: SharedPreferences, number: String) {
+    fun forget(prefs: SharedPreferences, number: String, nowMs: Long = System.currentTimeMillis()) {
         // Route through snapshot() so expired entries are pruned at the same time.
         // The previous raw-string approach left stale entries accumulating between
         // record() calls, which can cause the stored KEY string to grow unboundedly
         // (no cap applies to forget()-only paths that never trigger record()).
-        val nowMs = System.currentTimeMillis()
         val current = snapshot(prefs, nowMs).toMutableMap()
         if (current.remove(number) != null) {
             prefs.edit {
