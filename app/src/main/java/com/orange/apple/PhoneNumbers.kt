@@ -10,16 +10,6 @@ package com.orange.apple
 internal object PhoneNumbers {
 
     /**
-     * Strip everything except digits and leading '+' from a raw phone
-     * number string. This is the canonical form used by the decision
-     * engine, all caches, and all directory lookups.
-     *
-     * Examples:
-     *   "+81 (3) 3581-4321"  →  "+81335814321"
-     *   "090-1234-5678"      →  "09012345678"
-     *   ""                   →  ""
-     */
-    /**
      * Strip everything except digits and a leading '+' from a raw phone number,
      * folding full-width characters to half-width first.
      *
