@@ -4,6 +4,28 @@ All notable changes to Orange will be documented in this file.
 Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased] — v1.3 (patch)
+
+### Fixed
+- **Wangiri forget variant mismatch** — `WangiriTracker.forget()` was called with the callback number's exact form. If the short-ring was stored in domestic form but the callback arrived in E.164 (or vice versa), `forget()` was a no-op and the stale entry lingered until the 6-hour window expired. Fixed via `phoneVariants()` expansion before calling `forget()`.
+- **OutboundGuard variant mismatch** — `handleOutgoing()` called `OutboundGuard.wasRecentlyFlagged()` with exact-string match. A blocked call stored in domestic form was missed when the user dialled the same number in E.164 form, silently skipping the outbound-warning notification.
+- **`business_directory.csv` duplicate E.164 keys** — 文部科学省 was stored under `+81352538111` (国土交通省's number). Corrected to `+81352534111`. 個人情報保護委員会 entry duplicated 内閣官房's number and has been commented out pending verification.
+- **SettingsActivity full-width family number** — manual `filter { c.isDigit() }` kept full-width Unicode digits (e.g. ０９０) intact since Kotlin's `Char.isDigit()` covers the Unicode Nd category. The UI field showed full-width digits after save until next prefs reload. Fixed by using `PhoneNumbers.normalize()` which folds full-width to ASCII in one step.
+- **HistoryActivity missing `semantics` import** — `Modifier.semantics {}` requires `import androidx.compose.ui.semantics.semantics`; only `contentDescription` was imported. Static CI does not compile Kotlin so this slipped through; would have crashed at runtime on any device.
+- **NotificationRateLimiter no-op writes** — two early-return branches each called `prefs.edit {}` writing back values that were already in prefs. Removed both redundant writes.
+- **PostCallAdvisor double-write** — `if (lastShown > 0L) prefs.edit { remove(rateKey) }` before `prefs.edit { putLong(rateKey, now) }` was a no-op. Removed.
+- **`PhoneNumbers.mask()` duplication** — `mask()` was privately defined in both `BlockHistoryStore` and `TrustNotifier` with identical logic. Extracted to `PhoneNumbers.mask()` as a single source of truth.
+- **`PhoneNumbers.kt` misplaced docblock** — `/** Map full-width... */` was positioned before `mask()` instead of before `foldFullWidth()`. Moved to its correct position.
+
+### Added
+- **ADR 012** (`docs/adr/012-domestic-e164-variant-expansion.md`) — documents the domestic↔E.164 variant-expansion pattern, the three bugs it caused, and the invariant for future developers.
+- **CSV duplicate-key CI check** — `check_comprehensive.sh` section 9/10 now detects duplicate E.164 keys and malformed lines in `business_directory.csv`.
+- **Layer 15 boundary-hour tests** — 7 new `CallDecisionTest` cases verify exact boundary hours (8, 9, 11, 12, 13, 15, 16) for the `isHighRiskHour()` predicate.
+- **`PRIVACY_MANIFESTO.md` §10** — honest explanation of why `READ_CALL_LOG` is requested and what it is NOT used for.
+
+### Changed
+- `widget_orange.xml` background changed from hardcoded `#FF8C42` to `@color/orange_primary`.
+
 ## [Unreleased] — v1.2 (patch)
 
 ### Fixed
