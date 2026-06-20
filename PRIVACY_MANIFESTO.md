@@ -70,6 +70,24 @@ blocker doesn't actually need. Orange is defined by what it refuses to ask for.
    notification fires from a local timer, is rate-limited to once per 24
    hours per number, and can be ignored without consequence.
 
+10. **Why Orange requests READ_CALL_LOG — and why it's less than it sounds.**
+    Android's system broadcasts include the phone number of an incoming call
+    in the `PHONE_STATE` intent. On Android 9-11, accessing that number
+    from a broadcast receiver requires `READ_CALL_LOG`. Orange uses it for
+    exactly one purpose: detecting the Wangiri "short-ring callback" scam,
+    where a fraudulent call rings briefly and hangs up hoping the victim
+    calls back to a premium-rate number. The receiver notes the ring start
+    and end time, and if the gap is under 6 seconds, records the number
+    locally so the engine can silence the next call from the same number.
+
+    What Orange does NOT do with READ_CALL_LOG: it does not read your call
+    history, does not enumerate past calls, does not access call duration
+    records, and does not transmit anything derived from the log. The only
+    data path is: incoming number → in-memory Wangiri candidate → forget
+    after 6 hours. On Android 12+ the system delivers the number directly
+    to the `CallScreeningService` API without this permission; READ_CALL_LOG
+    degrades gracefully to a no-op on those devices.
+
 ## What Orange does do, once
 
 Exactly three things touch anything outside the app:
