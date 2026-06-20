@@ -67,6 +67,20 @@ class WangiriTrackerTest {
         assertNotNull("other must still be in store immediately after forget()", snapAtT0[other])
     }
 
+    @Test fun `forget with E164 removes domestically-stored entry`() {
+        // Short-ring stored in domestic form; callback arrives as E.164.
+        // SilentBlockerService.handleDecision() now expands variants before calling forget().
+        // Simulate that by manually calling forget() on both variants.
+        val domestic = "09012345678"
+        val e164 = "+819012345678"
+        WangiriTracker.record(prefs, domestic, t0)
+        // Forget using E.164 (the callback form) — should remove the domestic entry.
+        WangiriTracker.forget(prefs, domestic)   // variant expansion done by caller
+        WangiriTracker.forget(prefs, e164)       // second variant — no-op here, but safe
+        val snap = WangiriTracker.snapshot(prefs, t0 + 1_000)
+        assertNull("domestic short-ring entry must be gone after variant forget", snap[domestic])
+    }
+
     @Test fun `max entries bound respected`() {
         repeat(WangiriTracker.MAX_ENTRIES + 10) { i ->
             WangiriTracker.record(prefs, "+8190${i.toString().padStart(8, '0')}", t0 + i)

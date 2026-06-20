@@ -141,7 +141,11 @@ class SilentBlockerService : CallScreeningService() {
             recordBlock()
             if (number.isNotEmpty()) OutboundGuard.record(p, number, now)
             if (decision.reason == BlockReason.WANGIRI_CALLBACK) {
-                WangiriTracker.forget(p, number)
+                // Expand domestic↔E.164 variants: the short-ring may have been stored
+                // in a different format than the callback number (carrier inconsistency).
+                // Forget all variants so the stale entry doesn't linger until window expiry.
+                val wfCc = callingCodeOf(simCountryIso())
+                phoneVariants(number, wfCc).forEach { WangiriTracker.forget(p, it) }
             }
             // Remember this number so a repeat call is silenced instantly by the
             // Layer-6 spam-cache lookup (the cache's only writer — without this,
