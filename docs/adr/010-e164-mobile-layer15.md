@@ -5,7 +5,10 @@ Accepted
 
 ## Context
 Layer 15 (`HIGH_RISK_HOUR_DOMESTIC`) fires when `isUnknownDomesticMobile()` returns true
-and the call arrives during business-hours risk windows (Mon–Fri 09–12 / 13–16 JST).
+and the call arrives during business-hours risk windows (Mon–Fri 09:00–11:59 / 13:00–15:59 JST).
+The implementation uses `hour in 9..11 || hour in 13..15` where `hour` is the JST
+hour-of-day (0–23), so 12:00 noon and 16:00 are excluded (matching the half-open convention
+used in Japanese telecommunications fraud-peak research).
 
 Android delivers incoming calls via `CallScreeningService.onScreenCall()`. The number
 format depends on the carrier stack:

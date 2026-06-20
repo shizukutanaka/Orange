@@ -58,8 +58,12 @@ class SilentBlockerService : CallScreeningService() {
 
     private fun handleOutgoing(p: SharedPreferences, number: String, now: Long) {
         addToOutbound(p, number)
-        if (number.isNotEmpty() && OutboundGuard.wasRecentlyFlagged(p, number, now)) {
-            WarningNotifier.showOutboundWarning(this, number)
+        // Expand domestic↔E.164 variants: incoming blocked calls may have been stored
+        // in a different format than what the outgoing dial delivers.
+        if (number.isNotEmpty()) {
+            val cc = callingCodeOf(simCountryIso())
+            val flagged = phoneVariants(number, cc).any { OutboundGuard.wasRecentlyFlagged(p, it, now) }
+            if (flagged) WarningNotifier.showOutboundWarning(this, number)
         }
     }
 

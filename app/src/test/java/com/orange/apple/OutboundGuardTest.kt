@@ -50,6 +50,18 @@ class OutboundGuardTest {
         assertFalse(OutboundGuard.wasRecentlyFlagged(p, "09012345678", now - 1L))
     }
 
+    // This test documents the E.164↔domestic variant gap in OutboundGuard itself.
+    // The guard stores numbers exactly as recorded; the call site (SilentBlockerService)
+    // is responsible for expanding variants before calling wasRecentlyFlagged.
+    @Test fun `domestic stored does not match E164 directly in guard`() {
+        val p = FakePrefs()
+        val now = 1_000_000L
+        OutboundGuard.record(p, "09012345678", now)
+        // Guard itself does exact-string match — E.164 form must NOT match here.
+        // SilentBlockerService.handleOutgoing() expands variants before querying.
+        assertFalse(OutboundGuard.wasRecentlyFlagged(p, "+819012345678", now + 1000L))
+    }
+
     @Test fun `record respects MAX_ENTRIES bound`() {
         val p = FakePrefs()
         val now = 1_000_000L
