@@ -75,7 +75,7 @@ object TrustNotifier {
         val notif = NotificationCompat.Builder(ctx, CHANNEL_TRUST)
             .setSmallIcon(android.R.drawable.stat_sys_phone_call_forward)
             .setContentTitle(ctx.getString(R.string.notif_title))
-            .setContentText(mask(blockedNumber))
+            .setContentText(PhoneNumbers.mask(blockedNumber))
             .addAction(0, ctx.getString(R.string.notif_action_restore), restorePi)
             .setAutoCancel(true)
             .setOnlyAlertOnce(true)
@@ -116,7 +116,7 @@ object TrustNotifier {
         val notif = NotificationCompat.Builder(ctx, CHANNEL_ONGOING)
             .setSmallIcon(android.R.drawable.stat_sys_phone_call_forward)
             .setContentTitle(ctx.getString(R.string.notif_title))
-            .setContentText(mask(blockedNumber))
+            .setContentText(PhoneNumbers.mask(blockedNumber))
             .setContentIntent(historyPi)
             .addAction(0, ctx.getString(R.string.notif_action_restore), restorePi)
             .setAutoCancel(true)
@@ -175,9 +175,6 @@ object TrustNotifier {
         h = h xor (h ushr 16)
         return h and Int.MAX_VALUE  // keep positive for notification IDs
     }
-
-    private fun mask(n: String): String =
-        if (n.length <= 4) "****" else "****" + n.takeLast(4)
 
     private fun ensureChannel(ctx: Context, id: String, name: String, importance: Int) {
         val mgr = ctx.getSystemService(Context.NOTIFICATION_SERVICE) as? NotificationManager ?: return

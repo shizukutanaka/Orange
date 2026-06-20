@@ -34,7 +34,7 @@ internal object BlockHistoryStore {
     @Synchronized
     fun record(prefs: SharedPreferences, number: String, reason: BlockReason, nowMs: Long) {
         val entries = load(prefs, nowMs).toMutableList()
-        entries.add(0, Entry(mask(number), nowMs, reason))
+        entries.add(0, Entry(PhoneNumbers.mask(number), nowMs, reason))
         if (entries.size > MAX_ENTRIES) entries.subList(MAX_ENTRIES, entries.size).clear()
         save(prefs, entries)
     }
@@ -69,6 +69,4 @@ internal object BlockHistoryStore {
         prefs.edit { putString(KEY, raw) }
     }
 
-    private fun mask(n: String): String =
-        if (n.length <= 4) "****" else "****" + n.takeLast(4)
 }
