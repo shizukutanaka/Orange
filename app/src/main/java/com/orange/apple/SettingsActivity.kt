@@ -98,7 +98,12 @@ fun SettingsScreen() {
                 // Extracted to avoid duplicating the save logic between IME Done and Save button.
                 val saveSlot = {
                     focusManager.clearFocus()
-                    val cleaned = fieldValue.filter { c -> c.isDigit() || c == '+' }
+                    // Use PhoneNumbers.normalize() rather than a manual filter so that
+                    // full-width digits (e.g. "０９０…") are folded to ASCII before display.
+                    // A manual `filter { isDigit() }` keeps full-width chars (Unicode Nd),
+                    // which causes the field to show full-width after save until the next
+                    // prefs reload flips it back to ASCII.
+                    val cleaned = PhoneNumbers.normalize(fieldValue)
                     if (cleaned.isEmpty()) {
                         FamilyCallback.clearNumber(ctx, slot)
                         fieldValue = ""
