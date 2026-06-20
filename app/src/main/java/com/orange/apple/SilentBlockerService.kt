@@ -57,6 +57,12 @@ class SilentBlockerService : CallScreeningService() {
     }
 
     private fun handleOutgoing(p: SharedPreferences, number: String, now: Long) {
+        // Never record emergency numbers (110, 119, etc.) as outbound-known. A user
+        // who calls 110 to verify a police number should still get the spoofing warning
+        // on a subsequent call from someone impersonating police. If we record 110 as
+        // outbound-known, all future police calls ring with no warning.
+        if (EmergencyWhitelist.isEmergency(number)) return
+
         addToOutbound(p, number)
         // Expand domestic↔E.164 variants: incoming blocked calls may have been stored
         // in a different format than what the outgoing dial delivers.
