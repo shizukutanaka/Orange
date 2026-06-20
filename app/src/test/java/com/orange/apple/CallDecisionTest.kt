@@ -618,6 +618,50 @@ class CallDecisionTest {
         assertNull(d.warning)
     }
 
+    // --- Layer 15 exact boundary hours (hour in 9..11 || hour in 13..15) -------
+
+    private fun jstHour(hour: Int): Long {
+        val cal = java.util.Calendar.getInstance(java.util.TimeZone.getTimeZone("Asia/Tokyo"))
+        cal.set(2025, java.util.Calendar.MAY, 6, hour, 0, 0) // Tuesday
+        cal.set(java.util.Calendar.MILLISECOND, 0)
+        return cal.timeInMillis
+    }
+
+    @Test fun hour_8_is_outside_high_risk() {
+        val d = decide(call("09012345678").copy(nowMillis = jstHour(8)), emptyState)
+        assertNull(d.warning)
+    }
+
+    @Test fun hour_9_is_inside_high_risk() {
+        val d = decide(call("09012345678").copy(nowMillis = jstHour(9)), emptyState)
+        assertEquals(WarnReason.HIGH_RISK_HOUR_DOMESTIC, d.warning)
+    }
+
+    @Test fun hour_11_is_inside_high_risk() {
+        val d = decide(call("09012345678").copy(nowMillis = jstHour(11)), emptyState)
+        assertEquals(WarnReason.HIGH_RISK_HOUR_DOMESTIC, d.warning)
+    }
+
+    @Test fun hour_12_is_outside_high_risk() {
+        val d = decide(call("09012345678").copy(nowMillis = jstHour(12)), emptyState)
+        assertNull(d.warning)
+    }
+
+    @Test fun hour_13_is_inside_high_risk() {
+        val d = decide(call("09012345678").copy(nowMillis = jstHour(13)), emptyState)
+        assertEquals(WarnReason.HIGH_RISK_HOUR_DOMESTIC, d.warning)
+    }
+
+    @Test fun hour_15_is_inside_high_risk() {
+        val d = decide(call("09012345678").copy(nowMillis = jstHour(15)), emptyState)
+        assertEquals(WarnReason.HIGH_RISK_HOUR_DOMESTIC, d.warning)
+    }
+
+    @Test fun hour_16_is_outside_high_risk() {
+        val d = decide(call("09012345678").copy(nowMillis = jstHour(16)), emptyState)
+        assertNull(d.warning)
+    }
+
     // --- callingCodeOf --------------------------------------------------------
 
     @Test fun calling_code_of_jp_is_81() = assertEquals("81", callingCodeOf("JP"))
