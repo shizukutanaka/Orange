@@ -170,7 +170,11 @@ fun decide(ctx: CallContext, state: CallState): Decision {
     if (state.isSpamCached) return Decision(Verdict.SILENCE, BlockReason.SPAM_CACHE)
 
     // Layer 7: Wangiri callback. Same number + recent short-ring = pattern.
-    val recentRingAt = state.recentShortRings[ctx.number]
+    // Expand domestic↔E.164 variants: the short-ring may have been delivered in
+    // one form while the callback arrives in the other. Both must trigger the block.
+    val wangiriCc = callingCodeOf(ctx.calleeCountryIso)
+    val recentRingAt = phoneVariants(ctx.number, wangiriCc)
+        .firstNotNullOfOrNull { state.recentShortRings[it] }
     if (recentRingAt != null && ctx.nowMillis >= recentRingAt && ctx.nowMillis - recentRingAt < WANGIRI_WINDOW_MS) {
         return Decision(Verdict.SILENCE, BlockReason.WANGIRI_CALLBACK)
     }

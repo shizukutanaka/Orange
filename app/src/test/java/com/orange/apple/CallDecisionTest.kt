@@ -130,6 +130,30 @@ class CallDecisionTest {
         assertEquals(BlockReason.FOREIGN_GENERIC, d.reason)
     }
 
+    @Test fun wangiri_e164_callback_matches_domestic_short_ring() {
+        // Regression: short ring arrives as "09012345678" (domestic), callback arrives
+        // as "+819012345678" (E.164). Without variant expansion the map lookup misses
+        // and the Wangiri block doesn't fire. The fix expands phoneVariants() in Layer 7.
+        val now = 1_700_000_000_000L
+        val state = emptyState.copy(
+            recentShortRings = mapOf("09012345678" to now - 60_000L)
+        )
+        val d = decide(call("+819012345678", iso = "JP", now = now), state)
+        assertEquals(Verdict.SILENCE, d.verdict)
+        assertEquals(BlockReason.WANGIRI_CALLBACK, d.reason)
+    }
+
+    @Test fun wangiri_domestic_callback_matches_e164_short_ring() {
+        // Inverse: short ring arrives as "+819012345678" (E.164), callback as domestic.
+        val now = 1_700_000_000_000L
+        val state = emptyState.copy(
+            recentShortRings = mapOf("+819012345678" to now - 60_000L)
+        )
+        val d = decide(call("09012345678", iso = "JP", now = now), state)
+        assertEquals(Verdict.SILENCE, d.verdict)
+        assertEquals(BlockReason.WANGIRI_CALLBACK, d.reason)
+    }
+
     // --- Layer 7: Domestic JP spoof -------------------------------------------
 
     @Test fun jp_020_reserved_number_is_spoof() {
