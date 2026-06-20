@@ -80,7 +80,30 @@ else
     echo "SKIP: python3 not available (oracle runs in CI)"
 fi
 
-echo "=== 9/9. Required documentation present ==="
+echo "=== 9/10. Business directory integrity ==="
+CSV="app/src/main/assets/business_directory.csv"
+if [ -f "$CSV" ]; then
+    # Duplicate E.164 keys cause the later entry to silently overwrite the earlier
+    # one in the HashMap. Every key must appear exactly once.
+    dups=$(grep -v '^#' "$CSV" | grep -v '^[[:space:]]*$' | cut -d',' -f1 | sort | uniq -d)
+    if [ -n "$dups" ]; then
+        echo "FAIL: duplicate E.164 keys in $CSV:"
+        echo "$dups"
+        FAIL=1
+    fi
+    # Every non-comment, non-blank line must have exactly the format "<key>,<name>".
+    bad=$(grep -v '^#' "$CSV" | grep -v '^[[:space:]]*$' | grep -v ',')
+    if [ -n "$bad" ]; then
+        echo "FAIL: malformed lines (no comma) in $CSV:"
+        echo "$bad"
+        FAIL=1
+    fi
+else
+    echo "FAIL: $CSV missing"
+    FAIL=1
+fi
+
+echo "=== 10/10. Required documentation present ==="
 for doc in README.md PRIVACY_MANIFESTO.md HONESTY_ADDENDUM.md THREAT_MODEL.md \
            DESIGN_NOTES.md RESEARCH_BASIS.md CHANGELOG.md SECURITY.md \
            CONTRIBUTING.md DEVELOPING.md LICENSE \
