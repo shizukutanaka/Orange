@@ -382,9 +382,14 @@ internal fun phoneVariants(number: String, callingCode: String?): Set<String> {
             // domestic trunk form → E.164: "09012345678" → "+819012345678"
             number.startsWith("0") && !number.startsWith("+") ->
                 out.add("+$callingCode${number.substring(1)}")
-            // E.164 → domestic trunk form: "+819012345678" → "09012345678"
-            number.startsWith("+$callingCode") ->
-                out.add("0${number.removePrefix("+$callingCode")}")
+            // E.164 → domestic trunk form: "+819012345678" → "09012345678".
+            // Some carriers deliver "+810XXXXXXXXX" (leading zero kept after +81).
+            // In that case removePrefix("+81") already starts with "0", so we must
+            // not prepend another "0" — mirror the logic in PoliceStationDirectory.lookup().
+            number.startsWith("+$callingCode") -> {
+                val rest = number.removePrefix("+$callingCode")
+                out.add(if (rest.startsWith("0")) rest else "0$rest")
+            }
         }
     }
     return out

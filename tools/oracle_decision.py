@@ -120,6 +120,11 @@ CASES = [
     ("0222123456789", True, "022 Sendai 13-digit — spoof"),
     # 00x intl access used domestically
     ("00123456789", True, "00x intl-access prefix domestic"),
+    # +810… — carrier-mangled E.164 (domestic leading zero not stripped before +81 prefix)
+    # to_domestic("+810335814321") → "0335814321" (valid Tokyo) → not impossible
+    ("+810335814321", False, "+810… Tokyo landline — carrier kept leading zero, still valid"),
+    # +8100… — double zero after +81 maps to domestic "00…" (intl-access prefix) → impossible
+    ("+8100312345678", True, "+8100… intl-access domestic form — impossible"),
     # non-JP — out of scope, never flagged
     ("+12125551234", False, "US number — not JP, out of scope"),
     ("+447911123456", False, "UK number — not JP, out of scope"),

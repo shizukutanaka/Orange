@@ -74,6 +74,16 @@ class PhoneVariantsTest {
         assertTrue("domestic-form delivery must match E.164 business directory entry", matched)
     }
 
+    @Test fun `carrier-mangled E164 with leading zero after country code expands correctly`() {
+        // Some JP carriers deliver "+810335814321" (domestic "0335814321" with "+81" prepended
+        // without stripping the leading 0).  phoneVariants() must produce the correct domestic
+        // form "0335814321", not the double-zero form "00335814321".
+        val v = phoneVariants("+810335814321", "81")
+        assertTrue("+810335814321 must be in set", v.contains("+810335814321"))
+        assertTrue("domestic form must be 0335814321", v.contains("0335814321"))
+        assertFalse("double-zero form must NOT appear", v.contains("00335814321"))
+    }
+
     @Test fun `business directory domestic shortcode matched in E164 delivery`() {
         // Shortcodes (e.g., "188" 消費者ホットライン) are stored as-is in the CSV.
         // They don't have a domestic/E.164 dual form, so phoneVariants returns only
