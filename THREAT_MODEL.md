@@ -74,6 +74,7 @@ own call log is the source of truth — Orange doesn't log anything extra.
 | Wangiri tracker grows unbounded | Bounded at 64 entries, 6-hour window | Mitigated |
 | Decision path exceeds Android's screening deadline | All lookups O(1) against snapshot state; no disk I/O in hot path | Mitigated |
 | Repeated role revocation by OS update | Onboarding idempotent — relaunch re-requests role | Mitigated |
+| DND mode prevents emergency calls (user misconfiguration) | DND_HONOR layer (Layer 14) silences unknown domestic calls only when DND active; emergency numbers always bypass via Layer 1 hardcoded list. If user enables DND and sets no Pause, known contacts still ring (Layer 4/5). User regains control via Pause tile. | Mitigated. User is responsible for DND configuration; product always allows emergencies. |
 
 ### E — Elevation of privilege
 

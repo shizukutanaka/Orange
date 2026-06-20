@@ -63,6 +63,13 @@ not a modal alarm.
 
 ## Layer-by-layer mapping
 
+*Note: The table below documents the **literature-grounded mechanisms** in Orange's
+decision engine (those with published academic or industry basis). Orange's full
+16-layer decision tree (see README.md, layers 1-16) also includes practical design
+layers such as emergency bypass (Layer 1), user pause control (Layer 2), business
+directory (Layer 5), DND honor (Layer 14), and default allow (Layer 16) that are
+not primarily motivated by published research but by safety and usability principles.*
+
 | Orange mechanism | Literature basis | What it does / its documented limit |
 |------------------|------------------|-------------------------------------|
 | Structural spoof detection (`DomesticSpoofDetector`) | Mustafa et al., "You can call but you can't hide", DSN 2014 | Catches numbers that violate the numbering plan. Limit: structurally valid spoofs pass. |
@@ -107,6 +114,8 @@ points the user to the right humans for everything else."
   Detecting caller ID spoofing attacks.* DSN 2014.
 - M. Sahin, A. Francillon. *Understanding and Detecting International Revenue
   Share Fraud.* NDSS 2021. (Basis for the IRSF/Wangiri elevated-risk corridors.)
+- Truecaller. *The State of Robocalls and Spam 2024.* 2024.
+  (Basis for repeat-caller velocity detection; Truecaller reported ~3.3B scam calls/month.)
 - *"It Warned Me Just at the Right Moment": Exploring LLM-based Real-time
   Detection of Phone Scams.* arXiv:2502.03964, 2025.
 - *Combating Phone Scams with LLM-based Detection: Where Do We Stand?*
