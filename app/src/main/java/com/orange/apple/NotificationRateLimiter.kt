@@ -58,25 +58,12 @@ internal object NotificationRateLimiter {
             0 to mutableSetOf()
         }
 
-        // Already notified for this number in this window: silent increment.
-        if (key in seen) {
-            prefs.edit {
-                putLong(KEY_WINDOW_START, if (inWindow) windowStart else nowMs)
-                putInt(KEY_WINDOW_COUNT, count)
-                putString(KEY_SEEN_NUMBERS, seen.joinToString(" "))
-            }
-            return false
-        }
+        // Already notified for this number in this window: no state change needed.
+        // (seen is only non-empty when inWindow=true, so all three keys are unchanged.)
+        if (key in seen) return false
 
-        // Cap reached: silent.
-        if (count >= MAX_NOTIFS_PER_WINDOW) {
-            prefs.edit {
-                putLong(KEY_WINDOW_START, windowStart)
-                putInt(KEY_WINDOW_COUNT, count)
-                putString(KEY_SEEN_NUMBERS, seen.joinToString(" "))
-            }
-            return false
-        }
+        // Cap reached: no state change needed.
+        if (count >= MAX_NOTIFS_PER_WINDOW) return false
 
         // Fire and record.
         seen.add(key)
