@@ -34,4 +34,21 @@ class PhoneNumbersTest {
 
     @Test fun `non-numeric non-plus chars stripped`() =
         assertEquals("0355551234", PhoneNumbers.normalize("(03)5555-1234"))
+
+    // --- PhoneNumbers.mask() -------------------------------------------------
+
+    @Test fun `mask hides all but last 4 digits`() =
+        assertEquals("****5678", PhoneNumbers.mask("09012345678"))
+
+    @Test fun `mask of exactly 4 digits returns four stars`() =
+        assertEquals("****", PhoneNumbers.mask("1234"))
+
+    @Test fun `mask of 3 digits returns four stars`() =
+        assertEquals("****", PhoneNumbers.mask("110"))
+
+    @Test fun `mask of empty string returns four stars`() =
+        assertEquals("****", PhoneNumbers.mask(""))
+
+    @Test fun `mask of E164 number hides all but last 4`() =
+        assertEquals("****4321", PhoneNumbers.mask("+81335814321"))
 }
