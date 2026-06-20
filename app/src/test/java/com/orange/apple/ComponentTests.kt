@@ -97,12 +97,18 @@ class RepeatCallerTrackerComponentTest {
         assertFalse(RepeatCallerTracker.isRepeatOffender(p, "+111", 3000L))
     }
 
-    @Test fun third_call_triggers_flag() {
+    @Test fun fourth_call_triggers_flag() {
+        // N_THRESHOLD = 3: block fires on the (N_THRESHOLD+1)th = 4th call.
+        // calls.size > N_THRESHOLD → 4 > 3 → true.
         val p = FakePrefs()
         RepeatCallerTracker.record(p, "+111", 1000L)
         RepeatCallerTracker.record(p, "+111", 2000L)
         RepeatCallerTracker.record(p, "+111", 3000L)
-        assertTrue(RepeatCallerTracker.isRepeatOffender(p, "+111", 4000L))
+        assertFalse("3rd call must NOT trigger flag yet",
+            RepeatCallerTracker.isRepeatOffender(p, "+111", 3500L))
+        RepeatCallerTracker.record(p, "+111", 4000L)
+        assertTrue("4th call must trigger flag",
+            RepeatCallerTracker.isRepeatOffender(p, "+111", 5000L))
     }
 
     @Test fun different_numbers_independent() {
@@ -140,13 +146,17 @@ class RepeatCallerTrackerComponentTest {
 
     @Test fun clear_removes_entries() {
         val p = FakePrefs()
-        repeat(RepeatCallerTracker.N_THRESHOLD) {
+        // Record N_THRESHOLD + 1 calls to actually trigger offender status.
+        // N_THRESHOLD calls alone only reach calls.size == N_THRESHOLD, which
+        // satisfies calls.size > N_THRESHOLD → false (not flagged yet).
+        repeat(RepeatCallerTracker.N_THRESHOLD + 1) {
             RepeatCallerTracker.record(p, "+111", it * 1000L)
         }
+        val checkTime = (RepeatCallerTracker.N_THRESHOLD + 1) * 1000L + 1
         // Was flagged
-        assertTrue(RepeatCallerTracker.isRepeatOffender(p, "+111", RepeatCallerTracker.N_THRESHOLD * 1000L + 1))
+        assertTrue(RepeatCallerTracker.isRepeatOffender(p, "+111", checkTime))
         // User answers → clear
         RepeatCallerTracker.clear(p, "+111")
-        assertFalse(RepeatCallerTracker.isRepeatOffender(p, "+111", RepeatCallerTracker.N_THRESHOLD * 1000L + 2))
+        assertFalse(RepeatCallerTracker.isRepeatOffender(p, "+111", checkTime + 1))
     }
 }
