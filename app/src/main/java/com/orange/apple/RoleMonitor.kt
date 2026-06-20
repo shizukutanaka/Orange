@@ -7,6 +7,7 @@ import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
 import android.os.Build
+import androidx.core.content.edit
 
 /**
  * Detects when the system revokes Orange's Call Screening role.
@@ -53,7 +54,7 @@ internal object RoleMonitor {
         val prefs = ctx.getSharedPreferences(SilentBlockerService.PREFS, Context.MODE_PRIVATE)
         val previously = prefs.getBoolean(KEY_ROLE_HELD, true)
         if (held != previously) {
-            prefs.edit().putBoolean(KEY_ROLE_HELD, held).apply()
+            prefs.edit { putBoolean(KEY_ROLE_HELD, held) }
             // Nudge the widget to redraw. ACTION_APPWIDGET_UPDATE is only
             // delivered to onUpdate() when EXTRA_APPWIDGET_IDS is included —
             // without it, AppWidgetProvider.onReceive() drops the intent.
