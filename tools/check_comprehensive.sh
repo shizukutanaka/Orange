@@ -112,7 +112,8 @@ for doc in README.md PRIVACY_MANIFESTO.md HONESTY_ADDENDUM.md THREAT_MODEL.md \
            docs/adr/003-warn-payload-single-lookup.md \
            docs/adr/004-special-prefix-digit-lengths.md \
            docs/adr/005-no-manual-callscreening-start.md \
-           docs/adr/006-hashed-spam-cache.md; do
+           docs/adr/006-hashed-spam-cache.md \
+           docs/adr/012-domestic-e164-variant-expansion.md; do
     if [ ! -f "$doc" ]; then
         echo "FAIL: required document missing: $doc"; FAIL=1
     fi
