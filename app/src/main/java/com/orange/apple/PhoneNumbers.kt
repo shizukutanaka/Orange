@@ -35,7 +35,6 @@ internal object PhoneNumbers {
             }
         }
 
-    /** Map full-width '＋' and '０'-'９' to ASCII; pass everything else through. */
     /**
      * Mask a phone number for display: show only the last 4 digits.
      * Used by BlockHistoryStore and TrustNotifier for privacy-safe history entries.
@@ -43,6 +42,7 @@ internal object PhoneNumbers {
     fun mask(n: String): String =
         if (n.length <= 4) "****" else "****" + n.takeLast(4)
 
+    /** Map full-width '＋' and '０'-'９' to ASCII; pass everything else through. */
     private fun foldFullWidth(ch: Char): Char = when (ch) {
         '\uFF0B' -> '+'
         in '\uFF10'..'\uFF19' -> ('0' + (ch.code - 0xFF10))
