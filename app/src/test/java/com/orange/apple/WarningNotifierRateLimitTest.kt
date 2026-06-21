@@ -161,4 +161,61 @@ class WarningNotifierRateLimitTest {
         val keyNumber: String = null.let { number }  // no phoneVariants called
         assertEquals(expectedKey, "highrisk_last_$keyNumber")
     }
+
+    // --- Stale rate-limit key pruning ---
+
+    @Test fun `pruneStaleRateLimitKeys removes expired highrisk keys`() {
+        val p = FakePrefs()
+        val now = 1_000_000_000L
+        val expired = now - 24L * 60 * 60 * 1000 - 1  // one ms past the 24h window
+        p.edit().putLong("highrisk_last_09012345678", expired).apply()
+        WarningNotifier.pruneStaleRateLimitKeys(p, now)
+        assertFalse("expired highrisk key should be removed", p.contains("highrisk_last_09012345678"))
+    }
+
+    @Test fun `pruneStaleRateLimitKeys keeps fresh highrisk keys`() {
+        val p = FakePrefs()
+        val now = 1_000_000_000L
+        val fresh = now - 1000L  // 1 second ago — well within 24h window
+        p.edit().putLong("highrisk_last_09012345678", fresh).apply()
+        WarningNotifier.pruneStaleRateLimitKeys(p, now)
+        assertTrue("fresh highrisk key should survive", p.contains("highrisk_last_09012345678"))
+    }
+
+    @Test fun `pruneStaleRateLimitKeys removes expired outbound keys`() {
+        val p = FakePrefs()
+        val now = 1_000_000_000L
+        val expired = now - 60L * 60 * 1000 - 1  // one ms past the 1h window
+        p.edit().putLong("outbound_warn_ts_+819012345678", expired).apply()
+        WarningNotifier.pruneStaleRateLimitKeys(p, now)
+        assertFalse("expired outbound key should be removed", p.contains("outbound_warn_ts_+819012345678"))
+    }
+
+    @Test fun `pruneStaleRateLimitKeys keeps fresh outbound keys`() {
+        val p = FakePrefs()
+        val now = 1_000_000_000L
+        val fresh = now - 1000L
+        p.edit().putLong("outbound_warn_ts_+819012345678", fresh).apply()
+        WarningNotifier.pruneStaleRateLimitKeys(p, now)
+        assertTrue("fresh outbound key should survive", p.contains("outbound_warn_ts_+819012345678"))
+    }
+
+    @Test fun `pruneStaleRateLimitKeys does not touch unrelated keys`() {
+        val p = FakePrefs()
+        val now = 1_000_000_000L
+        p.edit().putLong("some_other_key", 0L).apply()
+        WarningNotifier.pruneStaleRateLimitKeys(p, now)
+        assertTrue("unrelated key should not be removed", p.contains("some_other_key"))
+    }
+
+    @Test fun `pruneStaleRateLimitKeys backward clock does not prune fresh keys`() {
+        val p = FakePrefs()
+        val now = 1_000_000L
+        // Stored timestamp is in the future (clock jumped backward)
+        val futureTs = now + 1_000L
+        p.edit().putLong("highrisk_last_09012345678", futureTs).apply()
+        WarningNotifier.pruneStaleRateLimitKeys(p, now)
+        // now < futureTs → now >= futureTs is false → should NOT prune
+        assertTrue("future-ts key should survive backward clock", p.contains("highrisk_last_09012345678"))
+    }
 }

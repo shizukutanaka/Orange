@@ -69,6 +69,7 @@ internal object WarningNotifier {
             phoneVariants(number, callingCode).firstOrNull { !it.startsWith("+") } ?: number
         else number
         val prefs = ctx.getSharedPreferences(SilentBlockerService.PREFS, Context.MODE_PRIVATE)
+        pruneStaleRateLimitKeys(prefs, System.currentTimeMillis())
         val key = "highrisk_last_$keyNumber"
         val now = System.currentTimeMillis()
         val last = prefs.getLong(key, 0L)
@@ -101,6 +102,7 @@ internal object WarningNotifier {
      */
     fun showOutboundWarning(ctx: Context, number: String) {
         val prefs = ctx.getSharedPreferences(SilentBlockerService.PREFS, Context.MODE_PRIVATE)
+        pruneStaleRateLimitKeys(prefs, System.currentTimeMillis())
         // Key includes the full number so numbers that differ only in early digits don't
         // share a rate-limit bucket. takeLast(8) caused collisions (e.g., "+8190123456789"
         // and "+8190987656789" both end in "56789..." — different numbers, same key).
@@ -127,6 +129,29 @@ internal object WarningNotifier {
     }
 
     private const val OUTBOUND_WARN_WINDOW_MS = 60L * 60 * 1000  // 1 hour dedup window
+    private const val HIGHRISK_WARN_WINDOW_MS = 24L * 60 * 60 * 1000  // 24 hour dedup window
+
+    /**
+     * Prune stale highrisk and outbound rate-limit keys from SharedPreferences.
+     *
+     * Each distinct scam caller that triggers a warning writes one persistent key.
+     * Without pruning these accumulate indefinitely. Both prefixes are swept in one
+     * pass to avoid two separate O(n) prefs.all scans.
+     */
+    internal fun pruneStaleRateLimitKeys(prefs: android.content.SharedPreferences, now: Long) {
+        val stale = prefs.all.entries.filter { (k, v) ->
+            when {
+                k.startsWith("highrisk_last_") ->
+                    v is Long && now >= (v as Long) && now - (v as Long) >= HIGHRISK_WARN_WINDOW_MS
+                k.startsWith("outbound_warn_ts_") ->
+                    v is Long && now >= (v as Long) && now - (v as Long) >= OUTBOUND_WARN_WINDOW_MS
+                else -> false
+            }
+        }.map { it.key }
+        if (stale.isNotEmpty()) {
+            prefs.edit { stale.forEach { remove(it) } }
+        }
+    }
 
     private fun addFamilyAction(ctx: Context, builder: NotificationCompat.Builder) {
         val familyNum = FamilyCallback.primaryNumber(ctx) ?: return
