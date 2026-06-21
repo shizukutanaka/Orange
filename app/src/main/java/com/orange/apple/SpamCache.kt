@@ -37,9 +37,19 @@ internal object SpamCache {
      * Android Keystore key (non-exportable, hardware-backed where available)
      * so a forensic image of /data cannot recover it. See ADR 006 / KeyDroid
      * (arXiv:2507.07927). Falls back to plaintext on non-Android test hosts.
+     *
+     * Cached in memory after first load: the salt is generated once at install
+     * and never changes, so a Keystore round-trip (10–50 ms) on every incoming
+     * call — which is in Android's latency-sensitive screening callback — is
+     * unnecessary. The @Volatile write visibility guarantee ensures threads that
+     * read cachedSalt after the @Synchronized writer completes see the update
+     * without themselves needing to enter the synchronized block.
      */
+    @Volatile private var cachedSalt: String? = null
+
     @Synchronized
-    private fun salt(prefs: SharedPreferences): String = SaltVault.salt(prefs)
+    private fun salt(prefs: SharedPreferences): String =
+        cachedSalt ?: SaltVault.salt(prefs).also { cachedSalt = it }
 
     /** Salted SHA-256 hex of a normalized phone number. */
     internal fun hash(prefs: SharedPreferences, number: String): String {

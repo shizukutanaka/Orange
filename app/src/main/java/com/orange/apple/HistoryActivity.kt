@@ -98,7 +98,12 @@ private fun HistoryScreen() {
                         onAllow = {
                             AllowSuffixStore.allow(prefs, entry.maskedNumber)
                             BlockHistoryStore.remove(prefs, entry)
-                            entries = entries.filter { it !== entry }
+                            // Use value equality (!=) not identity (!==): Entry is a data
+                            // class, and Compose may recompose before this lambda fires,
+                            // creating a new instance with the same fields but a different
+                            // object reference. Identity comparison would then silently fail
+                            // to remove the entry from the visible list.
+                            entries = entries.filter { it != entry }
                         }
                     )
                 }
