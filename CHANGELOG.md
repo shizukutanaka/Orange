@@ -13,6 +13,7 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - **Emergency numbers in `CallStateObserver.addToOutbound()`** — `SilentBlockerService.handleOutgoing()` was fixed in v1.4 to exclude emergency numbers from outbound-known, but `CallStateObserver` had the same path without the guard. A user dialling 110 via the system dialer (OFFHOOK without prior RINGING) would have "110" recorded in outbound-known via `CallStateObserver`, causing Layer 4 to bypass the Layer 9 police-impersonation warning on future spoofed-police calls.
 - **`SpamCache` salt cache invalidation in tests** — the initial singleton-level `cachedSalt` cache caused `SpamCacheTest.salt_differs_across_installs` to fail because two `FakePrefs` instances (simulating distinct installs) would share the cached salt from the first invocation. Cache now keyed by the prefs sentinel string that `SaltVault` writes (`spam_salt` plaintext or `spam_salt_enc` ciphertext), ensuring each distinct FakePrefs instance forces its own SaltVault call. On a real device (single prefs instance per lifetime), the cache still hits every time after first initialization.
 - **`BlockHistoryStore` TTL boundary off-by-one** — eviction used `nowMs - ts > TTL_MS` (`>`), keeping entries that are exactly 30 days old. Changed to `>=` so the 30-day boundary is treated as expired, matching the documented TTL claim.
+- **`isUnknownDomesticMobile()` misses carrier-mangled E.164 `+810...`** — Layer 15 high-risk-hour warning checked `+8190/+8180/+8170/+8160` (standard E.164 JP mobile) but not `+81090/+81080...` (carrier-mangled form where the domestic leading zero is retained after `+81`). A call delivered as `"+8109012345678"` fell through Layer 15 silently. Fixed by adding a `"+810"` prefix branch that strips `+81` and checks the remainder for mobile prefixes. This mirrors the same carrier-mangled handling already in `phoneVariants()` and `DomesticSpoofDetector.toDomestic()`.
 - **`RepeatCallerTracker.clear()` variant mismatch** — `CallStateObserver.onOffhook()` called `RepeatCallerTracker.clear()` with the exact-string number from the PHONE_STATE broadcast. The screening service (`Call.Details.handle`) can deliver the same caller in a different format (domestic vs E.164). Without variant expansion, the `clear()` missed the stored form, leaving the repeat-caller count alive and silencing the legitimate caller on their next call. Fixed by passing the home calling code from `TelephonyManager` to `onOffhook()` and clearing all `phoneVariants()` of the answered number.
 
 ### Added
@@ -20,7 +21,7 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - **`CallStateObserverTest` emergency-number regression** — verifies that 110 and 119 are never stored in outbound-known set.
 
 ### Changed
-- Test count: 388 → 405 (17 new tests across this session; RepeatCallerTracker fix is behavioral, no new test added — it mirrors the existing ADR 012 variant-expansion pattern).
+- Test count: 388 → 406 (18 new tests across this session).
 
 ## [Unreleased] — v1.4 (patch)
 
