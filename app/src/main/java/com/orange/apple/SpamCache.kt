@@ -41,15 +41,28 @@ internal object SpamCache {
      * Cached in memory after first load: the salt is generated once at install
      * and never changes, so a Keystore round-trip (10–50 ms) on every incoming
      * call — which is in Android's latency-sensitive screening callback — is
-     * unnecessary. The @Volatile write visibility guarantee ensures threads that
-     * read cachedSalt after the @Synchronized writer completes see the update
-     * without themselves needing to enter the synchronized block.
+     * unnecessary.
+     *
+     * Cache is keyed by the plaintext prefs sentinel so that JVM unit tests
+     * using separate FakePrefs instances each get their own salt (each FakePrefs
+     * has a distinct KEY_PLAIN_SALT value after its first SaltVault.salt() call).
+     * On a real device there is only one SharedPreferences instance per app,
+     * so the cache key never changes after first initialization.
      */
     @Volatile private var cachedSalt: String? = null
+    @Volatile private var cachedSaltKey: String? = null  // prefs sentinel used to populate cache
 
     @Synchronized
-    private fun salt(prefs: SharedPreferences): String =
-        cachedSalt ?: SaltVault.salt(prefs).also { cachedSalt = it }
+    private fun salt(prefs: SharedPreferences): String {
+        // Read the prefs sentinel that identifies which install this salt belongs to.
+        // SaltVault stores plaintext fallback under "spam_salt"; encrypted form under "spam_salt_enc".
+        val prefsKey = prefs.getString("spam_salt", null) ?: prefs.getString("spam_salt_enc", null)
+        if (cachedSalt != null && prefsKey != null && prefsKey == cachedSaltKey) return cachedSalt!!
+        return SaltVault.salt(prefs).also { s ->
+            cachedSalt = s
+            cachedSaltKey = prefs.getString("spam_salt", null) ?: prefs.getString("spam_salt_enc", null)
+        }
+    }
 
     /** Salted SHA-256 hex of a normalized phone number. */
     internal fun hash(prefs: SharedPreferences, number: String): String {
