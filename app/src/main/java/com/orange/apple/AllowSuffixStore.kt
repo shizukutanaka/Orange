@@ -28,7 +28,7 @@ internal object AllowSuffixStore {
 
     @Synchronized
     fun allow(prefs: SharedPreferences, maskedNumber: String) {
-        val suffix = maskedNumber.takeLast(4).filter { it.isDigit() }
+        val suffix = maskedNumber.filter { it.isDigit() }.takeLast(4)
         if (suffix.length < 4) return
         val ordered = loadOrdered(prefs).toMutableList()
         if (suffix !in ordered) {
@@ -45,7 +45,7 @@ internal object AllowSuffixStore {
      */
     @Synchronized
     fun revoke(prefs: SharedPreferences, maskedNumber: String) {
-        val suffix = maskedNumber.takeLast(4).filter { it.isDigit() }
+        val suffix = maskedNumber.filter { it.isDigit() }.takeLast(4)
         if (suffix.length < 4) return
         val ordered = loadOrdered(prefs).toMutableList()
         if (ordered.remove(suffix)) save(prefs, ordered)
