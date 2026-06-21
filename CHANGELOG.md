@@ -4,6 +4,21 @@ All notable changes to Orange will be documented in this file.
 Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased] — v1.5 (patch)
+
+### Fixed
+- **`HistoryActivity` identity comparison** — filter used `!==` (object identity) on a `data class` Entry. After Compose recomposition, a new Entry instance with identical field values has a different reference, so the identity check silently failed to remove the tapped entry from the visible list even though SharedPreferences was already updated. Changed to `!=` (data class value equality).
+- **`SpamCache` Keystore round-trip on every call** — `SaltVault.salt()` performs an Android Keystore decrypt (10–50 ms) on every `hash()` invocation. The salt is per-install and never mutates. Added `@Volatile cachedSalt` field; first call loads from Keystore, subsequent calls return cached value without entering the synchronized block.
+- **`WarningNotifier` stale rate-limit key accumulation** — `highrisk_last_*` (24 h) and `outbound_warn_ts_*` (1 h) keys were never pruned, unlike `PostCallAdvisor`'s `postcall_last_*` keys. Each distinct scam caller that triggered a warning wrote one permanent SharedPreferences entry. Added `pruneStaleRateLimitKeys()` sweeping both prefixes in a single `prefs.all` pass, called at the start of each `show*Warning()` invocation.
+- **Emergency numbers in `CallStateObserver.addToOutbound()`** — `SilentBlockerService.handleOutgoing()` was fixed in v1.4 to exclude emergency numbers from outbound-known, but `CallStateObserver` had the same path without the guard. A user dialling 110 via the system dialer (OFFHOOK without prior RINGING) would have "110" recorded in outbound-known via `CallStateObserver`, causing Layer 4 to bypass the Layer 9 police-impersonation warning on future spoofed-police calls.
+
+### Added
+- **`WarningNotifierRateLimitTest.kt`** — covers: highrisk 24 h dedup key canonicalisation (domestic and E.164 variants share one bucket), backward-clock guard, outbound 1 h window, distinct-number bucket isolation, stale-key pruning (expired vs fresh highrisk and outbound keys, unrelated-key safety, backward-clock prune guard).
+- **`CallStateObserverTest` emergency-number regression** — verifies that 110 and 119 are never stored in outbound-known set.
+
+### Changed
+- Test count: 388 → 403 (15 new tests across this session).
+
 ## [Unreleased] — v1.4 (patch)
 
 ### Fixed
