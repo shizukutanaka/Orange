@@ -113,6 +113,11 @@ for doc in README.md PRIVACY_MANIFESTO.md HONESTY_ADDENDUM.md THREAT_MODEL.md \
            docs/adr/004-special-prefix-digit-lengths.md \
            docs/adr/005-no-manual-callscreening-start.md \
            docs/adr/006-hashed-spam-cache.md \
+           docs/adr/007-fullwidth-normalization.md \
+           docs/adr/008-masked-block-history.md \
+           docs/adr/009-fix-foreign-generic-coverage.md \
+           docs/adr/010-e164-mobile-layer15.md \
+           docs/adr/011-police-before-stir-shaken.md \
            docs/adr/012-domestic-e164-variant-expansion.md; do
     if [ ! -f "$doc" ]; then
         echo "FAIL: required document missing: $doc"; FAIL=1
