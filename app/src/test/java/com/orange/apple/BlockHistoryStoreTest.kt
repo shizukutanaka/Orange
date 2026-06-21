@@ -100,4 +100,26 @@ class BlockHistoryStoreTest {
         val entries = BlockHistoryStore.load(prefs, now + 1000)
         assertEquals(1, entries.size)
     }
+
+    @Test
+    fun `entry at exact TTL boundary is evicted`() {
+        // An entry whose age equals TTL_MS exactly should be treated as expired (>= boundary).
+        val now = 1_700_000_000_000L
+        val ttl = 30L * 24 * 60 * 60 * 1000
+        BlockHistoryStore.record(prefs, "09012345678", BlockReason.SPAM_CACHE, now)
+        // Advance clock to exactly TTL_MS after the recorded timestamp.
+        val atBoundary = now + ttl
+        val entries = BlockHistoryStore.load(prefs, atBoundary)
+        assertTrue("entry at exact TTL boundary should be evicted", entries.isEmpty())
+    }
+
+    @Test
+    fun `entry one millisecond before TTL boundary is kept`() {
+        val now = 1_700_000_000_000L
+        val ttl = 30L * 24 * 60 * 60 * 1000
+        BlockHistoryStore.record(prefs, "09012345678", BlockReason.SPAM_CACHE, now)
+        val justBefore = now + ttl - 1
+        val entries = BlockHistoryStore.load(prefs, justBefore)
+        assertEquals("entry just inside TTL should survive", 1, entries.size)
+    }
 }
