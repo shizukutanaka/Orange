@@ -158,7 +158,7 @@ orange/
 │   │   ├── res/                    ← Layouts, strings (en/ja/zh/ko), icons
 │   │   ├── assets/business_directory.csv
 │   │   └── AndroidManifest.xml
-│   ├── src/test/                   ← Pure Kotlin unit tests (≈2300 LOC, 354 tests)
+│   ├── src/test/                   ← Pure Kotlin unit tests (≈3200 LOC, 403 tests)
 │   ├── build.gradle.kts
 │   ├── proguard-rules.pro
 │   └── signing.gradle.kts
