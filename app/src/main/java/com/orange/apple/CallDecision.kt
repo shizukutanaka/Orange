@@ -302,6 +302,13 @@ internal fun isUnknownDomesticMobile(number: String): Boolean {
     // E.164 JP mobile: +8190/+8180/+8170/+8160
     if (number.startsWith("+8190") || number.startsWith("+8180") ||
         number.startsWith("+8170") || number.startsWith("+8160")) return true
+    // Carrier-mangled E.164: some carriers keep the domestic leading zero after "+81",
+    // delivering "+81090..." instead of "+8190...". Convert to domestic first.
+    if (number.startsWith("+810")) {
+        val rest = number.removePrefix("+81")  // "+81090..." → "090..."
+        if (rest.startsWith("090") || rest.startsWith("080") ||
+            rest.startsWith("070") || rest.startsWith("060")) return true
+    }
     return false
 }
 

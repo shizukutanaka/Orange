@@ -696,4 +696,21 @@ class CallDecisionTest {
         val v = phoneVariants("+12125551234", "81")
         assertFalse(v.any { it.startsWith("0") && !it.startsWith("+") })
     }
+
+    // --- Carrier-mangled E.164 "+810..." in isUnknownDomesticMobile ---
+
+    @Test fun carrier_mangled_e164_mobile_treated_as_domestic_mobile() {
+        // Some carriers deliver "+8109012345678" (leading zero kept after +81).
+        // Without the "+810" check, isUnknownDomesticMobile() returns false and
+        // Layer 15 does NOT fire the high-risk-hour warning for this caller.
+        val cal = java.util.Calendar.getInstance(java.util.TimeZone.getTimeZone("Asia/Tokyo"))
+        cal.set(2025, java.util.Calendar.MAY, 6, 10, 30, 0) // Tuesday 10:30 JST
+        cal.set(java.util.Calendar.MILLISECOND, 0)
+        val d = decide(
+            CallContext("+8109012345678", "JP", cal.timeInMillis),
+            emptyState
+        )
+        assertEquals(Verdict.RING, d.verdict)
+        assertEquals(WarnReason.HIGH_RISK_HOUR_DOMESTIC, d.warning)
+    }
 }
