@@ -46,10 +46,17 @@ object PostCallAdvisor {
         if (number.isEmpty()) return
 
         val prefs = ctx.getSharedPreferences(SilentBlockerService.PREFS, Context.MODE_PRIVATE)
+        val now = System.currentTimeMillis()
+
+        // Prune stale rate-limit keys to prevent unbounded SharedPreferences growth.
+        // Each unique unknown call answered for >30s writes one "postcall_last_*" key.
+        // Without pruning, the prefs file grows indefinitely. Drop any such key whose
+        // 24h window has already expired — it will be re-created if needed.
+        pruneStaleRateKeys(prefs, now)
+
         // Rate-limit key: "postcall_last_" + normalized number (max 16 chars, safe for prefs).
         val rateKey = "postcall_last_$number"
         val lastShown = prefs.getLong(rateKey, 0L)
-        val now = System.currentTimeMillis()
         if (now >= lastShown && now - lastShown < WINDOW_MS) return   // rate-limit: once per 24h per number
 
         // Only fire for genuinely unknown callers. Trusted callers — numbers the
@@ -81,6 +88,15 @@ object PostCallAdvisor {
         val iso = tm.simCountryIso?.takeIf { it.isNotEmpty() }
             ?: tm.networkCountryIso?.takeIf { it.isNotEmpty() }
         return callingCodeOf(iso?.uppercase(java.util.Locale.ROOT))
+    }
+
+    private fun pruneStaleRateKeys(prefs: android.content.SharedPreferences, now: Long) {
+        val stale = prefs.all.entries
+            .filter { (k, v) -> k.startsWith("postcall_last_") && v is Long && now - (v as Long) >= WINDOW_MS }
+            .map { it.key }
+        if (stale.isNotEmpty()) {
+            prefs.edit { stale.forEach { remove(it) } }
+        }
     }
 
     private fun show(ctx: Context, number: String) {

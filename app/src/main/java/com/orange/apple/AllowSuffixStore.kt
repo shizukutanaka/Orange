@@ -38,6 +38,19 @@ internal object AllowSuffixStore {
         save(prefs, ordered)
     }
 
+    /**
+     * Remove a previously-allowed suffix. Called from HistoryActivity when
+     * a user taps "Block" on an entry they had previously allowed.
+     * No-op if the suffix is not in the list.
+     */
+    @Synchronized
+    fun revoke(prefs: SharedPreferences, maskedNumber: String) {
+        val suffix = maskedNumber.takeLast(4).filter { it.isDigit() }
+        if (suffix.length < 4) return
+        val ordered = loadOrdered(prefs).toMutableList()
+        if (ordered.remove(suffix)) save(prefs, ordered)
+    }
+
     @Synchronized
     fun isAllowed(prefs: SharedPreferences, number: String): Boolean {
         if (number.length < 4) return false

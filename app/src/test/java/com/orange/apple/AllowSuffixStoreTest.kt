@@ -77,4 +77,34 @@ class AllowSuffixStoreTest {
         assertFalse(AllowSuffixStore.isAllowed(prefs, "0110"))
         assertFalse(AllowSuffixStore.isAllowed(prefs, "09012345678"))
     }
+
+    @Test
+    fun `revoke removes a previously allowed suffix`() {
+        AllowSuffixStore.allow(prefs, "****5678")
+        assertTrue(AllowSuffixStore.isAllowed(prefs, "09012345678"))
+        AllowSuffixStore.revoke(prefs, "****5678")
+        assertFalse("suffix must be gone after revoke", AllowSuffixStore.isAllowed(prefs, "09012345678"))
+    }
+
+    @Test
+    fun `revoke on absent suffix is a no-op`() {
+        AllowSuffixStore.allow(prefs, "****1111")
+        AllowSuffixStore.revoke(prefs, "****9999")  // not in list
+        assertTrue("unrelated suffix must survive revoke", AllowSuffixStore.isAllowed(prefs, "09011111111"))
+    }
+
+    @Test
+    fun `revoke with masked-only suffix is a no-op`() {
+        AllowSuffixStore.allow(prefs, "****5678")
+        AllowSuffixStore.revoke(prefs, "****")  // too short — no digits to extract
+        assertTrue("suffix must survive invalid revoke", AllowSuffixStore.isAllowed(prefs, "09012345678"))
+    }
+
+    @Test
+    fun `allow after revoke re-adds suffix`() {
+        AllowSuffixStore.allow(prefs, "****5678")
+        AllowSuffixStore.revoke(prefs, "****5678")
+        AllowSuffixStore.allow(prefs, "****5678")
+        assertTrue("re-added suffix must work", AllowSuffixStore.isAllowed(prefs, "09012345678"))
+    }
 }
