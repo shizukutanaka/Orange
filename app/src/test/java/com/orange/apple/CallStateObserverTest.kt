@@ -81,8 +81,22 @@ class CallStateObserverTest {
         assertFalse(RepeatCallerTracker.isRepeatOffender(p, number, now + RepeatCallerTracker.N_THRESHOLD * 1000L + 200))
     }
 
-    // Simulates the addToOutbound logic from CallStateObserver (same code).
+    @Test fun emergency_number_not_added_to_outbound() {
+        // Regression: CallStateObserver.addToOutbound() must not record emergency numbers.
+        // If 110 (JP police) is recorded, subsequent Layer 4 outbound-known bypass silences
+        // the spoofing warning when a scammer calls back pretending to be police.
+        val p = FakePrefs()
+        addToOutbound(p, "110")
+        addToOutbound(p, "119")
+        val set = p.getStringSet(SilentBlockerService.KEY_OUTBOUND, emptySet())!!
+        assertFalse("110 must not be in outbound set", "110" in set)
+        assertFalse("119 must not be in outbound set", "119" in set)
+    }
+
+    // Simulates the addToOutbound logic from CallStateObserver (same code, including fix).
     private fun addToOutbound(prefs: FakePrefs, number: String) {
+        if (number.isEmpty()) return
+        if (EmergencyWhitelist.isEmergency(number)) return
         val set = prefs.getStringSet(SilentBlockerService.KEY_OUTBOUND, emptySet())!!
             .toMutableSet()
         if (set.add(number)) {

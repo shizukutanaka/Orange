@@ -120,6 +120,10 @@ class CallStateObserver : BroadcastReceiver() {
 
     private fun addToOutbound(prefs: android.content.SharedPreferences, number: String) {
         if (number.isEmpty()) return
+        // Same guard as SilentBlockerService.handleOutgoing(): never record emergency numbers
+        // (110, 119, etc.) as outbound-known. A user who dials 110 to verify a suspicious call
+        // must still see the impersonation warning if someone later spoofs that number.
+        if (EmergencyWhitelist.isEmergency(number)) return
         val set = prefs.getStringSet(SilentBlockerService.KEY_OUTBOUND, emptySet())
             .orEmpty().toMutableSet()
         if (set.add(number)) {
