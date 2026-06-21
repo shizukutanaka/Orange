@@ -90,7 +90,7 @@ object PostCallAdvisor {
         return callingCodeOf(iso?.uppercase(java.util.Locale.ROOT))
     }
 
-    private fun pruneStaleRateKeys(prefs: android.content.SharedPreferences, now: Long) {
+    internal fun pruneStaleRateKeys(prefs: android.content.SharedPreferences, now: Long) {
         val stale = prefs.all.entries
             .filter { (k, v) -> k.startsWith("postcall_last_") && v is Long && now - (v as Long) >= WINDOW_MS }
             .map { it.key }
