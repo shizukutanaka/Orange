@@ -107,4 +107,21 @@ class AllowSuffixStoreTest {
         AllowSuffixStore.allow(prefs, "****5678")
         assertTrue("re-added suffix must work", AllowSuffixStore.isAllowed(prefs, "09012345678"))
     }
+
+    @Test
+    fun `allow with trailing non-digit in masked number still extracts 4 digits`() {
+        // "****1234X": takeLast(4) = "234X", filter{isDigit()} = "234" (only 3 digits) → old code
+        // silently discarded this entry. New code: filter first → "1234", takeLast(4) → "1234" ✓
+        AllowSuffixStore.allow(prefs, "****1234X")
+        assertTrue("4 digit suffix extracted despite trailing non-digit",
+            AllowSuffixStore.isAllowed(prefs, "09012341234"))
+    }
+
+    @Test
+    fun `revoke with trailing non-digit removes the correct suffix`() {
+        AllowSuffixStore.allow(prefs, "****1234")
+        AllowSuffixStore.revoke(prefs, "****1234X")  // trailing non-digit, same 4 leading digits
+        assertFalse("suffix must be removed even with trailing non-digit in masked arg",
+            AllowSuffixStore.isAllowed(prefs, "09012341234"))
+    }
 }
