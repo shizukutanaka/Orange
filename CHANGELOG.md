@@ -4,6 +4,27 @@ All notable changes to Orange will be documented in this file.
 Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased] — v1.4 (patch)
+
+### Fixed
+- **`phoneVariants()` carrier-mangled E.164** — `"+810XXXXXXXXX"` (domestic leading zero not stripped before `+81` country prefix) was expanded to `"00XXXXXXXXX"` instead of the correct domestic form `"0XXXXXXXXX"`. Fixed by adding a leading-zero guard mirroring `PoliceStationDirectory.lookup()`. Layers affected: Wangiri callback detection, OutboundGuard variant matching, all other variant-expansion consumers.
+- **Emergency numbers recorded in outbound history** — `handleOutgoing()` recorded all dialed numbers, including emergency numbers (110, 119, etc.). After calling 110 to verify a suspicious call, subsequent spoofed police calls would ring with no warning (Layer 4 outbound-known bypassed Layer 9 police warning). Fixed by checking `EmergencyWhitelist.isEmergency()` at the start of `handleOutgoing()`.
+- **`AllowSuffixStore` no undo path** — when a user tapped "Allow" in block history there was no API to reverse the decision. Added `revoke()` method which removes a suffix from the ordered allow list. Ready for a future "Block again" UI path.
+- **`PostCallAdvisor` unbounded prefs growth** — rate-limit keys `"postcall_last_*"` accumulated indefinitely (one key per unique unknown call answered for >30 s). Added `pruneStaleRateKeys()` which removes expired keys on each advisory opportunity.
+- **`RESEARCH_BASIS.md` incomplete reference** — Truecaller 2024 statistic cited in repeat-caller mechanism table but missing from References section. Added formal citation.
+- **`RESEARCH_BASIS.md` layer-mapping scope unclear** — the literature-grounded table covers only research-backed layers, not all 16 engine layers. Added explanatory note directing readers to README.md for the full 16-layer list.
+- **`THREAT_MODEL.md` missing DND threat** — `DND_HONOR` (Layer 14) was documented in HONESTY_ADDENDUM and implemented but absent from the STRIDE D-axis enumeration. Added threat row explaining that emergency numbers bypass DND via Layer 1 hard-coded whitelist.
+
+### Added
+- **`SPECIFICATION.md`** — comprehensive product specification covering the 16-layer decision engine, all core components with file references, design principles (Rams), security invariants, file structure tree, known limitations, strengths, and improvement opportunities.
+- **`EmergencyWhitelistTest.kt`** — 24 tests covering JP codes (110/119/118/189/171), international codes (911/112/999/000), E.164 variants, negative cases, and edge cases (special characters documented as design limitation).
+- **`PostCallAdvisorTest.kt`** — 6 tests for rate-limit key pruning: stale removal, fresh key survival, prefix isolation, multi-key prune, empty prefs no-op, and backward clock-jump guard.
+- **`AllowSuffixStore.revoke()` tests** — 4 new tests: removes suffix, no-op for absent, no-op for too-short input, re-allow after revoke.
+- **`oracle_decision.py` cases** — 2 new CASES covering `+810…` (valid Tokyo via leading-zero normalisation) and `+8100…` (international-access prefix, impossible).
+
+### Changed
+- Test count: 296 → 388 (across this and the previous session's improvements).
+
 ## [Unreleased] — v1.3 (patch)
 
 ### Fixed
