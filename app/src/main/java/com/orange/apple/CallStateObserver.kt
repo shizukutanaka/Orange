@@ -51,7 +51,7 @@ class CallStateObserver : BroadcastReceiver() {
 
         when (state) {
             TelephonyManager.EXTRA_STATE_RINGING -> onRinging(prefs, number, now)
-            TelephonyManager.EXTRA_STATE_OFFHOOK -> onOffhook(prefs, number)
+            TelephonyManager.EXTRA_STATE_OFFHOOK -> onOffhook(ctx, prefs, number)
             TelephonyManager.EXTRA_STATE_IDLE    -> onIdle(prefs, now, ctx)
         }
     }
@@ -72,7 +72,7 @@ class CallStateObserver : BroadcastReceiver() {
         }
     }
 
-    private fun onOffhook(prefs: android.content.SharedPreferences, number: String?) {
+    private fun onOffhook(ctx: Context, prefs: android.content.SharedPreferences, number: String?) {
         val wasRinging = prefs.getBoolean(KEY_WAS_RINGING, false)
         if (wasRinging) {
             // Prefer the number from the intent; fall back to the number captured
@@ -80,7 +80,16 @@ class CallStateObserver : BroadcastReceiver() {
             val rawNum = number?.takeIf { it.isNotEmpty() }
                 ?: prefs.getString(KEY_RING_NUMBER, null)
             val norm = rawNum?.let { normalize(it) }
-            if (norm != null) RepeatCallerTracker.clear(prefs, norm)
+            if (norm != null) {
+                // Expand domestic↔E.164 variants and clear all of them.
+                // The screening service may record the number in a different format
+                // (e.g., domestic "09012345678") than what the PHONE_STATE broadcast
+                // delivers (e.g., E.164 "+819012345678"). Without variant expansion,
+                // RepeatCallerTracker.clear() misses the stored form, leaving the repeat
+                // count alive and silencing the legitimate caller on their next call.
+                val cc = simCallingCode(ctx)
+                phoneVariants(norm, cc).forEach { v -> RepeatCallerTracker.clear(prefs, v) }
+            }
             val answerTime = System.currentTimeMillis()
             prefs.edit {
                 putLong(KEY_ANSWER_TIME, answerTime)
@@ -138,6 +147,13 @@ class CallStateObserver : BroadcastReceiver() {
     }
 
     private fun normalize(raw: String): String = PhoneNumbers.normalize(raw)
+
+    private fun simCallingCode(ctx: Context): String? {
+        val tm = ctx.getSystemService(android.telephony.TelephonyManager::class.java) ?: return null
+        val iso = tm.simCountryIso?.takeIf { it.isNotEmpty() }
+            ?: tm.networkCountryIso?.takeIf { it.isNotEmpty() }
+        return callingCodeOf(iso?.uppercase(java.util.Locale.ROOT))
+    }
 
     companion object {
         internal const val KEY_WAS_RINGING = "was_ringing"
