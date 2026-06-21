@@ -29,6 +29,12 @@ import java.util.Calendar
 class WeeklyDigest : BroadcastReceiver() {
 
     override fun onReceive(ctx: Context, intent: Intent?) {
+        // If the user revoked the CallScreening role, Orange is no longer screening
+        // calls. Showing a digest notification when the app is effectively disabled
+        // would be confusing and spammy. Skip silently; alarm continues to be
+        // scheduled so the digest resumes if the user re-grants the role.
+        if (!RoleMonitor.isRoleHeld(ctx)) return
+
         val prefs = ctx.getSharedPreferences(SilentBlockerService.PREFS, Context.MODE_PRIVATE)
 
         val installTs = prefs.getLong(TrustNotifier.KEY_INSTALL_TS, 0L)

@@ -53,11 +53,23 @@ internal object WarningNotifier {
         mgr.notify(TrustNotifier.notifIdFor(number) xor 0x0BADE, builder.build())
     }
 
-    /** Soft warning for unknown domestic mobile during アポ電 peak hours. */
-    fun showHighRiskHourWarning(ctx: Context, number: String) {
+    /**
+     * Soft warning for unknown domestic mobile during アポ電 peak hours.
+     *
+     * @param callingCode Home country's ITU calling code (e.g. "81" for JP), used to
+     *   canonicalise the rate-limit key to the domestic trunk form (0XXXXXXXXXX).
+     *   Without this, a carrier that sometimes delivers "+819012345678" and sometimes
+     *   "09012345678" for the same number would create two rate-limit buckets,
+     *   allowing two warning notifications per 24 hours for the same caller.
+     */
+    fun showHighRiskHourWarning(ctx: Context, number: String, callingCode: String? = null) {
         // Rate-limit: once per 24 h per number — same philosophy as PostCallAdvisor.
+        // Key uses the domestic trunk form so domestic ↔ E.164 variants share one bucket.
+        val keyNumber = if (callingCode != null)
+            phoneVariants(number, callingCode).firstOrNull { !it.startsWith("+") } ?: number
+        else number
         val prefs = ctx.getSharedPreferences(SilentBlockerService.PREFS, Context.MODE_PRIVATE)
-        val key = "highrisk_last_$number"
+        val key = "highrisk_last_$keyNumber"
         val now = System.currentTimeMillis()
         val last = prefs.getLong(key, 0L)
         if (now >= last && now - last < 24L * 60 * 60 * 1000) return

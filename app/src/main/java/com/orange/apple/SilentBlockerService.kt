@@ -180,7 +180,10 @@ class SilentBlockerService : CallScreeningService() {
                 highSeverity = decision.warning == WarnReason.POLICE_IMPERSONATION_HIGH)
         }
         if (decision.warning == WarnReason.HIGH_RISK_HOUR_DOMESTIC) {
-            WarningNotifier.showHighRiskHourWarning(this, number)
+            // Record in OutboundGuard so if the user calls back, they see the
+            // outbound-warning notification — same behaviour as police warnings.
+            if (number.isNotEmpty()) OutboundGuard.record(p, number, now)
+            WarningNotifier.showHighRiskHourWarning(this, number, callingCodeOf(simCountryIso()))
         }
     }
 
