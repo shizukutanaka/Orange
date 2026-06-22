@@ -81,6 +81,22 @@ class SpamCacheTest {
         assertTrue(SpamCache.contains(p, "+${SpamCache.MAX_ENTRIES + 4}"))
     }
 
+    @Test fun contains_is_format_sensitive_hash_depends_on_exact_string() {
+        // SpamCache hashes the exact number string. A number blocked in domestic form
+        // ("09012345678") produces a different hash than its E.164 form ("+819012345678").
+        // Callers (screenIncoming) must check all phoneVariants() to catch cross-format hits.
+        val p = FakePrefs()
+        SpamCache.add(p, "09012345678")            // blocked as domestic
+        assertTrue(SpamCache.contains(p, "09012345678"))   // same form: hit
+        assertFalse(SpamCache.contains(p, "+819012345678")) // E.164 form: miss (different hash)
+        // The adapter fixes this by adding ALL variants to the cache on block,
+        // and by checking ALL variants on lookup. Verify that adding the E.164 variant
+        // also causes the domestic form to be a hit.
+        SpamCache.add(p, "+819012345678")           // add E.164 variant too
+        assertTrue(SpamCache.contains(p, "+819012345678")) // now both forms hit
+        assertTrue(SpamCache.contains(p, "09012345678"))
+    }
+
     @Test fun concurrent_add_does_not_corrupt_cache() {
         // Verifies that @Synchronized prevents lost-update races when two
         // threads add different numbers simultaneously.  Without the annotation

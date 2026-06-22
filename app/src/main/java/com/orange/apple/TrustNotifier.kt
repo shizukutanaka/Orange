@@ -206,7 +206,16 @@ class RestoreReceiver : BroadcastReceiver() {
         // SpamCache stores salted SHA-256 hashes — remove via the cache API so the
         // hash (not the plaintext string) is actually erased. Direct KEY_SPAM removal
         // of the plaintext would always be a no-op and leave Layer 6 permanently armed.
-        SpamCache.remove(prefs, n)
+        // Remove ALL domestic↔E.164 variants: SilentBlockerService now stores both
+        // forms when blocking so that Layer-6 hits regardless of delivery format.
+        // Without removing all variants, the un-removed form re-blocks the number.
+        val simIso = (ctx.getSystemService(Context.TELEPHONY_SERVICE)
+            as? android.telephony.TelephonyManager)?.let {
+                it.simCountryIso?.takeIf { s -> s.isNotEmpty() }
+                    ?: it.networkCountryIso?.takeIf { s -> s.isNotEmpty() }
+            }?.uppercase(java.util.Locale.ROOT)
+        val cc = callingCodeOf(simIso)
+        phoneVariants(n, cc).forEach { v -> SpamCache.remove(prefs, v) }
         // Clear the OutboundGuard entry: a Restore is explicit trust, so the
         // outbound-warning ("recently flagged") must not fire when the user calls back.
         OutboundGuard.forget(prefs, n, System.currentTimeMillis())

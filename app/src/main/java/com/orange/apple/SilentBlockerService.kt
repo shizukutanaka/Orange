@@ -112,7 +112,12 @@ class SilentBlockerService : CallScreeningService() {
 
         val state = CallState(
             outboundKnown     = outbound + family,
-            isSpamCached      = SpamCache.contains(p, number),
+            // Check all domestic↔E.164 variants against the spam cache. A number
+            // blocked in domestic form ("09012345678") is hashed and stored that way;
+            // when the same caller rings back in E.164 ("+819012345678"), the exact-
+            // string hash misses. Checking variants ensures the Layer-6 fast-path fires
+            // regardless of which format the carrier delivers this time.
+            isSpamCached      = variants.any { SpamCache.contains(p, it) },
             knownBusinesses   = businesses,
             pausedUntilMillis = if (PauseTile.isPaused(p)) p.getLong(PauseTile.KEY_PAUSED_UNTIL, 0L) else 0L,
             recentShortRings  = WangiriTracker.snapshot(p, now),
@@ -157,8 +162,11 @@ class SilentBlockerService : CallScreeningService() {
             // Layer-6 spam-cache lookup (the cache's only writer — without this,
             // Layer 6 never fires and the Restore-removes-from-cache path is moot).
             // Contextual silences (DND_HONOR) are excluded; see isCacheableSilence.
+            // Store ALL domestic↔E.164 variants so the fast-path fires regardless of
+            // which format the carrier delivers on the next call from the same number.
             if (number.isNotEmpty() && decision.reason?.let(::isCacheableSilence) == true) {
-                SpamCache.add(p, number)
+                val cacheCc = callingCodeOf(simCountryIso())
+                phoneVariants(number, cacheCc).forEach { v -> SpamCache.add(p, v) }
             }
             decision.reason?.let { BlockHistoryStore.record(p, number, it, now) }
             if (NotificationRateLimiter.shouldNotify(p, number, now)) {
