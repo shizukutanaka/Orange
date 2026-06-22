@@ -17,15 +17,17 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - **`RepeatCallerTracker.clear()` variant mismatch** — `CallStateObserver.onOffhook()` called `RepeatCallerTracker.clear()` with the exact-string number from the PHONE_STATE broadcast. The screening service (`Call.Details.handle`) can deliver the same caller in a different format (domestic vs E.164). Without variant expansion, the `clear()` missed the stored form, leaving the repeat-caller count alive and silencing the legitimate caller on their next call. Fixed by passing the home calling code from `TelephonyManager` to `onOffhook()` and clearing all `phoneVariants()` of the answered number.
 
 ### Fixed (continued)
+- **`SpamCache` cross-format miss** — `SpamCache` hashes the exact number string. A call blocked in domestic form (`"09012345678"`) is cached under `hash("09012345678")`; the same caller's next attempt in E.164 (`"+819012345678"`) produces a different hash, so Layer-6 fast-path misses and all 15+ decision layers re-execute unnecessarily. Fixed in three coordinated places: (1) `screenIncoming()` now checks `variants.any { SpamCache.contains(p, it) }` so Layer 6 fires for any cached format; (2) `handleDecision()` stores all `phoneVariants()` in SpamCache on block; (3) `RestoreReceiver` removes all variants on Restore so the un-removed form cannot re-block a restored number.
 - **`AllowSuffixStore.allow/revoke()` suffix extraction order** — both methods used `maskedNumber.takeLast(4).filter { it.isDigit() }` (wrong order). If the masked string ends in a non-digit character (e.g. `"****1234X"`), `takeLast(4)` produces `"234X"`, then `filter` yields only 3 digits → entry silently discarded. `isAllowed()` already used the correct order (`filter` then `takeLast`). Fixed by matching `isAllowed()`'s order in both `allow()` and `revoke()`.
 
 ### Added
 - **`WarningNotifierRateLimitTest.kt`** — covers: highrisk 24 h dedup key canonicalisation (domestic and E.164 variants share one bucket), backward-clock guard, outbound 1 h window, distinct-number bucket isolation, stale-key pruning (expired vs fresh highrisk and outbound keys, unrelated-key safety, backward-clock prune guard).
 - **`CallStateObserverTest` emergency-number regression** — verifies that 110 and 119 are never stored in outbound-known set.
 - **`AllowSuffixStoreTest` extraction-order regression** — two new tests covering the `takeLast.filter` vs `filter.takeLast` divergence on masked strings with trailing non-digit characters.
+- **`SpamCacheTest` format-sensitivity documentation** — test documenting that `SpamCache.contains()` is exact-string sensitive and that adding both variants solves the cross-format miss.
 
 ### Changed
-- Test count: 388 → 408 (20 new tests across this session).
+- Test count: 388 → 409 (21 new tests across this session).
 
 ## [Unreleased] — v1.4 (patch)
 
