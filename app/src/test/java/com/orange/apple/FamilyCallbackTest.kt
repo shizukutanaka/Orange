@@ -70,4 +70,17 @@ class FamilyCallbackTest {
         // 2 digits is below the 3-digit minimum
         assertNull(validate("81"))
     }
+
+    @Test fun `E164 with maximum 15 digits accepted`() {
+        // '+' + 15 digits = 16 characters total. Old code checked cleaned.length <= 15
+        // (counting '+'), incorrectly rejecting this valid E.164 number. New code checks
+        // digit count only, so '+' + 15 digits passes.
+        val maxE164 = "+" + "9".repeat(15)  // "+999999999999999"
+        assertNotNull("E.164 with 15 digits must be accepted", validate(maxE164))
+    }
+
+    @Test fun `E164 with 16 digits rejected`() {
+        val tooLong = "+" + "9".repeat(16)  // '+' + 16 digits exceeds E.164 max
+        assertNull("E.164 with 16 digits must be rejected", validate(tooLong))
+    }
 }

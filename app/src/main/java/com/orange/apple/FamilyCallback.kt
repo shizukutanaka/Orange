@@ -54,12 +54,11 @@ object FamilyCallback {
         // Normalize first (folds full-width digits, strips spaces/hyphens/parens)
         // so full-width input "０９０…" is safely stored as ASCII "090…".
         val cleaned = PhoneNumbers.normalize(number)
+        // Count digits only (the '+' prefix is not a digit).
         // Minimum: 3 digits (short codes like 110/119).
-        // Maximum: 15 digits (ITU-T E.164 maximum).
-        if (cleaned.length !in 3..15) return null
-        // Must contain at least 3 digits: short codes are 3 digits (110/119),
-        // and an E.164 prefix alone like "+81" (only 2 digits) is not dialable.
-        if (cleaned.count { it.isDigit() } < 3) return null
+        // Maximum: 15 digits (ITU-T E.164 hard cap).
+        val digitCount = cleaned.count { it.isDigit() }
+        if (digitCount !in 3..15) return null
         return cleaned
     }
 
