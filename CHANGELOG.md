@@ -19,6 +19,7 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 ### Fixed (continued)
 - **`SpamCache` cross-format miss** — `SpamCache` hashes the exact number string. A call blocked in domestic form (`"09012345678"`) is cached under `hash("09012345678")`; the same caller's next attempt in E.164 (`"+819012345678"`) produces a different hash, so Layer-6 fast-path misses and all 15+ decision layers re-execute unnecessarily. Fixed in three coordinated places: (1) `screenIncoming()` now checks `variants.any { SpamCache.contains(p, it) }` so Layer 6 fires for any cached format; (2) `handleDecision()` stores all `phoneVariants()` in SpamCache on block; (3) `RestoreReceiver` removes all variants on Restore so the un-removed form cannot re-block a restored number.
 - **`AllowSuffixStore.allow/revoke()` suffix extraction order** — both methods used `maskedNumber.takeLast(4).filter { it.isDigit() }` (wrong order). If the masked string ends in a non-digit character (e.g. `"****1234X"`), `takeLast(4)` produces `"234X"`, then `filter` yields only 3 digits → entry silently discarded. `isAllowed()` already used the correct order (`filter` then `takeLast`). Fixed by matching `isAllowed()`'s order in both `allow()` and `revoke()`.
+- **`PostCallAdvisor` backward-clock guard missing** — two independent backward-clock bugs: (1) `maybeShow()` rate-limit check `now >= lastShown && now - lastShown < WINDOW_MS` returns `false` when `now < lastShown`, allowing the notification to fire through the rate-limit window on backward clock; (2) `pruneStaleRateKeys()` subtracted `now - ts` without guarding `now >= ts` first — a future-dated timestamp produces a negative Long that wraps to a huge positive value exceeding `WINDOW_MS`, incorrectly pruning a still-valid rate-limit key. Fixed both: `maybeShow()` now uses `lastShown > 0L && (now < lastShown || now - lastShown < WINDOW_MS)` to suppress even on backward jump; `pruneStaleRateKeys()` adds `now >= (v as Long)` guard before subtraction.
 
 ### Added
 - **`WarningNotifierRateLimitTest.kt`** — covers: highrisk 24 h dedup key canonicalisation (domestic and E.164 variants share one bucket), backward-clock guard, outbound 1 h window, distinct-number bucket isolation, stale-key pruning (expired vs fresh highrisk and outbound keys, unrelated-key safety, backward-clock prune guard).
@@ -27,7 +28,7 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - **`SpamCacheTest` format-sensitivity documentation** — test documenting that `SpamCache.contains()` is exact-string sensitive and that adding both variants solves the cross-format miss.
 
 ### Changed
-- Test count: 388 → 409 (21 new tests across this session).
+- Test count: 388 → 411 (23 new tests across this session).
 
 ## [Unreleased] — v1.4 (patch)
 

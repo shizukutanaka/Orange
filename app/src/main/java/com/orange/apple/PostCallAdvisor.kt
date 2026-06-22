@@ -57,7 +57,10 @@ object PostCallAdvisor {
         // Rate-limit key: "postcall_last_" + normalized number (max 16 chars, safe for prefs).
         val rateKey = "postcall_last_$number"
         val lastShown = prefs.getLong(rateKey, 0L)
-        if (now >= lastShown && now - lastShown < WINDOW_MS) return   // rate-limit: once per 24h per number
+        // Rate-limit: suppress if shown within the last 24h.
+        // Guard now >= lastShown before subtracting to prevent a backward-clock
+        // scenario (now < lastShown) from bypassing the rate-limit entirely.
+        if (lastShown > 0L && (now < lastShown || now - lastShown < WINDOW_MS)) return
 
         // Only fire for genuinely unknown callers. Trusted callers — numbers the
         // user dialed, registered family members, or bundled legitimate businesses
@@ -92,7 +95,10 @@ object PostCallAdvisor {
 
     internal fun pruneStaleRateKeys(prefs: android.content.SharedPreferences, now: Long) {
         val stale = prefs.all.entries
-            .filter { (k, v) -> k.startsWith("postcall_last_") && v is Long && now - (v as Long) >= WINDOW_MS }
+            // Guard now >= ts before subtracting: a backward clock jump makes
+            // now - ts negative which wraps to a huge Long, incorrectly pruning
+            // a rate-limit key that should still be in effect.
+            .filter { (k, v) -> k.startsWith("postcall_last_") && v is Long && now >= (v as Long) && now - v >= WINDOW_MS }
             .map { it.key }
         if (stale.isNotEmpty()) {
             prefs.edit { stale.forEach { remove(it) } }

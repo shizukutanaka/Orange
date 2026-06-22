@@ -69,15 +69,27 @@ class PostCallAdvisorTest {
     }
 
     @Test fun `prune respects backward clock jump guard`() {
-        // If stored timestamp > now (clock jumped backward), do NOT prune —
-        // the difference (now - ts) would be negative and unsigned overflow gives
-        // a huge value exceeding WINDOW_MS. Verify the guard works.
+        // If stored timestamp > now (clock jumped backward), do NOT prune:
+        // now - ts is negative as a signed Long, and the guard (now >= ts) must
+        // reject such entries before the subtraction. A missing guard would let
+        // Long underflow produce a huge positive value exceeding WINDOW_MS and
+        // incorrectly delete the rate-limit key.
         val future = 5_000_000L
         val now = 1_000_000L  // now < future → backward jump scenario
         prefs.edit().putLong("postcall_last_09012345678", future).apply()
         PostCallAdvisor.pruneStaleRateKeys(prefs, now)
-        // (now - future) = -4_000_000L < 0 and < WINDOW_MS (positive), so NOT pruned
         assertTrue("future-timestamp key must survive backward-jump prune",
+            prefs.contains("postcall_last_09012345678"))
+    }
+
+    @Test fun `prune does not prune key at exactly window boundary`() {
+        // At exactly now - ts == WINDOW_MS, the key is just expiring. The condition
+        // is `>= WINDOW_MS` so it IS pruned at the boundary (caller can see advisor again).
+        val base = 1_000_000L
+        val now = base + PostCallAdvisor.WINDOW_MS
+        prefs.edit().putLong("postcall_last_09012345678", base).apply()
+        PostCallAdvisor.pruneStaleRateKeys(prefs, now)
+        assertFalse("key at exact boundary is expired and must be pruned",
             prefs.contains("postcall_last_09012345678"))
     }
 }
