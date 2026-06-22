@@ -22,6 +22,8 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - **`WarningNotifier` backward-clock guard missing** — `showHighRiskHourWarning()` and `showOutboundWarning()` used `now >= last && now - last < WINDOW` for rate-limiting. When `now < last` (clock regression), the condition fails and the notification fires through the rate-limit window. Fixed to `last > 0L && (now < last || now - last < WINDOW)` so backward clock suppresses instead of bypasses.
 - **`PostCallAdvisor` backward-clock guard missing** — two independent backward-clock bugs: (1) `maybeShow()` rate-limit check `now >= lastShown && now - lastShown < WINDOW_MS` returns `false` when `now < lastShown`, allowing the notification to fire through the rate-limit window on backward clock; (2) `pruneStaleRateKeys()` subtracted `now - ts` without guarding `now >= ts` first — a future-dated timestamp produces a negative Long that wraps to a huge positive value exceeding `WINDOW_MS`, incorrectly pruning a still-valid rate-limit key. Fixed both: `maybeShow()` now uses `lastShown > 0L && (now < lastShown || now - lastShown < WINDOW_MS)` to suppress even on backward jump; `pruneStaleRateKeys()` adds `now >= (v as Long)` guard before subtraction.
 
+- **`CaribbeanPremiumNANP.isPremiumNANP()` accepts overly-long numbers** — the check was `local.length < 10`, accepting any number with 10+ digits. NANP numbers are EXACTLY 10 digits (3-digit area code + 7-digit local). A malformed number like "+124255512345" (11 digits) would incorrectly match the premium area code 242. Fixed to `local.length != 10` for strict validation. Ten regression tests added including boundary cases and all premium area codes.
+
 ### Added
 - **`isHighRiskHour()` off-by-one excludes 12:00 and 16:00 windows** — the hour range was `hour in 9..11 || hour in 13..15`, but the comment and police advisory logs specify "09:00-12:00 and 13:00-16:00 JST". The 12:00-12:59 hour (noon) and 16:00-16:59 hour (4 PM) — when scam calls peak — were excluded. Fixed to `hour in 9..12 || hour in 13..16` to cover all hours in the documented windows. Two boundary-case regression tests added.
 - **`BusinessDirectoryBundle` cache field missing @Volatile** — the `cache` field was not marked @Volatile despite being read by unsynchronized callers in the decision engine. While `load()` is synchronized to prevent races, the visibility across threads was not guaranteed. Added @Volatile annotation to match the pattern used in SpamCache.kt.
@@ -34,7 +36,7 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - **`SpamCacheTest` format-sensitivity documentation** — test documenting that `SpamCache.contains()` is exact-string sensitive and that adding both variants solves the cross-format miss.
 
 ### Changed
-- Test count: 388 → 425 (37 new tests across this session).
+- Test count: 388 → 435 (47 new tests across this session).
 
 ## [Unreleased] — v1.4 (patch)
 
