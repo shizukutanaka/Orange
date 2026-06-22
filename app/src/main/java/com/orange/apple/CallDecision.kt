@@ -285,7 +285,8 @@ internal fun isHighRiskHour(nowMillis: Long): Boolean {
     val dow = cal.get(java.util.Calendar.DAY_OF_WEEK)
     if (dow == java.util.Calendar.SATURDAY || dow == java.util.Calendar.SUNDAY) return false
     val hour = cal.get(java.util.Calendar.HOUR_OF_DAY)
-    return hour in 9..11 || hour in 13..15
+    // 09:00-12:59 (hours 9-12) and 13:00-16:59 (hours 13-16) per police advisory logs.
+    return hour in 9..12 || hour in 13..16
 }
 
 /**

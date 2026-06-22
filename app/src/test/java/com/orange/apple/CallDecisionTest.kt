@@ -553,6 +553,28 @@ class CallDecisionTest {
         assertEquals(WarnReason.HIGH_RISK_HOUR_DOMESTIC, d.warning)
     }
 
+    @Test fun noon_hour_12_00_gets_warning() {
+        // 12:00 JST Tuesday — boundary of first peak window (should be included).
+        // Previously: hour in 9..11 excluded hour 12 (bug). Fixed: hour in 9..12 includes it.
+        val cal = java.util.Calendar.getInstance(java.util.TimeZone.getTimeZone("Asia/Tokyo"))
+        cal.set(2025, java.util.Calendar.MAY, 6, 12, 0, 0)
+        cal.set(java.util.Calendar.MILLISECOND, 0)
+        val d = decide(call("09012345678").copy(nowMillis = cal.timeInMillis), emptyState)
+        assertEquals(Verdict.RING, d.verdict)
+        assertEquals(WarnReason.HIGH_RISK_HOUR_DOMESTIC, d.warning)
+    }
+
+    @Test fun hour_16_00_gets_warning() {
+        // 16:00 JST Tuesday — boundary of second peak window (should be included).
+        // Previously: hour in 13..15 excluded hour 16 (bug). Fixed: hour in 13..16 includes it.
+        val cal = java.util.Calendar.getInstance(java.util.TimeZone.getTimeZone("Asia/Tokyo"))
+        cal.set(2025, java.util.Calendar.MAY, 6, 16, 0, 0)
+        cal.set(java.util.Calendar.MILLISECOND, 0)
+        val d = decide(call("07012345678").copy(nowMillis = cal.timeInMillis), emptyState)
+        assertEquals(Verdict.RING, d.verdict)
+        assertEquals(WarnReason.HIGH_RISK_HOUR_DOMESTIC, d.warning)
+    }
+
     // --- STIR/SHAKEN escalation to POLICE_IMPERSONATION_HIGH -----------------
 
     @Test fun police_hq_plus_stir_shaken_fail_escalates() {

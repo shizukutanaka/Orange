@@ -39,7 +39,7 @@ import java.io.BufferedReader
 internal object BusinessDirectoryBundle {
 
     private const val ASSET = "business_directory.csv"
-    private var cache: Map<String, String>? = null
+    @Volatile private var cache: Map<String, String>? = null
 
     /** Loads directory on first call; returns empty map if no asset present. */
     @Synchronized
