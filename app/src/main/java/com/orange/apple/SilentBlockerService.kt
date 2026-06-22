@@ -68,7 +68,17 @@ class SilentBlockerService : CallScreeningService() {
         // in a different format than what the outgoing dial delivers.
         if (number.isNotEmpty()) {
             val cc = callingCodeOf(simCountryIso())
-            val flagged = phoneVariants(number, cc).any { OutboundGuard.wasRecentlyFlagged(p, it, now) }
+            val variants = phoneVariants(number, cc)
+            // Warn if the number was previously blocked/warned (OutboundGuard, 24h), OR
+            // if it matches a recent short-ring (WangiriTracker, 6h). The Wangiri check
+            // covers the case where the user dials back a bait number before Orange sees
+            // the callback — e.g., a 1-second ring at 10:00, user calls back at 10:01.
+            // OutboundGuard only fires after Orange has formally blocked something; without
+            // the WangiriTracker check, this callback window is a silent blind spot.
+            val wangiriCandidates = WangiriTracker.snapshot(p, now)
+            val flagged = variants.any { v ->
+                OutboundGuard.wasRecentlyFlagged(p, v, now) || wangiriCandidates.containsKey(v)
+            }
             if (flagged) WarningNotifier.showOutboundWarning(this, number)
         }
     }

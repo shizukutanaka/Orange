@@ -23,6 +23,7 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - **`PostCallAdvisor` backward-clock guard missing** — two independent backward-clock bugs: (1) `maybeShow()` rate-limit check `now >= lastShown && now - lastShown < WINDOW_MS` returns `false` when `now < lastShown`, allowing the notification to fire through the rate-limit window on backward clock; (2) `pruneStaleRateKeys()` subtracted `now - ts` without guarding `now >= ts` first — a future-dated timestamp produces a negative Long that wraps to a huge positive value exceeding `WINDOW_MS`, incorrectly pruning a still-valid rate-limit key. Fixed both: `maybeShow()` now uses `lastShown > 0L && (now < lastShown || now - lastShown < WINDOW_MS)` to suppress even on backward jump; `pruneStaleRateKeys()` adds `now >= (v as Long)` guard before subtraction.
 
 ### Added
+- **Wangiri outbound-warning blind spot** — `handleOutgoing()` checked only `OutboundGuard` (numbers Orange had formally blocked/warned). If a user dials back a Wangiri bait number within the 6-hour short-ring window but before Orange blocks the second call, `OutboundGuard` has no entry and no warning fires. Fixed by also checking `WangiriTracker.snapshot()` in `handleOutgoing()`; any number in the short-ring tracker now triggers `showOutboundWarning()` on callback just as if Orange had already blocked it.
 - **`FamilyCallback.normalizeAndValidate()` E.164 15-digit number incorrectly rejected** — the length check was `cleaned.length !in 3..15`, but `cleaned` includes the `+` prefix. An E.164 number with the maximum 15 digits ('+' + 15 digits = 16 chars) was rejected as too long. The comment said "Maximum: 15 digits (ITU-T E.164 maximum)" but the code enforced 15 **characters**. Fixed by counting only digits: `digitCount = cleaned.count { it.isDigit() }; if (digitCount !in 3..15) return null`. Also removed the now-redundant separate `< 3` digit check.
 - **"Restore &amp; Call" action on block notifications** — When Orange blocks a legitimate call, the user had to: (1) tap Restore, (2) open the dialer, (3) manually retype the number. Now a second action button "Restore &amp; Call" (JP: 解除して折り返す) does all three in one tap. Uses `ACTION_DIAL` so the user confirms before the call is placed — no new permissions required. Available in both the 7-day trust-window notification and the post-trust silent notification.
 - **`WarningNotifierRateLimitTest.kt`** — covers: highrisk 24 h dedup key canonicalisation (domestic and E.164 variants share one bucket), backward-clock guard, outbound 1 h window, distinct-number bucket isolation, stale-key pruning (expired vs fresh highrisk and outbound keys, unrelated-key safety, backward-clock prune guard).
@@ -31,7 +32,7 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - **`SpamCacheTest` format-sensitivity documentation** — test documenting that `SpamCache.contains()` is exact-string sensitive and that adding both variants solves the cross-format miss.
 
 ### Changed
-- Test count: 388 → 418 (30 new tests across this session).
+- Test count: 388 → 423 (35 new tests across this session).
 
 ## [Unreleased] — v1.4 (patch)
 
