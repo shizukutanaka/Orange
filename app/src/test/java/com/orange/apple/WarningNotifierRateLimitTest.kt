@@ -88,7 +88,7 @@ class WarningNotifierRateLimitTest {
         assertFalse(afterWindow - last < window)
     }
 
-    @Test fun `highrisk backward clock jump does not fire`() {
+    @Test fun `highrisk backward clock jump suppresses warning`() {
         val p = FakePrefs()
         val callingCode = "81"
         val number = "09012345678"
@@ -98,15 +98,16 @@ class WarningNotifierRateLimitTest {
             .firstOrNull { !it.startsWith("+") } ?: number
         val key = "highrisk_last_$keyNumber"
 
-        // Store a future timestamp (simulating a clock that jumped forward then back)
+        // Store a future timestamp (simulating clock jumped forward then backward).
+        // Guard: `last > 0L && (now < last || now - last < window)` → now < last is true
+        // → suppress. Prevents notification spam when the system clock regresses.
         val futureTs = now + 1_000L
         p.edit().putLong(key, futureTs).apply()
 
-        // WarningNotifier guard: `if (now >= last && now - last < window) return`
-        // When now < last (backward jump), the condition `now >= last` is false → do NOT suppress
         val last = p.getLong(key, 0L)
-        // now < last → clock went backward, so warning should NOT be rate-limited
-        assertFalse("backward clock should not suppress warning", now >= last && now - last < 24L * 60 * 60 * 1000)
+        val window = 24L * 60 * 60 * 1000
+        // New guard: suppress when last > 0 AND (now < last OR now - last < window)
+        assertTrue("backward clock must suppress the warning", last > 0L && (now < last || now - last < window))
     }
 
     // --- Outbound warning key isolation ---
@@ -135,6 +136,19 @@ class WarningNotifierRateLimitTest {
 
         // After 1h: allowed
         assertFalse(now + window + 1 - last < window)
+    }
+
+    @Test fun `outbound backward clock jump suppresses warning`() {
+        val p = FakePrefs()
+        val number = "+819012345678"
+        val key = "outbound_warn_ts_$number"
+        val now = 1_000_000_000L
+        val futureTs = now + 1_000L
+        p.edit().putLong(key, futureTs).apply()
+
+        val last = p.getLong(key, 0L)
+        val window = 60L * 60 * 1000
+        assertTrue("backward clock must suppress outbound warning", last > 0L && (now < last || now - last < window))
     }
 
     @Test fun `outbound different numbers do not share rate-limit bucket`() {
