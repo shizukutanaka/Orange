@@ -71,12 +71,21 @@ object TrustNotifier {
             ctx, notifId, restoreIntent,
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
+        val restoreAndCallPi = PendingIntent.getBroadcast(
+            ctx, notifId xor RC_SUFFIX_CALL,
+            Intent(ctx, RestoreReceiver::class.java).apply {
+                putExtra(EXTRA_NUMBER, blockedNumber)
+                putExtra(EXTRA_DIAL_AFTER, true)
+            },
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
 
         val notif = NotificationCompat.Builder(ctx, CHANNEL_TRUST)
             .setSmallIcon(android.R.drawable.stat_sys_phone_call_forward)
             .setContentTitle(ctx.getString(R.string.notif_title))
             .setContentText(PhoneNumbers.mask(blockedNumber))
             .addAction(0, ctx.getString(R.string.notif_action_restore), restorePi)
+            .addAction(0, ctx.getString(R.string.notif_action_restore_and_call), restoreAndCallPi)
             .setAutoCancel(true)
             .setOnlyAlertOnce(true)
             .setPriority(NotificationCompat.PRIORITY_LOW)
@@ -112,6 +121,14 @@ object TrustNotifier {
             ctx, notifId, restoreIntent,
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
+        val restoreAndCallPi = PendingIntent.getBroadcast(
+            ctx, notifId xor RC_SUFFIX_CALL,
+            Intent(ctx, RestoreReceiver::class.java).apply {
+                putExtra(EXTRA_NUMBER, blockedNumber)
+                putExtra(EXTRA_DIAL_AFTER, true)
+            },
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
 
         val notif = NotificationCompat.Builder(ctx, CHANNEL_ONGOING)
             .setSmallIcon(android.R.drawable.stat_sys_phone_call_forward)
@@ -119,6 +136,7 @@ object TrustNotifier {
             .setContentText(PhoneNumbers.mask(blockedNumber))
             .setContentIntent(historyPi)
             .addAction(0, ctx.getString(R.string.notif_action_restore), restorePi)
+            .addAction(0, ctx.getString(R.string.notif_action_restore_and_call), restoreAndCallPi)
             .setAutoCancel(true)
             .setOnlyAlertOnce(true)
             .setPriority(NotificationCompat.PRIORITY_MIN)
@@ -188,6 +206,10 @@ object TrustNotifier {
     }
 
     const val EXTRA_NUMBER = "num"
+    const val EXTRA_DIAL_AFTER = "dial"
+    // XOR suffix for the "Restore & Call" PendingIntent request code. Must differ from
+    // the base notifId (used for plain Restore) so Android stores two distinct PendingIntents.
+    internal const val RC_SUFFIX_CALL = 0x0CA11  // "CALL" mnemonic
     private const val NOTIF_ID_SUMMARY = 0x0B10C5  // "BLOCKS" mnemonic
 }
 
@@ -229,5 +251,16 @@ class RestoreReceiver : BroadcastReceiver() {
             ctx.getString(R.string.toast_restored),
             android.widget.Toast.LENGTH_SHORT
         ).show()
+
+        // "Restore & Call": open the dialer pre-filled with the number.
+        // ACTION_DIAL (not ACTION_CALL) so the user confirms before the call
+        // is placed — no CALL_PHONE permission needed, and the user retains control.
+        if (intent.getBooleanExtra(TrustNotifier.EXTRA_DIAL_AFTER, false)) {
+            val dialIntent = android.content.Intent(
+                android.content.Intent.ACTION_DIAL,
+                android.net.Uri.parse("tel:$n")
+            ).apply { addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK) }
+            ctx.startActivity(dialIntent)
+        }
     }
 }

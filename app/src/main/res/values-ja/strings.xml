@@ -17,6 +17,7 @@
 
     <string name="notif_title">着信を止めた</string>
     <string name="notif_action_restore">解除</string>
+    <string name="notif_action_restore_and_call">解除して折り返す</string>
     <string name="notif_channel_trust">ブロック通知（最初の1週間）</string>
     <string name="notif_channel_ongoing">ブロック通知</string>
     <string name="notif_summary_text">%d 件の通話をサイレントにしました — タップして確認</string>

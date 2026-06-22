@@ -4,6 +4,7 @@
     <string name="cta_protect_description">이 전화를 스팸 전화로부터 보호</string>
     <string name="notif_title">전화를 차단함</string>
     <string name="notif_action_restore">해제</string>
+    <string name="notif_action_restore_and_call">해제 후 전화</string>
     <string name="notif_channel_trust">차단된 전화 (첫 7일)</string>
     <string name="notif_channel_ongoing">차단된 전화</string>
     <string name="notif_summary_text">%d 건의 전화가 차단됨 — 탭하여 확인</string>

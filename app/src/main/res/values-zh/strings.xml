@@ -4,6 +4,7 @@
     <string name="cta_protect_description">保护此手机免受骚扰电话</string>
     <string name="notif_title">已拦截一通来电</string>
     <string name="notif_action_restore">取消拦截</string>
+    <string name="notif_action_restore_and_call">取消拦截并回拨</string>
     <string name="notif_channel_trust">已拦截的来电（前 7 天）</string>
     <string name="notif_channel_ongoing">已拦截的来电</string>
     <string name="notif_summary_text">已静音 %d 个来电 — 点击查看</string>

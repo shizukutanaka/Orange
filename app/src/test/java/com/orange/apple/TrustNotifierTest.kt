@@ -74,4 +74,27 @@ class TrustNotifierTest {
         // This is a probabilistic check — collision would be a bug in the mix function.
         assertFalse("notifIdFor collision for distinct numbers", a == b)
     }
+
+    @Test fun restore_and_call_request_code_differs_from_plain_restore() {
+        // The "Restore & Call" PendingIntent uses notifId XOR RC_SUFFIX_CALL as its
+        // request code. Android identifies PendingIntents by (action, requestCode, data, …).
+        // If the request codes collide, one PendingIntent overwrites the other and
+        // the user gets whichever was registered last for both buttons.
+        val n = "+819012345678"
+        val notifId = TrustNotifier.notifIdFor(n)
+        val callRc = notifId xor TrustNotifier.RC_SUFFIX_CALL
+        assertFalse("Restore and Restore&Call request codes must differ", notifId == callRc)
+    }
+
+    @Test fun rc_suffix_call_is_nonzero() {
+        // XOR with 0 is identity — both PendingIntents would get the same request code.
+        assertFalse("RC_SUFFIX_CALL must be non-zero", TrustNotifier.RC_SUFFIX_CALL == 0)
+    }
+
+    @Test fun restore_and_call_request_code_is_positive() {
+        // Android notification IDs and PendingIntent request codes should be non-negative.
+        val n = "+819012345678"
+        val rc = TrustNotifier.notifIdFor(n) xor TrustNotifier.RC_SUFFIX_CALL
+        assertTrue("Restore&Call request code must be non-negative", rc >= 0)
+    }
 }

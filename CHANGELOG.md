@@ -23,13 +23,14 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - **`PostCallAdvisor` backward-clock guard missing** — two independent backward-clock bugs: (1) `maybeShow()` rate-limit check `now >= lastShown && now - lastShown < WINDOW_MS` returns `false` when `now < lastShown`, allowing the notification to fire through the rate-limit window on backward clock; (2) `pruneStaleRateKeys()` subtracted `now - ts` without guarding `now >= ts` first — a future-dated timestamp produces a negative Long that wraps to a huge positive value exceeding `WINDOW_MS`, incorrectly pruning a still-valid rate-limit key. Fixed both: `maybeShow()` now uses `lastShown > 0L && (now < lastShown || now - lastShown < WINDOW_MS)` to suppress even on backward jump; `pruneStaleRateKeys()` adds `now >= (v as Long)` guard before subtraction.
 
 ### Added
+- **"Restore &amp; Call" action on block notifications** — When Orange blocks a legitimate call, the user had to: (1) tap Restore, (2) open the dialer, (3) manually retype the number. Now a second action button "Restore &amp; Call" (JP: 解除して折り返す) does all three in one tap. Uses `ACTION_DIAL` so the user confirms before the call is placed — no new permissions required. Available in both the 7-day trust-window notification and the post-trust silent notification.
 - **`WarningNotifierRateLimitTest.kt`** — covers: highrisk 24 h dedup key canonicalisation (domestic and E.164 variants share one bucket), backward-clock guard, outbound 1 h window, distinct-number bucket isolation, stale-key pruning (expired vs fresh highrisk and outbound keys, unrelated-key safety, backward-clock prune guard).
 - **`CallStateObserverTest` emergency-number regression** — verifies that 110 and 119 are never stored in outbound-known set.
 - **`AllowSuffixStoreTest` extraction-order regression** — two new tests covering the `takeLast.filter` vs `filter.takeLast` divergence on masked strings with trailing non-digit characters.
 - **`SpamCacheTest` format-sensitivity documentation** — test documenting that `SpamCache.contains()` is exact-string sensitive and that adding both variants solves the cross-format miss.
 
 ### Changed
-- Test count: 388 → 413 (25 new tests across this session).
+- Test count: 388 → 416 (28 new tests across this session).
 
 ## [Unreleased] — v1.4 (patch)
 
