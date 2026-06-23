@@ -103,11 +103,11 @@ data class CallState(
     val pausedUntilMillis: Long,
 
     /**
-     * Number → (timestamp of last short ring). Used by Wangiri detector.
-     * A short ring is one the user didn't answer that hung up quickly.
-     * Only "pending Wangiri candidates" are stored, bounded to last 64 entries.
+     * Timestamp of the most recent short ring from the current caller, or null.
+     * Pre-computed by SilentBlockerService (which has SharedPreferences access for
+     * hash lookups) so the pure decision engine never needs prefs.
      */
-    val recentShortRings: Map<String, Long>,
+    val wangiriRingAt: Long?,
 )
 
 /** Engine result: what to do, and why. */
@@ -169,12 +169,9 @@ fun decide(ctx: CallContext, state: CallState): Decision {
     // Layer 6: User-marked spam. Always block on subsequent attempts.
     if (state.isSpamCached) return Decision(Verdict.SILENCE, BlockReason.SPAM_CACHE)
 
-    // Layer 7: Wangiri callback. Same number + recent short-ring = pattern.
-    // Expand domestic↔E.164 variants: the short-ring may have been delivered in
-    // one form while the callback arrives in the other. Both must trigger the block.
-    val wangiriCc = callingCodeOf(ctx.calleeCountryIso)
-    val recentRingAt = phoneVariants(ctx.number, wangiriCc)
-        .firstNotNullOfOrNull { state.recentShortRings[it] }
+    // Layer 7: Wangiri callback. SilentBlockerService pre-computed whether any
+    // phone variant of the current caller matches a recent short ring.
+    val recentRingAt = state.wangiriRingAt
     if (recentRingAt != null && ctx.nowMillis >= recentRingAt && ctx.nowMillis - recentRingAt < WANGIRI_WINDOW_MS) {
         return Decision(Verdict.SILENCE, BlockReason.WANGIRI_CALLBACK)
     }

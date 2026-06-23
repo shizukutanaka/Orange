@@ -17,7 +17,7 @@ class DecisionPriorityTest {
         isSpamCached = false,
         knownBusinesses = emptySet(),
         pausedUntilMillis = 0L,
-        recentShortRings = emptyMap(),
+        wangiriRingAt = null,
     )
 
     private fun call(number: String, iso: String? = "JP", now: Long = 1_000_000L) =
@@ -78,7 +78,7 @@ class DecisionPriorityTest {
         val now = 1_000_000L
         val state = emptyState.copy(
             isSpamCached = true,
-            recentShortRings = mapOf("+67512345" to now - 1000L)
+            wangiriRingAt = now - 1000L
         )
         val d = decide(call("+67512345", now = now), state)
         assertEquals(Verdict.SILENCE, d.verdict)
@@ -91,7 +91,7 @@ class DecisionPriorityTest {
         // 02-prefix is structurally invalid JP; would be DOMESTIC_SPOOF.
         // If it's also a wangiri callback, we want the wangiri label.
         val state = emptyState.copy(
-            recentShortRings = mapOf("02012345678" to now - 1000L)
+            wangiriRingAt = now - 1000L
         )
         val d = decide(call("02012345678", now = now), state)
         assertEquals(Verdict.SILENCE, d.verdict)

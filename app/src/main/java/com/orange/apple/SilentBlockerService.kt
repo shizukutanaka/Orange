@@ -77,7 +77,7 @@ class SilentBlockerService : CallScreeningService() {
             // the WangiriTracker check, this callback window is a silent blind spot.
             val wangiriCandidates = WangiriTracker.snapshot(p, now)
             val flagged = variants.any { v ->
-                OutboundGuard.wasRecentlyFlagged(p, v, now) || wangiriCandidates.containsKey(v)
+                OutboundGuard.wasRecentlyFlagged(p, v, now) || wangiriCandidates.containsKey(SpamCache.hash(p, v))
             }
             if (flagged) WarningNotifier.showOutboundWarning(this, number)
         }
@@ -120,6 +120,11 @@ class SilentBlockerService : CallScreeningService() {
             return Decision(Verdict.SILENCE, BlockReason.REPEAT_CALLER)
         }
 
+        val wangiriSnapshot = WangiriTracker.snapshot(p, now)
+        val wangiriRingAt = phoneVariants(number, cc).firstNotNullOfOrNull { variant ->
+            wangiriSnapshot[SpamCache.hash(p, variant)]
+        }
+
         val state = CallState(
             outboundKnown     = outbound + family,
             // Check all domestic↔E.164 variants against the spam cache. A number
@@ -130,7 +135,7 @@ class SilentBlockerService : CallScreeningService() {
             isSpamCached      = variants.any { SpamCache.contains(p, it) },
             knownBusinesses   = businesses,
             pausedUntilMillis = if (PauseTile.isPaused(p)) p.getLong(PauseTile.KEY_PAUSED_UNTIL, 0L) else 0L,
-            recentShortRings  = WangiriTracker.snapshot(p, now),
+            wangiriRingAt     = wangiriRingAt,
         )
 
         // DND state: read once per call, inject into context.

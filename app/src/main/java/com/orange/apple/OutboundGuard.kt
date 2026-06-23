@@ -32,8 +32,9 @@ internal object OutboundGuard {
     @Synchronized
     fun record(prefs: SharedPreferences, number: String, nowMs: Long) {
         if (number.isEmpty()) return   // defensive: never store empty key
+        val hash = SpamCache.hash(prefs, number)
         val current = snapshot(prefs, nowMs).toMutableMap()
-        current[number] = nowMs
+        current[hash] = nowMs
         if (current.size > MAX_ENTRIES) {
             val trimmed = current.entries
                 .sortedByDescending { it.value }
@@ -48,14 +49,15 @@ internal object OutboundGuard {
     /** Check if a number was recently blocked/warned. */
     @Synchronized
     fun wasRecentlyFlagged(prefs: SharedPreferences, number: String, nowMs: Long): Boolean =
-        snapshot(prefs, nowMs).containsKey(number)
+        snapshot(prefs, nowMs).containsKey(SpamCache.hash(prefs, number))
 
     /** Remove a number from the guard (called when user restores a false positive). */
     @Synchronized
     fun forget(prefs: SharedPreferences, number: String, nowMs: Long) {
         if (number.isEmpty()) return
+        val hash = SpamCache.hash(prefs, number)
         val current = snapshot(prefs, nowMs).toMutableMap()
-        if (current.remove(number) != null) save(prefs, current)
+        if (current.remove(hash) != null) save(prefs, current)
     }
 
     private fun snapshot(prefs: SharedPreferences, nowMs: Long): Map<String, Long> {

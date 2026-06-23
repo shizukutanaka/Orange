@@ -26,7 +26,7 @@ class EngineInvariantTest {
         isSpamCached = false,
         knownBusinesses = emptySet(),
         pausedUntilMillis = 0L,
-        recentShortRings = emptyMap(),
+        wangiriRingAt = null,
     )
 
     /** Generate a spread of representative numbers across all JP prefix classes. */
@@ -72,7 +72,7 @@ class EngineInvariantTest {
             // pausedUntilMillis must be > nowMillis (1_700_000_000_000L) to actually
             // activate the pause path. 0L is epoch (past), identical to baseState().
             baseState().copy(pausedUntilMillis = Long.MAX_VALUE),
-            baseState().copy(recentShortRings = mapOf("110" to 1L)),
+            baseState().copy(wangiriRingAt = 1L),
         )
         for (num in emergencies) {
             for (st in hostileStates) {

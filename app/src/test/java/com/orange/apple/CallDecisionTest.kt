@@ -21,7 +21,7 @@ class CallDecisionTest {
         isSpamCached = false,
         knownBusinesses = emptySet(),
         pausedUntilMillis = 0L,
-        recentShortRings = emptyMap(),
+        wangiriRingAt = null,
     )
 
     private fun call(number: String, iso: String? = "JP", now: Long = 1_700_000_000_000L) =
@@ -103,7 +103,7 @@ class CallDecisionTest {
     @Test fun wangiri_recent_callback_silenced() {
         val now = 1_700_000_000_000L
         val state = emptyState.copy(
-            recentShortRings = mapOf("+16712345678" to now - 60_000L)
+            wangiriRingAt = now - 60_000L
         )
         val d = decide(call("+16712345678", now = now), state)
         assertEquals(Verdict.SILENCE, d.verdict)
@@ -113,7 +113,7 @@ class CallDecisionTest {
     @Test fun wangiri_after_six_hours_no_longer_blocks() {
         val now = 1_700_000_000_000L
         val oldTs = now - (WANGIRI_WINDOW_MS + 1000L)
-        val state = emptyState.copy(recentShortRings = mapOf("+16712345678" to oldTs))
+        val state = emptyState.copy(wangiriRingAt = oldTs)
         // Falls through wangiri → +671 (Guam, US code variant) country code
         // parses to "1" which maps to US, so lands in foreign-unsolicited.
         val d = decide(call("+16712345678", now = now), state)
@@ -124,7 +124,7 @@ class CallDecisionTest {
     @Test fun wangiri_after_six_hours_us_number_falls_to_generic_foreign() {
         val now = 1_700_000_000_000L
         val oldTs = now - (WANGIRI_WINDOW_MS + 1000L)
-        val state = emptyState.copy(recentShortRings = mapOf("+14155551234" to oldTs))
+        val state = emptyState.copy(wangiriRingAt = oldTs)
         val d = decide(call("+14155551234", now = now), state)
         assertEquals(Verdict.SILENCE, d.verdict)
         assertEquals(BlockReason.FOREIGN_GENERIC, d.reason)
@@ -136,7 +136,7 @@ class CallDecisionTest {
         // and the Wangiri block doesn't fire. The fix expands phoneVariants() in Layer 7.
         val now = 1_700_000_000_000L
         val state = emptyState.copy(
-            recentShortRings = mapOf("09012345678" to now - 60_000L)
+            wangiriRingAt = now - 60_000L
         )
         val d = decide(call("+819012345678", iso = "JP", now = now), state)
         assertEquals(Verdict.SILENCE, d.verdict)
@@ -147,7 +147,7 @@ class CallDecisionTest {
         // Inverse: short ring arrives as "+819012345678" (E.164), callback as domestic.
         val now = 1_700_000_000_000L
         val state = emptyState.copy(
-            recentShortRings = mapOf("+819012345678" to now - 60_000L)
+            wangiriRingAt = now - 60_000L
         )
         val d = decide(call("09012345678", iso = "JP", now = now), state)
         assertEquals(Verdict.SILENCE, d.verdict)

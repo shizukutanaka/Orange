@@ -68,8 +68,9 @@ internal object WangiriTracker {
     @Synchronized
     fun record(prefs: SharedPreferences, number: String, nowMs: Long) {
         if (number.isEmpty()) return
+        val hash = SpamCache.hash(prefs, number)
         val current = snapshot(prefs, nowMs).toMutableMap()
-        current[number] = nowMs
+        current[hash] = nowMs
         // Keep newest MAX_ENTRIES only.
         val trimmed = current.entries
             .sortedByDescending { it.value }
@@ -87,8 +88,9 @@ internal object WangiriTracker {
         // The previous raw-string approach left stale entries accumulating between
         // record() calls, which can cause the stored KEY string to grow unboundedly
         // (no cap applies to forget()-only paths that never trigger record()).
+        val hash = SpamCache.hash(prefs, number)
         val current = snapshot(prefs, nowMs).toMutableMap()
-        if (current.remove(number) != null) {
+        if (current.remove(hash) != null) {
             prefs.edit {
                 putString(KEY, current.entries.joinToString(" ") { "${it.key}:${it.value}" })
             }

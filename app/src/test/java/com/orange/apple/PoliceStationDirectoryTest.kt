@@ -92,7 +92,7 @@ class PoliceStationDirectoryTest {
             isSpamCached = false,
             knownBusinesses = emptySet(),
             pausedUntilMillis = 0L,
-            recentShortRings = emptyMap()
+            wangiriRingAt = null
         )
         val d = decide(ctx, state)
         assertEquals(Verdict.RING, d.verdict)
@@ -112,7 +112,7 @@ class PoliceStationDirectoryTest {
             isSpamCached = false,
             knownBusinesses = emptySet(),
             pausedUntilMillis = 0L,
-            recentShortRings = emptyMap()
+            wangiriRingAt = null
         )
         val d = decide(ctx, state)
         assertEquals(Verdict.RING, d.verdict)
@@ -131,7 +131,7 @@ class PoliceStationDirectoryTest {
             isSpamCached = false,
             knownBusinesses = emptySet(),
             pausedUntilMillis = 0L,
-            recentShortRings = emptyMap()
+            wangiriRingAt = null
         )
         val d = decide(ctx, state)
         // Should ring without police warning (no Layer 9 match outside JP)
