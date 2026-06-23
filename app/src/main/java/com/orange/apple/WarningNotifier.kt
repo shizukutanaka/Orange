@@ -70,7 +70,10 @@ internal object WarningNotifier {
         else number
         val prefs = ctx.getSharedPreferences(SilentBlockerService.PREFS, Context.MODE_PRIVATE)
         pruneStaleRateLimitKeys(prefs, System.currentTimeMillis())
-        val key = "highrisk_last_$keyNumber"
+        // Hash the number so SharedPreferences key names don't expose caller identity
+        // to device backup or forensic inspection. Mirrors SpamCache's PII-minimisation
+        // approach (CLAUDE.md I5). take(16) = 64 bits — sufficient for a dedup key.
+        val key = "highrisk_last_${SpamCache.hash(prefs, keyNumber).take(16)}"
         val now = System.currentTimeMillis()
         val last = prefs.getLong(key, 0L)
         if (last > 0L && (now < last || now - last < 24L * 60 * 60 * 1000)) return
@@ -103,10 +106,10 @@ internal object WarningNotifier {
     fun showOutboundWarning(ctx: Context, number: String) {
         val prefs = ctx.getSharedPreferences(SilentBlockerService.PREFS, Context.MODE_PRIVATE)
         pruneStaleRateLimitKeys(prefs, System.currentTimeMillis())
-        // Key includes the full number so numbers that differ only in early digits don't
-        // share a rate-limit bucket. takeLast(8) caused collisions (e.g., "+8190123456789"
-        // and "+8190987656789" both end in "56789..." — different numbers, same key).
-        val rateKey = "outbound_warn_ts_$number"
+        // Hash so the SharedPreferences key name doesn't expose the dialled number to
+        // backup readers. take(16) = 64-bit dedup key, collision risk negligible at ≤64
+        // entries (same Carmack bound as WangiriTracker/OutboundGuard).
+        val rateKey = "outbound_warn_ts_${SpamCache.hash(prefs, number).take(16)}"
         val now = System.currentTimeMillis()
         val last = prefs.getLong(rateKey, 0L)
         if (last > 0L && (now < last || now - last < OUTBOUND_WARN_WINDOW_MS)) return

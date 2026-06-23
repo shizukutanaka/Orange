@@ -2,6 +2,7 @@ package com.orange.apple
 
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNotEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -15,8 +16,20 @@ import org.junit.Test
  *     one 24-hour bucket (not two)
  *   - showOutboundWarning: dedup key is full number; different numbers get separate buckets
  *   - Backward clock jump: `now < last` never fires a spurious repeat
+ *   - Key privacy: keys are hashed (no raw number in key name)
  */
 class WarningNotifierRateLimitTest {
+
+    // Mirrors WarningNotifier.showHighRiskHourWarning key construction.
+    private fun highriskKey(p: FakePrefs, number: String, callingCode: String): String {
+        val keyNumber = phoneVariants(number, callingCode)
+            .firstOrNull { !it.startsWith("+") } ?: number
+        return "highrisk_last_${SpamCache.hash(p, keyNumber).take(16)}"
+    }
+
+    // Mirrors WarningNotifier.showOutboundWarning key construction.
+    private fun outboundKey(p: FakePrefs, number: String): String =
+        "outbound_warn_ts_${SpamCache.hash(p, number).take(16)}"
 
     // --- HighRiskHour key canonicalization ---
 
@@ -25,18 +38,8 @@ class WarningNotifierRateLimitTest {
         val callingCode = "81"
         val domestic = "09012345678"
         val e164 = "+819012345678"
-        val now = 1_000_000L
-        val window = 24L * 60 * 60 * 1000
-
-        // Simulate what WarningNotifier.showHighRiskHourWarning does: pick domestic form
-        fun canonicalKey(number: String): String {
-            val keyNumber = phoneVariants(number, callingCode)
-                .firstOrNull { !it.startsWith("+") } ?: number
-            return "highrisk_last_$keyNumber"
-        }
-
-        // Both variants must map to the same key
-        assertEquals(canonicalKey(domestic), canonicalKey(e164))
+        // Both variants must resolve to the same key so they share one bucket.
+        assertEquals(highriskKey(p, domestic, callingCode), highriskKey(p, e164, callingCode))
     }
 
     @Test fun `highrisk domestic and E164 share same rate-limit bucket`() {
@@ -46,18 +49,10 @@ class WarningNotifierRateLimitTest {
         val e164 = "+819012345678"
         val now = 1_000_000L
 
-        fun canonicalKey(number: String): String {
-            val keyNumber = phoneVariants(number, callingCode)
-                .firstOrNull { !it.startsWith("+") } ?: number
-            return "highrisk_last_$keyNumber"
-        }
-
-        // Simulate the notifier writing the timestamp for the domestic call
-        val key = canonicalKey(domestic)
+        val key = highriskKey(p, domestic, callingCode)
         p.edit().putLong(key, now).apply()
 
-        // When E.164 form arrives within the window, the same key should be hit
-        val keyForE164 = canonicalKey(e164)
+        val keyForE164 = highriskKey(p, e164, callingCode)
         assertEquals(key, keyForE164)
 
         val last = p.getLong(keyForE164, 0L)
@@ -72,18 +67,13 @@ class WarningNotifierRateLimitTest {
         val now = 1_000_000L
         val window = 24L * 60 * 60 * 1000
 
-        val keyNumber = phoneVariants(number, callingCode)
-            .firstOrNull { !it.startsWith("+") } ?: number
-        val key = "highrisk_last_$keyNumber"
-
+        val key = highriskKey(p, number, callingCode)
         p.edit().putLong(key, now).apply()
 
-        // Within window: should be suppressed
         val last = p.getLong(key, 0L)
         val withinWindow = now + window - 1
         assertTrue(withinWindow - last < window)
 
-        // After window: should fire
         val afterWindow = now + window + 1
         assertFalse(afterWindow - last < window)
     }
@@ -94,54 +84,59 @@ class WarningNotifierRateLimitTest {
         val number = "09012345678"
         val now = 1_000_000_000L
 
-        val keyNumber = phoneVariants(number, callingCode)
-            .firstOrNull { !it.startsWith("+") } ?: number
-        val key = "highrisk_last_$keyNumber"
-
-        // Store a future timestamp (simulating clock jumped forward then backward).
-        // Guard: `last > 0L && (now < last || now - last < window)` → now < last is true
-        // → suppress. Prevents notification spam when the system clock regresses.
+        val key = highriskKey(p, number, callingCode)
         val futureTs = now + 1_000L
         p.edit().putLong(key, futureTs).apply()
 
         val last = p.getLong(key, 0L)
         val window = 24L * 60 * 60 * 1000
-        // New guard: suppress when last > 0 AND (now < last OR now - last < window)
         assertTrue("backward clock must suppress the warning", last > 0L && (now < last || now - last < window))
+    }
+
+    // --- Key privacy: raw number must not appear in key name ---
+
+    @Test fun `highrisk key does not contain raw number`() {
+        val p = FakePrefs()
+        val number = "09012345678"
+        val key = highriskKey(p, number, "81")
+        assertFalse("key must not expose raw number", key.contains(number))
+    }
+
+    @Test fun `outbound key does not contain raw number`() {
+        val p = FakePrefs()
+        val number = "+819012345678"
+        val key = outboundKey(p, number)
+        assertFalse("key must not expose raw number", key.contains(number))
+        assertFalse("key must not expose stripped number", key.contains("819012345678"))
     }
 
     // --- Outbound warning key isolation ---
 
-    @Test fun `outbound rate-limit uses full number so distinct numbers are independent`() {
+    @Test fun `outbound rate-limit distinct numbers produce distinct keys`() {
+        val p = FakePrefs()
         val numberA = "+819012345678"
         val numberB = "+819087654321"
-        val keyA = "outbound_warn_ts_$numberA"
-        val keyB = "outbound_warn_ts_$numberB"
-        assertTrue("distinct numbers must have distinct keys", keyA != keyB)
+        assertNotEquals(outboundKey(p, numberA), outboundKey(p, numberB))
     }
 
     @Test fun `outbound rate-limit respects 1h window`() {
         val p = FakePrefs()
         val number = "+819012345678"
-        val key = "outbound_warn_ts_$number"
+        val key = outboundKey(p, number)
         val now = 1_000_000L
-        val window = 60L * 60 * 1000  // 1 hour
+        val window = 60L * 60 * 1000
 
         p.edit().putLong(key, now).apply()
-
         val last = p.getLong(key, 0L)
 
-        // Within 1h: suppressed
         assertTrue(now + window - 1 - last < window)
-
-        // After 1h: allowed
         assertFalse(now + window + 1 - last < window)
     }
 
     @Test fun `outbound backward clock jump suppresses warning`() {
         val p = FakePrefs()
         val number = "+819012345678"
-        val key = "outbound_warn_ts_$number"
+        val key = outboundKey(p, number)
         val now = 1_000_000_000L
         val futureTs = now + 1_000L
         p.edit().putLong(key, futureTs).apply()
@@ -158,60 +153,53 @@ class WarningNotifierRateLimitTest {
         val now = 1_000_000L
         val window = 60L * 60 * 1000
 
-        // Only record for A
-        p.edit().putLong("outbound_warn_ts_$numberA", now).apply()
+        p.edit().putLong(outboundKey(p, numberA), now).apply()
 
-        // B should not be suppressed
-        val lastB = p.getLong("outbound_warn_ts_$numberB", 0L)
+        val lastB = p.getLong(outboundKey(p, numberB), 0L)
         assertFalse("B should not be rate-limited by A's record", now - lastB < window)
     }
 
-    // --- Numbers without a callingCode fallback to raw key ---
-
-    @Test fun `highrisk without callingCode uses raw number as key`() {
-        val number = "09012345678"
-        // When callingCode is null, keyNumber = number, key = "highrisk_last_$number"
-        val expectedKey = "highrisk_last_$number"
-        val keyNumber: String = null.let { number }  // no phoneVariants called
-        assertEquals(expectedKey, "highrisk_last_$keyNumber")
-    }
-
     // --- Stale rate-limit key pruning ---
+    // pruneStaleRateLimitKeys matches on key prefix only — key body format is opaque.
 
     @Test fun `pruneStaleRateLimitKeys removes expired highrisk keys`() {
         val p = FakePrefs()
         val now = 1_000_000_000L
-        val expired = now - 24L * 60 * 60 * 1000 - 1  // one ms past the 24h window
-        p.edit().putLong("highrisk_last_09012345678", expired).apply()
+        val expired = now - 24L * 60 * 60 * 1000 - 1
+        val key = "highrisk_last_deadbeefcafebabe"
+        p.edit().putLong(key, expired).apply()
         WarningNotifier.pruneStaleRateLimitKeys(p, now)
-        assertFalse("expired highrisk key should be removed", p.contains("highrisk_last_09012345678"))
+        assertFalse("expired highrisk key should be removed", p.contains(key))
     }
 
     @Test fun `pruneStaleRateLimitKeys keeps fresh highrisk keys`() {
         val p = FakePrefs()
         val now = 1_000_000_000L
-        val fresh = now - 1000L  // 1 second ago — well within 24h window
-        p.edit().putLong("highrisk_last_09012345678", fresh).apply()
+        val fresh = now - 1000L
+        val key = "highrisk_last_deadbeefcafebabe"
+        p.edit().putLong(key, fresh).apply()
         WarningNotifier.pruneStaleRateLimitKeys(p, now)
-        assertTrue("fresh highrisk key should survive", p.contains("highrisk_last_09012345678"))
+        assertTrue("fresh highrisk key should survive", p.contains(key))
     }
 
     @Test fun `pruneStaleRateLimitKeys removes expired outbound keys`() {
         val p = FakePrefs()
         val now = 1_000_000_000L
-        val expired = now - 60L * 60 * 1000 - 1  // one ms past the 1h window
-        p.edit().putLong("outbound_warn_ts_+819012345678", expired).apply()
+        val expired = now - 60L * 60 * 1000 - 1
+        val key = "outbound_warn_ts_deadbeefcafebabe"
+        p.edit().putLong(key, expired).apply()
         WarningNotifier.pruneStaleRateLimitKeys(p, now)
-        assertFalse("expired outbound key should be removed", p.contains("outbound_warn_ts_+819012345678"))
+        assertFalse("expired outbound key should be removed", p.contains(key))
     }
 
     @Test fun `pruneStaleRateLimitKeys keeps fresh outbound keys`() {
         val p = FakePrefs()
         val now = 1_000_000_000L
         val fresh = now - 1000L
-        p.edit().putLong("outbound_warn_ts_+819012345678", fresh).apply()
+        val key = "outbound_warn_ts_deadbeefcafebabe"
+        p.edit().putLong(key, fresh).apply()
         WarningNotifier.pruneStaleRateLimitKeys(p, now)
-        assertTrue("fresh outbound key should survive", p.contains("outbound_warn_ts_+819012345678"))
+        assertTrue("fresh outbound key should survive", p.contains(key))
     }
 
     @Test fun `pruneStaleRateLimitKeys does not touch unrelated keys`() {
@@ -222,14 +210,13 @@ class WarningNotifierRateLimitTest {
         assertTrue("unrelated key should not be removed", p.contains("some_other_key"))
     }
 
-    @Test fun `pruneStaleRateLimitKeys backward clock does not prune fresh keys`() {
+    @Test fun `pruneStaleRateLimitKeys backward clock does not prune future-ts keys`() {
         val p = FakePrefs()
         val now = 1_000_000L
-        // Stored timestamp is in the future (clock jumped backward)
         val futureTs = now + 1_000L
-        p.edit().putLong("highrisk_last_09012345678", futureTs).apply()
+        val key = "highrisk_last_deadbeefcafebabe"
+        p.edit().putLong(key, futureTs).apply()
         WarningNotifier.pruneStaleRateLimitKeys(p, now)
-        // now < futureTs → now >= futureTs is false → should NOT prune
-        assertTrue("future-ts key should survive backward clock", p.contains("highrisk_last_09012345678"))
+        assertTrue("future-ts key should survive backward clock", p.contains(key))
     }
 }
