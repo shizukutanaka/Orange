@@ -101,6 +101,10 @@ private fun HistoryScreen() {
                 )
             }
         } else {
+            // Count how many times each masked number appears in the last 30 days.
+            // Passed to each card so a number that called multiple times shows "3×"
+            // without needing a separate BlockHistoryStore aggregation query.
+            val blockCounts = entries.groupingBy { it.maskedNumber }.eachCount()
             LazyColumn(
                 Modifier.fillMaxSize().padding(padding),
                 state = lazyListState,
@@ -111,6 +115,7 @@ private fun HistoryScreen() {
                 items(entries, key = { "${it.maskedNumber}_${it.timestampMs}" }) { entry ->
                     HistoryCard(
                         entry = entry,
+                        blockCount = blockCounts[entry.maskedNumber] ?: 1,
                         onAllow = {
                             AllowSuffixStore.allow(prefs, entry.maskedNumber)
                             BlockHistoryStore.remove(prefs, entry)
@@ -193,11 +198,16 @@ private fun ConsultBanner() {
 }
 
 @Composable
-private fun HistoryCard(entry: BlockHistoryStore.Entry, onAllow: () -> Unit) {
+private fun HistoryCard(
+    entry: BlockHistoryStore.Entry,
+    blockCount: Int,
+    onAllow: () -> Unit,
+) {
     val ctx = LocalContext.current
     val fmt = remember { SimpleDateFormat("MM/dd HH:mm", Locale.getDefault()) }
     val dateStr = fmt.format(Date(entry.timestampMs))
     val reasonStr = entry.reason.toDisplayString(ctx)
+    val countSuffix = if (blockCount > 1) "  ·  ${blockCount}×" else ""
     // Only exclude reasons where suffix-Allow is meaningless or misleading:
     //  WITHHELD_NUMBER  — number is "" so AllowSuffixStore.allow() would be a no-op
     //  DOMESTIC_SPOOF   — structurally impossible number; Allow cannot make it possible
@@ -225,7 +235,7 @@ private fun HistoryCard(entry: BlockHistoryStore.Entry, onAllow: () -> Unit) {
                 )
                 Spacer(Modifier.height(2.dp))
                 Text(
-                    "$dateStr  ·  $reasonStr",
+                    "$dateStr  ·  $reasonStr$countSuffix",
                     fontSize = 12.sp,
                     color = Color.Gray
                 )
