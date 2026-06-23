@@ -50,6 +50,7 @@
     <string name="postcall_action_9110">#9110 に電話</string>
 
     <!-- 履歴画面 -->
+    <string name="history_consult_banner">被害に遭った場合は #9110（無料）にご相談を</string>
     <string name="history_title">ブロック履歴</string>
     <string name="history_empty">最近のブロック記録はありません。</string>
     <string name="history_action_allow">許可</string>

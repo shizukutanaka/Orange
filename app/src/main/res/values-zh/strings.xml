@@ -33,6 +33,7 @@
     <string name="postcall_body_big">#9110 警察咨询 / 188 消费者热线 / 0120-210-364 国际电话停用申请（免费）</string>
     <string name="postcall_action_9110">拨打 #9110</string>
 
+    <string name="history_consult_banner">如遭受诈骗，可免费拨打 #9110 咨询警察</string>
     <string name="history_title">拦截记录</string>
     <string name="history_empty">暂无最近的拦截记录。</string>
     <string name="history_action_allow">允许</string>

@@ -33,6 +33,7 @@
     <string name="postcall_body_big">#9110 경찰 상담 / 188 소비자 / 0120-210-364 국제전화 중지신청（무료）</string>
     <string name="postcall_action_9110">#9110 전화</string>
 
+    <string name="history_consult_banner">피해를 입으셨다면 #9110(무료)으로 상담하세요</string>
     <string name="history_title">차단 기록</string>
     <string name="history_empty">최근 차단된 통화가 없습니다.</string>
     <string name="history_action_allow">허용</string>

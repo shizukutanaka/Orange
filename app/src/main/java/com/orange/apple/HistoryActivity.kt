@@ -1,6 +1,8 @@
 package com.orange.apple
 
 import android.content.Context
+import android.content.Intent
+import android.net.Uri
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -92,6 +94,7 @@ private fun HistoryScreen() {
                 contentPadding = PaddingValues(horizontal = 16.dp, vertical = 12.dp),
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
+                item { ConsultBanner() }
                 items(entries, key = { "${it.maskedNumber}_${it.timestampMs}" }) { entry ->
                     HistoryCard(
                         entry = entry,
@@ -116,6 +119,45 @@ private fun HistoryScreen() {
                         modifier = Modifier.padding(horizontal = 4.dp)
                     )
                 }
+            }
+        }
+    }
+}
+
+@Composable
+private fun ConsultBanner() {
+    val ctx = LocalContext.current
+    Card(
+        shape = RoundedCornerShape(12.dp),
+        colors = CardDefaults.cardColors(containerColor = Color(0xFFFFF3E0)),
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Row(
+            Modifier.padding(horizontal = 16.dp, vertical = 10.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                stringResource(R.string.history_consult_banner),
+                fontSize = 13.sp,
+                color = Color(0xFF795548),
+                modifier = Modifier.weight(1f)
+            )
+            Spacer(Modifier.width(8.dp))
+            TextButton(
+                onClick = {
+                    ctx.startActivity(
+                        Intent(Intent.ACTION_DIAL, Uri.parse("tel:%239110"))
+                            .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                    )
+                }
+            ) {
+                Text(
+                    stringResource(R.string.postcall_action_9110),
+                    color = Color(0xFFFF8C42),
+                    fontWeight = FontWeight.SemiBold,
+                    fontSize = 13.sp
+                )
             }
         }
     }

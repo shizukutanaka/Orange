@@ -55,6 +55,7 @@
     <string name="postcall_action_9110">#9110 に電話</string>
 
     <!-- History screen -->
+    <string name="history_consult_banner">Blocked calls reported to police? #9110 is free.</string>
     <string name="history_title">Blocked Calls</string>
     <string name="history_empty">No recent blocked calls.</string>
     <string name="history_action_allow">Allow</string>
