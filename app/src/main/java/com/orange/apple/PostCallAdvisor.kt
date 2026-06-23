@@ -54,8 +54,9 @@ object PostCallAdvisor {
         // 24h window has already expired — it will be re-created if needed.
         pruneStaleRateKeys(prefs, now)
 
-        // Rate-limit key: "postcall_last_" + normalized number (max 16 chars, safe for prefs).
-        val rateKey = "postcall_last_$number"
+        // Rate-limit key: prefix + 16-hex hash of the number.  Raw number in the key name
+        // would expose PII to backup/forensic readers; hash is sufficient for dedup.
+        val rateKey = "postcall_last_${SpamCache.hash(prefs, number).take(16)}"
         val lastShown = prefs.getLong(rateKey, 0L)
         // Rate-limit: suppress if shown within the last 24h.
         // Guard now >= lastShown before subtracting to prevent a backward-clock
