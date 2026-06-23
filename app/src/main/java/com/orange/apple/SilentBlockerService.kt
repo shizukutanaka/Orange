@@ -128,7 +128,10 @@ class SilentBlockerService : CallScreeningService() {
         }
 
         val state = CallState(
-            outboundKnown     = outbound + family,
+            // outbound bypass is handled above via hash lookup (line 109-113).
+            // outboundKnown in CallState now carries only family numbers so
+            // decide() can still short-circuit for family on the post-early-return path.
+            outboundKnown     = family,
             // Check all domestic↔E.164 variants against the spam cache. A number
             // blocked in domestic form ("09012345678") is hashed and stored that way;
             // when the same caller rings back in E.164 ("+819012345678"), the exact-
