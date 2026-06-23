@@ -229,6 +229,14 @@ private fun HistoryCard(entry: BlockHistoryStore.Entry, onAllow: () -> Unit) {
                     fontSize = 12.sp,
                     color = Color.Gray
                 )
+                if (entry.reason == BlockReason.DOMESTIC_SPOOF) {
+                    Spacer(Modifier.height(2.dp))
+                    Text(
+                        stringResource(R.string.history_spoof_no_allow),
+                        fontSize = 11.sp,
+                        color = Color(0xFFAAAAAA)
+                    )
+                }
             }
             if (canAllow) {
                 Spacer(Modifier.width(12.dp))

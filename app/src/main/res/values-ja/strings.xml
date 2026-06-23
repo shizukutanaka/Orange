@@ -56,6 +56,7 @@
     <string name="history_action_allow">許可</string>
     <string name="history_footer">番号は末尾4桁のみ表示。30日経過後に自動削除。</string>
     <string name="history_open_settings">家族番号の設定</string>
+    <string name="history_spoof_no_allow">存在しないJP番号のため許可不可</string>
 
     <!-- ブロック理由 -->
     <string name="reason_spam_cache">ブロック済み番号</string>

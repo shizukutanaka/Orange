@@ -39,6 +39,7 @@
     <string name="history_action_allow">허용</string>
     <string name="history_footer">번호는 마지막 4자리만 표시됩니다. 30일 후 자동 삭제.</string>
     <string name="history_open_settings">가족 번호 설정</string>
+    <string name="history_spoof_no_allow">유효하지 않은 JP 번호 — 허용 불가</string>
     <string name="reason_spam_cache">차단된 번호</string>
     <string name="reason_foreign_elevated">고위험 국제 번호</string>
     <string name="reason_foreign_generic">해외 번호</string>

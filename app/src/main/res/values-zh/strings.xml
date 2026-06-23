@@ -39,6 +39,7 @@
     <string name="history_action_allow">允许</string>
     <string name="history_footer">号码仅显示末 4 位，30 天后自动删除。</string>
     <string name="history_open_settings">家庭成员号码设置</string>
+    <string name="history_spoof_no_allow">无效的 JP 号码 — 无法允许</string>
     <string name="reason_spam_cache">已拦截号码</string>
     <string name="reason_foreign_elevated">高风险境外号码</string>
     <string name="reason_foreign_generic">境外号码</string>
