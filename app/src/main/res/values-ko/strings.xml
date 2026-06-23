@@ -42,6 +42,8 @@
     <string name="history_spoof_no_allow">유효하지 않은 JP 번호 — 허용 불가</string>
     <string name="history_foreign_tip">먼저 전화하면 영구적으로 신뢰됩니다</string>
     <string name="history_dnd_tip">허용하면 영구 예외가 됩니다 — 방해 금지 모드 중에도 울립니다</string>
+    <string name="history_allowed_notice">%s 허용됨</string>
+    <string name="history_undo">실행 취소</string>
     <string name="reason_spam_cache">차단된 번호</string>
     <string name="reason_foreign_elevated">고위험 국제 번호</string>
     <string name="reason_foreign_generic">해외 번호</string>

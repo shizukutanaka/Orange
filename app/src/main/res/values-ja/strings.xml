@@ -59,6 +59,8 @@
     <string name="history_spoof_no_allow">存在しないJP番号のため許可不可</string>
     <string name="history_foreign_tip">この番号に自分からかけると恒久的に信頼されます</string>
     <string name="history_dnd_tip">許可すると恒久的な例外になります — サイレントモード中も着信します</string>
+    <string name="history_allowed_notice">%s を許可しました</string>
+    <string name="history_undo">元に戻す</string>
 
     <!-- ブロック理由 -->
     <string name="reason_spam_cache">ブロック済み番号</string>

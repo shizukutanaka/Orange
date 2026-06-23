@@ -64,6 +64,8 @@
     <string name="history_spoof_no_allow">Invalid JP number — cannot be restored</string>
     <string name="history_foreign_tip">Call them first to trust permanently</string>
     <string name="history_dnd_tip">Allow adds a permanent exception — rings through even when DND is on</string>
+    <string name="history_allowed_notice">Allowed %s</string>
+    <string name="history_undo">Undo</string>
 
     <!-- Block reasons (history display) -->
     <string name="reason_spam_cache">Previously blocked</string>

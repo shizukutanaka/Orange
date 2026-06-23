@@ -27,6 +27,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -76,6 +77,8 @@ private fun HistoryScreen() {
         onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
     }
     val lazyListState = rememberLazyListState()
+    val snackbarHostState = remember { SnackbarHostState() }
+    val scope = rememberCoroutineScope()
 
     Scaffold(
         topBar = {
@@ -87,6 +90,7 @@ private fun HistoryScreen() {
                 )
             )
         },
+        snackbarHost = { SnackbarHost(snackbarHostState) },
         containerColor = Color(0xFFF5F5F5)
     ) { padding ->
         if (entries.isEmpty()) {
@@ -117,14 +121,28 @@ private fun HistoryScreen() {
                         entry = entry,
                         blockCount = blockCounts[entry.maskedNumber] ?: 1,
                         onAllow = {
-                            AllowSuffixStore.allow(prefs, entry.maskedNumber)
-                            BlockHistoryStore.remove(prefs, entry)
-                            // Use value equality (!=) not identity (!==): Entry is a data
-                            // class, and Compose may recompose before this lambda fires,
-                            // creating a new instance with the same fields but a different
-                            // object reference. Identity comparison would then silently fail
-                            // to remove the entry from the visible list.
+                            // Optimistic remove: entry leaves the list immediately.
+                            // Stores are written only on commit so the user can Undo
+                            // within the snackbar window without losing the history entry.
+                            // Value equality (!=) not identity (!==) — see comment below.
                             entries = entries.filter { it != entry }
+                            val allowedMsg = ctx.getString(R.string.history_allowed_notice, entry.maskedNumber)
+                            val undoLabel = ctx.getString(R.string.history_undo)
+                            scope.launch {
+                                val result = snackbarHostState.showSnackbar(
+                                    message = allowedMsg,
+                                    actionLabel = undoLabel,
+                                    duration = SnackbarDuration.Short
+                                )
+                                if (result == SnackbarResult.ActionPerformed) {
+                                    // Undo: restore entry. Stores not yet written, no revoke needed.
+                                    entries = (entries + entry).sortedByDescending { it.timestampMs }
+                                } else {
+                                    // Committed: write to both stores now.
+                                    AllowSuffixStore.allow(prefs, entry.maskedNumber)
+                                    BlockHistoryStore.remove(prefs, entry)
+                                }
+                            }
                         }
                     )
                 }
