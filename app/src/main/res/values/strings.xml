@@ -59,7 +59,7 @@
     <string name="history_title">Blocked Calls</string>
     <string name="history_empty">No recent blocked calls.</string>
     <string name="history_action_allow">Allow</string>
-    <string name="history_footer">Numbers shown masked. Entries older than 30 days are removed automatically.</string>
+    <string name="history_footer">Numbers shown masked. Up to 50 entries; oldest removed when full. Cleared after 30 days.</string>
     <string name="history_open_settings">Family contacts &amp; settings</string>
     <string name="history_spoof_no_allow">Invalid JP number — cannot be restored</string>
     <string name="history_foreign_tip">Call them first to trust permanently</string>

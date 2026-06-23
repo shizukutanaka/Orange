@@ -37,7 +37,7 @@
     <string name="history_title">拦截记录</string>
     <string name="history_empty">暂无最近的拦截记录。</string>
     <string name="history_action_allow">允许</string>
-    <string name="history_footer">号码仅显示末 4 位，30 天后自动删除。</string>
+    <string name="history_footer">号码仅显示末 4 位。最多保留 50 条，超出时自动删除最旧记录，30 天后全部清除。</string>
     <string name="history_open_settings">家庭成员号码设置</string>
     <string name="history_spoof_no_allow">无效的 JP 号码 — 无法允许</string>
     <string name="history_foreign_tip">主动拨出后该号码将永久信任</string>

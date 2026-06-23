@@ -37,7 +37,7 @@
     <string name="history_title">차단 기록</string>
     <string name="history_empty">최근 차단된 통화가 없습니다.</string>
     <string name="history_action_allow">허용</string>
-    <string name="history_footer">번호는 마지막 4자리만 표시됩니다. 30일 후 자동 삭제.</string>
+    <string name="history_footer">번호는 마지막 4자리만 표시됩니다. 최대 50건, 초과 시 오래된 항목부터 삭제. 30일 후 자동 삭제.</string>
     <string name="history_open_settings">가족 번호 설정</string>
     <string name="history_spoof_no_allow">유효하지 않은 JP 번호 — 허용 불가</string>
     <string name="history_foreign_tip">먼저 전화하면 영구적으로 신뢰됩니다</string>

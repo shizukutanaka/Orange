@@ -54,7 +54,7 @@
     <string name="history_title">ブロック履歴</string>
     <string name="history_empty">最近のブロック記録はありません。</string>
     <string name="history_action_allow">許可</string>
-    <string name="history_footer">番号は末尾4桁のみ表示。30日経過後に自動削除。</string>
+    <string name="history_footer">番号は末尾4桁のみ表示。最大50件、超えると古いものから削除。30日後に自動削除。</string>
     <string name="history_open_settings">家族番号の設定</string>
     <string name="history_spoof_no_allow">存在しないJP番号のため許可不可</string>
     <string name="history_foreign_tip">この番号に自分からかけると恒久的に信頼されます</string>
