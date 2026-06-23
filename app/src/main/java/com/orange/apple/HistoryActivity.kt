@@ -256,6 +256,14 @@ private fun HistoryCard(
                         color = Color(0xFFAAAAAA)
                     )
                 }
+                if (entry.reason == BlockReason.DND_HONOR) {
+                    Spacer(Modifier.height(2.dp))
+                    Text(
+                        stringResource(R.string.history_dnd_tip),
+                        fontSize = 11.sp,
+                        color = Color(0xFFAAAAAA)
+                    )
+                }
             }
             if (canAllow) {
                 Spacer(Modifier.width(12.dp))

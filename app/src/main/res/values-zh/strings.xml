@@ -41,6 +41,7 @@
     <string name="history_open_settings">家庭成员号码设置</string>
     <string name="history_spoof_no_allow">无效的 JP 号码 — 无法允许</string>
     <string name="history_foreign_tip">主动拨出后该号码将永久信任</string>
+    <string name="history_dnd_tip">允许后将成为永久例外 — 免打扰模式下仍会响铃</string>
     <string name="reason_spam_cache">已拦截号码</string>
     <string name="reason_foreign_elevated">高风险境外号码</string>
     <string name="reason_foreign_generic">境外号码</string>
