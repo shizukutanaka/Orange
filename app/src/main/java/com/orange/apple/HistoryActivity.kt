@@ -237,6 +237,15 @@ private fun HistoryCard(entry: BlockHistoryStore.Entry, onAllow: () -> Unit) {
                         color = Color(0xFFAAAAAA)
                     )
                 }
+                if (entry.reason == BlockReason.FOREIGN_ELEVATED ||
+                    entry.reason == BlockReason.FOREIGN_GENERIC) {
+                    Spacer(Modifier.height(2.dp))
+                    Text(
+                        stringResource(R.string.history_foreign_tip),
+                        fontSize = 11.sp,
+                        color = Color(0xFFAAAAAA)
+                    )
+                }
             }
             if (canAllow) {
                 Spacer(Modifier.width(12.dp))

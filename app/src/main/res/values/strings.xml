@@ -62,6 +62,7 @@
     <string name="history_footer">Numbers shown masked. Entries older than 30 days are removed automatically.</string>
     <string name="history_open_settings">Family contacts &amp; settings</string>
     <string name="history_spoof_no_allow">Invalid JP number — cannot be restored</string>
+    <string name="history_foreign_tip">Call them first to trust permanently</string>
 
     <!-- Block reasons (history display) -->
     <string name="reason_spam_cache">Previously blocked</string>
