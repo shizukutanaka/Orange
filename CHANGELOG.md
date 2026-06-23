@@ -38,6 +38,17 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 ### Changed
 - Test count: 388 → 435 (47 new tests across this session).
 
+### Changed (Socratic round — current session)
+- **`READ_CALL_LOG` permission removed** — declared in the manifest but never called. `setSkipCallLog(false)` is a `CallResponse` flag controlling whether screened calls appear in the system log, not a log-reading operation. On API 29+ the `ROLE_CALL_SCREENING` role grants all needed call metadata access without this permission. Removing it narrows the permission footprint and closes a contradiction with the app's stated privacy model (no READ_CONTACTS, no INTERNET).
+
+### Added (Socratic round — current session)
+- **`#9110` consult banner in `HistoryActivity`** — when the user opens block history and sees blocked entries, a warm-amber banner at the top provides one-tap `ACTION_DIAL` to `#9110` (the free police consultation line). The path from "I see blocked calls" to "I can report to police" previously required knowing the number. Banner is shown only when there are entries (empty state shows nothing). EN/JA/KO/ZH localized.
+- **`HistoryActivity` lifecycle-aware refresh** — `HistoryScreen` used `remember { }` to snapshot the block list at composition time. If the user backgrounded the Activity and new blocks arrived before returning, the list was stale. Added a `LifecycleEventObserver` so `ON_RESUME` triggers a fresh `BlockHistoryStore.load()` — no structural changes needed.
+- **Settings navigation link from `HistoryActivity`** — `SettingsActivity` documented "History screen bottom link" as a navigation path that was never implemented. Added a `TextButton` at the foot of the blocked-calls list opening `SettingsActivity`. EN/JA/KO/ZH localized.
+- **`DOMESTIC_SPOOF` explanation in `HistoryCard`** — when a call is blocked as `DOMESTIC_SPOOF`, the Allow button is absent (restoring an impossible JP number is meaningless). Without explanation, users see a blocked entry with no action and no reason why. Added a compact sub-label under the reason line for `DOMESTIC_SPOOF` entries only. EN/JA/KO/ZH localized.
+- **`PoliceStationDirectoryTest`** — Layer 9 (police impersonation warning) was the only security-critical path without dedicated tests. Adds 16 cases: domestic form, standard E.164 (`+81...`), carrier-mangled E.164 (`+810...`), non-police rejection, empty/international rejection, and integration tests confirming `decide()` returns `RING` with `POLICE_IMPERSONATION` warning (escalating to `POLICE_IMPERSONATION_HIGH` when STIR/SHAKEN also fails).
+- Test count: 435 → 451 (16 new tests this round).
+
 ## [Unreleased] — v1.4 (patch)
 
 ### Fixed
