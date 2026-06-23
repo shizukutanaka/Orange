@@ -39,7 +39,7 @@
     <string name="police_warn_title">%1$s の番号です</string>
     <string name="police_warn_body">偽装の可能性があります。一度切って #9110 にかけ直してください</string>
     <string name="police_warn_family">家族に連絡</string>
-    <string name="tile_label_family">家族に連絡</string>
+    <string name="tile_label_family">Call Family</string>
     <string name="notif_channel_outbound_warn">Outbound call warning</string>
     <string name="outbound_warn_title">Warning: recently flagged</string>
     <string name="outbound_warn_body">This number was recently blocked. Consider hanging up.</string>

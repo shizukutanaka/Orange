@@ -41,6 +41,7 @@ object PostCallAdvisor {
     private const val CHANNEL = "orange_postcall"
     private const val WINDOW_MS = 24L * 60 * 60 * 1000
 
+    @Synchronized
     fun maybeShow(ctx: Context, number: String, durationMs: Long) {
         if (durationMs < THRESHOLD_MS) return
         if (number.isEmpty()) return
