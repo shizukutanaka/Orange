@@ -19,7 +19,7 @@ class CallStateObserverTest {
         val p = FakePrefs()
         addToOutbound(p, "+14155551234")
         val set = p.getStringSet(SilentBlockerService.KEY_OUTBOUND, emptySet())!!
-        assertTrue("+14155551234" in set)
+        assertTrue(SpamCache.hash(p, "+14155551234") in set)
     }
 
     @Test fun duplicate_add_is_idempotent() {
@@ -89,17 +89,18 @@ class CallStateObserverTest {
         addToOutbound(p, "110")
         addToOutbound(p, "119")
         val set = p.getStringSet(SilentBlockerService.KEY_OUTBOUND, emptySet())!!
-        assertFalse("110 must not be in outbound set", "110" in set)
-        assertFalse("119 must not be in outbound set", "119" in set)
+        assertFalse("110 must not be in outbound set", SpamCache.hash(p, "110") in set)
+        assertFalse("119 must not be in outbound set", SpamCache.hash(p, "119") in set)
     }
 
     // Simulates the addToOutbound logic from CallStateObserver (same code, including fix).
     private fun addToOutbound(prefs: FakePrefs, number: String) {
         if (number.isEmpty()) return
         if (EmergencyWhitelist.isEmergency(number)) return
+        val hash = SpamCache.hash(prefs, number)
         val set = prefs.getStringSet(SilentBlockerService.KEY_OUTBOUND, emptySet())!!
             .toMutableSet()
-        if (set.add(number)) {
+        if (set.add(hash)) {
             if (set.size > SilentBlockerService.MAX_OUTBOUND_ENTRIES) {
                 val iter = set.iterator()
                 val excess = set.size - SilentBlockerService.MAX_OUTBOUND_ENTRIES

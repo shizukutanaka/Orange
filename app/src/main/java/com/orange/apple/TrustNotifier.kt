@@ -223,7 +223,7 @@ class RestoreReceiver : BroadcastReceiver() {
         val n = intent.getStringExtra(TrustNotifier.EXTRA_NUMBER) ?: return
         val prefs = ctx.getSharedPreferences(SilentBlockerService.PREFS, Context.MODE_PRIVATE)
         val set = prefs.getStringSet(SilentBlockerService.KEY_OUTBOUND, emptySet()).orEmpty().toMutableSet()
-        set.add(n)
+        set.add(SpamCache.hash(prefs, n))
         prefs.edit { putStringSet(SilentBlockerService.KEY_OUTBOUND, set) }
         // SpamCache stores salted SHA-256 hashes — remove via the cache API so the
         // hash (not the plaintext string) is actually erased. Direct KEY_SPAM removal

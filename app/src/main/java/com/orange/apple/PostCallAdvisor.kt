@@ -73,7 +73,7 @@ object PostCallAdvisor {
         val outbound = prefs.getStringSet(SilentBlockerService.KEY_OUTBOUND, emptySet()).orEmpty()
         val family = FamilyCallback.getNumbers(ctx).map { PhoneNumbers.normalize(it) }.toSet()
         val businesses = BusinessDirectoryBundle.load(ctx).keys
-        if (variants.any { it in outbound || it in family || it in businesses }) return
+        if (variants.any { SpamCache.hash(prefs, it) in outbound || it in family || it in businesses }) return
 
         prefs.edit { putLong(rateKey, now) }
         show(ctx, number)

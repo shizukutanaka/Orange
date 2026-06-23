@@ -106,7 +106,9 @@ class SilentBlockerService : CallScreeningService() {
         val family = familyNumbers(p)
         val businesses = BusinessDirectoryBundle.load(this).keys
         val variants = phoneVariants(number, cc)
-        if (number.isNotEmpty() && variants.any { it in outbound || it in family || it in businesses }) {
+        if (number.isNotEmpty() && variants.any {
+                SpamCache.hash(p, it) in outbound || it in family || it in businesses
+            }) {
             return Decision(Verdict.RING)
         }
 
@@ -235,8 +237,9 @@ class SilentBlockerService : CallScreeningService() {
 
     private fun addToOutbound(p: SharedPreferences, number: String) {
         if (number.isEmpty()) return
+        val hash = SpamCache.hash(p, number)
         val set = p.getStringSet(KEY_OUTBOUND, emptySet()).orEmpty().toMutableSet()
-        if (set.add(number)) {
+        if (set.add(hash)) {
             if (set.size > MAX_OUTBOUND_ENTRIES) {
                 val iter = set.iterator()
                 repeat(set.size - MAX_OUTBOUND_ENTRIES) { iter.next(); iter.remove() }
