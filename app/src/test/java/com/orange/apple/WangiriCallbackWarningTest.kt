@@ -34,7 +34,7 @@ class WangiriCallbackWarningTest {
         val wangiriCandidates = WangiriTracker.snapshot(prefs, now + 1_000)
         val flagged = variants.any { v ->
             OutboundGuard.wasRecentlyFlagged(prefs, v, now + 1_000) ||
-                wangiriCandidates.containsKey(v)
+                wangiriCandidates.containsKey(SpamCache.hash(prefs, v))
         }
         assertTrue("outbound guard entry must trigger warning", flagged)
     }
@@ -49,7 +49,7 @@ class WangiriCallbackWarningTest {
         val variants = phoneVariants("09012345678", cc)
         val wangiriCandidates = WangiriTracker.snapshot(prefs, now + 30_000)
         val outboundFlagged = variants.any { OutboundGuard.wasRecentlyFlagged(prefs, it, now + 30_000) }
-        val wangiiFlagged   = variants.any { wangiriCandidates.containsKey(it) }
+        val wangiiFlagged   = variants.any { wangiriCandidates.containsKey(SpamCache.hash(prefs, it)) }
         assertFalse("outbound guard alone misses this case", outboundFlagged)
         assertTrue ("wangiri tracker must catch the callback", wangiiFlagged)
         assertTrue ("combined check must flag the call",  outboundFlagged || wangiiFlagged)
@@ -61,7 +61,7 @@ class WangiriCallbackWarningTest {
         val cc = "81"
         val variants = phoneVariants("+819012345678", cc)  // outgoing in E.164
         val wangiriCandidates = WangiriTracker.snapshot(prefs, now + 1_000)
-        val flagged = variants.any { wangiriCandidates.containsKey(it) }
+        val flagged = variants.any { wangiriCandidates.containsKey(SpamCache.hash(prefs, it)) }
         assertTrue("E.164 outbound must match domestic short-ring via variants", flagged)
     }
 
@@ -71,7 +71,7 @@ class WangiriCallbackWarningTest {
         val cc = "81"
         val variants = phoneVariants("09012345678", cc)
         val wangiriCandidates = WangiriTracker.snapshot(prefs, after6h)
-        val flagged = variants.any { wangiriCandidates.containsKey(it) }
+        val flagged = variants.any { wangiriCandidates.containsKey(SpamCache.hash(prefs, it)) }
         assertFalse("expired wangiri entry must not trigger warning", flagged)
     }
 
@@ -84,7 +84,7 @@ class WangiriCallbackWarningTest {
         val wangiriCandidates = WangiriTracker.snapshot(prefs, now + 1_000)
         val flagged = variants.any { v ->
             OutboundGuard.wasRecentlyFlagged(prefs, v, now + 1_000) ||
-                wangiriCandidates.containsKey(v)
+                wangiriCandidates.containsKey(SpamCache.hash(prefs, v))
         }
         assertFalse("unrelated number must not be flagged", flagged)
     }

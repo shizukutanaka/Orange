@@ -40,12 +40,10 @@ internal object NotificationRateLimiter {
      */
     @Synchronized
     fun shouldNotify(prefs: SharedPreferences, number: String, nowMs: Long): Boolean {
-        // Withheld (非通知) calls arrive with number = "". An empty string survives
-        // set.add() and set.contains() but is dropped by filter { isNotBlank() }
-        // when the seen-set is deserialized from its space-separated string — the
-        // dedup for withheld calls silently fails and they notify 5×/window.
-        // Use a non-blank sentinel that can never appear in a normalized number.
-        val key = number.ifEmpty { "#" }
+        // Withheld (非通知) calls arrive with number = "". Hash would be deterministic
+        // per-device (salt + ""), which is fine — treated as a single dedup key.
+        // Use a sentinel "#" for the empty case so it can't collide with any hash.
+        val key = if (number.isEmpty()) "#" else SpamCache.hash(prefs, number).take(16)
         val windowStart = prefs.getLong(KEY_WINDOW_START, 0L)
         // If nowMs < windowStart, the system clock jumped backward. Treat as expired window.
         val inWindow = nowMs >= windowStart && nowMs - windowStart < WINDOW_MS
