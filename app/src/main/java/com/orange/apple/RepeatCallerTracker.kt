@@ -47,9 +47,11 @@ internal object RepeatCallerTracker {
         // if the entries are "old" from the clock's perspective.
         val raw = prefs.getString(KEY, "") ?: ""
         if (raw.isEmpty()) return
+        val hash = SpamCache.hash(prefs, number)
         val entries = raw.split('|').filter { entry ->
             // Drop malformed entries (no ':') consistent with snapshot()'s parts.size < 2 guard.
-            entry.contains(':') && entry.substringBefore(':') != number
+            // Compare against the salted hash — raw numbers are not stored on disk.
+            entry.contains(':') && entry.substringBefore(':') != hash
         }
         prefs.edit { putString(KEY, entries.joinToString("|")) }
     }
@@ -61,10 +63,11 @@ internal object RepeatCallerTracker {
     @Synchronized
     fun record(prefs: SharedPreferences, number: String, nowMs: Long) {
         if (number.isEmpty()) return
+        val hash = SpamCache.hash(prefs, number)
         val map = snapshot(prefs, nowMs).toMutableMap()
-        val existing = map[number] ?: emptyList()
+        val existing = map[hash] ?: emptyList()
         val updated = (existing + nowMs).takeLast(N_THRESHOLD + 2)
-        map[number] = updated
+        map[hash] = updated
         if (map.size > MAX_ENTRIES) {
             val trimmed = map.entries
                 .sortedByDescending { it.value.maxOrNull() ?: 0L }
@@ -82,10 +85,13 @@ internal object RepeatCallerTracker {
     @Synchronized
     fun isRepeatOffender(prefs: SharedPreferences, number: String, nowMs: Long): Boolean {
         if (number.isEmpty()) return false
-        val calls = snapshot(prefs, nowMs)[number] ?: return false
+        val hash = SpamCache.hash(prefs, number)
+        val calls = snapshot(prefs, nowMs)[hash] ?: return false
         return calls.size > N_THRESHOLD
     }
 
+    // Keys in the returned map are salted hashes, not raw numbers.
+    // Callers (record, isRepeatOffender) hash their input before lookup.
     private fun snapshot(prefs: SharedPreferences, nowMs: Long): Map<String, List<Long>> {
         val raw = prefs.getString(KEY, "") ?: ""
         if (raw.isEmpty()) return emptyMap()
@@ -93,11 +99,11 @@ internal object RepeatCallerTracker {
         raw.split('|').forEach { entry ->
             val parts = entry.split(':')
             if (parts.size < 2) return@forEach
-            val num = parts[0]
+            val key = parts[0]
             val times = parts.drop(1)
                 .mapNotNull { it.toLongOrNull() }
                 .filter { nowMs >= it && nowMs - it < WINDOW_MS }
-            if (times.isNotEmpty()) out[num] = times.toMutableList()
+            if (times.isNotEmpty()) out[key] = times.toMutableList()
         }
         return out
     }
