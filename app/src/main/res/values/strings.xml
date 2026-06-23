@@ -60,6 +60,7 @@
     <string name="history_empty">No recent blocked calls.</string>
     <string name="history_action_allow">Allow</string>
     <string name="history_footer">Numbers shown masked. Entries older than 30 days are removed automatically.</string>
+    <string name="history_open_settings">Family contacts &amp; settings</string>
 
     <!-- Block reasons (history display) -->
     <string name="reason_spam_cache">Previously blocked</string>

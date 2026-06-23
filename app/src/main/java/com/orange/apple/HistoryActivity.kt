@@ -131,6 +131,22 @@ private fun HistoryScreen() {
                         fontSize = 12.sp,
                         modifier = Modifier.padding(horizontal = 4.dp)
                     )
+                    Spacer(Modifier.height(8.dp))
+                    TextButton(
+                        onClick = {
+                            ctx.startActivity(
+                                Intent(ctx, SettingsActivity::class.java)
+                                    .addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP)
+                            )
+                        },
+                        modifier = Modifier.padding(horizontal = 0.dp)
+                    ) {
+                        Text(
+                            stringResource(R.string.history_open_settings),
+                            color = Color(0xFFFF8C42),
+                            fontSize = 13.sp
+                        )
+                    }
                 }
             }
         }
