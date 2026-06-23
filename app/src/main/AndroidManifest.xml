@@ -10,7 +10,6 @@
         INTERNET       — No servers. No telemetry. No crowdsourced DB uploads.
                          Entire product runs offline after install.
     -->
-    <uses-permission android:name="android.permission.READ_CALL_LOG"/>
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
     <!-- Required to register a BOOT_COMPLETED receiver. Does not access any
          data; only allows the receiver to fire on boot. -->
