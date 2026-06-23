@@ -77,4 +77,13 @@ class OutboundGuardTest {
         val oldestNum = "09012340000"
         assertFalse(OutboundGuard.wasRecentlyFlagged(p, oldestNum, now + OutboundGuard.MAX_ENTRIES + 1))
     }
+
+    @Test fun `raw number not stored in prefs value`() {
+        val p = FakePrefs()
+        val number = "09012345678"
+        OutboundGuard.record(p, number, 1_000_000L)
+        // The stored value must not contain the raw number — only hashes.
+        val raw = p.getString("outbound_guard", "")!!
+        assertFalse("raw number must not appear in stored guard value", raw.contains(number))
+    }
 }
