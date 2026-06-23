@@ -30,6 +30,7 @@ internal object WarningNotifier {
 
     /** Police HQ impersonation warning. Call RINGS but user sees heads-up.
      *  @param highSeverity true when STIR/SHAKEN also reports FAILED — escalated 🚨 alert. */
+    @Synchronized
     fun showPoliceWarning(ctx: Context, number: String, hqName: String, highSeverity: Boolean = false) {
         val mgr = notifManager(ctx) ?: return
         ensureChannel(ctx, mgr, CHANNEL_POLICE,
@@ -62,6 +63,7 @@ internal object WarningNotifier {
      *   "09012345678" for the same number would create two rate-limit buckets,
      *   allowing two warning notifications per 24 hours for the same caller.
      */
+    @Synchronized
     fun showHighRiskHourWarning(ctx: Context, number: String, callingCode: String? = null) {
         // Rate-limit: once per 24 h per number — same philosophy as PostCallAdvisor.
         // Key uses the domestic trunk form so domestic ↔ E.164 variants share one bucket.
@@ -103,6 +105,7 @@ internal object WarningNotifier {
      * generate a new heads-up notification each time. One warning per hour is
      * enough — the user has already been told.
      */
+    @Synchronized
     fun showOutboundWarning(ctx: Context, number: String) {
         val prefs = ctx.getSharedPreferences(SilentBlockerService.PREFS, Context.MODE_PRIVATE)
         pruneStaleRateLimitKeys(prefs, System.currentTimeMillis())
