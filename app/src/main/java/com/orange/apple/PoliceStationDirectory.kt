@@ -1,7 +1,7 @@
 package com.orange.apple
 
 /**
- * Bundled directory of 47 prefectural police HQ representative numbers.
+ * Bundled directory of 47 prefectural police HQ + 6 major Tokyo station numbers.
  *
  * 2025年のニセ警察詐欺 (9,642件, ¥831.9億円, 過去最悪) の主要手口:
  *   scammer → 被害者端末に"警視庁新宿署"の代表番号を偽装表示
@@ -46,6 +46,15 @@ internal object PoliceStationDirectory {
         "0488321111" to "埼玉県警察",
         "0432011111" to "千葉県警察",
         "0335814321" to "警視庁",         // 東京都
+        // 警視庁管内 主要警察署 — ニセ警察詐欺で頻繁に偽装される番号
+        // Source: 警視庁公式サイト (keishicho.metro.tokyo.lg.jp) 2026-06時点
+        // 2025-06-19: 千代田区が丸の内警察署番号でのアポ電入電中を公式警告
+        "0332130110" to "丸の内警察署",   // 千代田区 — 2025年アポ電で実際に使用
+        "0333460110" to "新宿警察署",     // 新宿区
+        "0339860110" to "池袋警察署",     // 豊島区
+        "0334980110" to "渋谷警察署",     // 渋谷区
+        "0338470110" to "上野警察署",     // 台東区
+        "0335430110" to "築地警察署",     // 中央区（銀座・築地エリア担当）
         "0452110110" to "神奈川県警察",
         // 中部
         "0252850110" to "新潟県警察",

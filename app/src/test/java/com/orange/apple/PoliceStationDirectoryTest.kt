@@ -119,6 +119,40 @@ class PoliceStationDirectoryTest {
         assertEquals(WarnReason.POLICE_IMPERSONATION_HIGH, d.warning)
     }
 
+    // --- 2025 アポ電: individual station numbers actively spoofed ---
+
+    @Test fun marunouchi_domestic_matches() {
+        // 千代田区公式警告 2025-06-19: 丸の内警察署番号でのアポ電が実際に発生中
+        assertEquals("丸の内警察署", PoliceStationDirectory.lookup("0332130110"))
+    }
+
+    @Test fun marunouchi_e164_matches() {
+        assertEquals("丸の内警察署", PoliceStationDirectory.lookup("+81332130110"))
+    }
+
+    @Test fun decide_rings_with_police_warning_for_marunouchi() {
+        val ctx = CallContext(
+            number = "0332130110",
+            calleeCountryIso = "JP",
+            nowMillis = 1_000_000L
+        )
+        val state = CallState(
+            outboundKnown = emptySet(),
+            isSpamCached = false,
+            knownBusinesses = emptySet(),
+            pausedUntilMillis = 0L,
+            wangiriRingAt = null
+        )
+        val d = decide(ctx, state)
+        assertEquals(Verdict.RING, d.verdict)
+        assertEquals(WarnReason.POLICE_IMPERSONATION, d.warning)
+        assertEquals("丸の内警察署", d.warnPayload)
+    }
+
+    @Test fun shinjuku_station_domestic_matches() {
+        assertEquals("新宿警察署", PoliceStationDirectory.lookup("0333460110"))
+    }
+
     @Test fun decide_no_police_warning_outside_jp() {
         // Police directory is JP-specific; same number from non-JP callee gets no Layer 9 check.
         val ctx = CallContext(
