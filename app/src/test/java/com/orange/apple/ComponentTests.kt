@@ -1,93 +1,18 @@
 package com.orange.apple
 
-import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
-import org.junit.Assert.assertNotNull
-import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
-class PoliceStationDirectoryTest {
-
-    @Test fun keishicho_is_in_directory() {
-        assertEquals("警視庁", PoliceStationDirectory.lookup("0335814321"))
-    }
-
-    @Test fun osaka_police_is_in_directory() {
-        assertNotNull(PoliceStationDirectory.lookup("0669430110"))
-    }
-
-    @Test fun okinawa_police_is_in_directory() {
-        assertEquals("沖縄県警察", PoliceStationDirectory.lookup("0988620110"))
-    }
-
-    @Test fun international_format_resolves() {
-        // +81-3-3581-4321 → 0335814321 → 警視庁
-        assertEquals("警視庁", PoliceStationDirectory.lookup("+81335814321"))
-    }
-
-    @Test fun random_landline_not_in_directory() {
-        assertNull(PoliceStationDirectory.lookup("0312345678"))
-    }
-
-    @Test fun emergency_110_not_in_directory() {
-        // 110 is in EmergencyWhitelist, not here
-        assertNull(PoliceStationDirectory.lookup("110"))
-    }
-
-    @Test fun exactly_47_entries() {
-        assertEquals(47, PoliceStationDirectory.entries.size)
-    }
-
-    @Test fun all_entries_are_10_digits() {
-        PoliceStationDirectory.entries.keys.forEach { num ->
-            assertTrue("$num is not 10 digits", num.length == 10 && num.all { it.isDigit() })
-        }
-    }
-
-    @Test fun all_47_entries_are_reachable_by_lookup() {
-        PoliceStationDirectory.entries.forEach { (number, name) ->
-            assertEquals("lookup($number) should return $name", name, PoliceStationDirectory.lookup(number))
-        }
-    }
-
-    @Test fun double_zero_international_format_resolves() {
-        // Some systems deliver +810335814321 (with leading 0 after country code)
-        assertEquals("警視庁", PoliceStationDirectory.lookup("+810335814321"))
-    }
-}
-
-class CaribbeanPremiumNANPTest {
-
-    @Test fun jamaica_876_is_premium() =
-        assertTrue(CaribbeanPremiumNANP.isPremiumNANP("+18761234567"))
-
-    @Test fun bahamas_242_is_premium() =
-        assertTrue(CaribbeanPremiumNANP.isPremiumNANP("+12421234567"))
-
-    @Test fun dominican_809_is_premium() =
-        assertTrue(CaribbeanPremiumNANP.isPremiumNANP("+18091234567"))
-
-    @Test fun bermuda_441_is_premium() =
-        assertTrue(CaribbeanPremiumNANP.isPremiumNANP("+14411234567"))
-
-    @Test fun us_415_is_not_premium() =
-        assertFalse(CaribbeanPremiumNANP.isPremiumNANP("+14155551234"))
-
-    @Test fun non_plus1_is_not_premium() =
-        assertFalse(CaribbeanPremiumNANP.isPremiumNANP("+81901234567"))
-
-    @Test fun too_short_is_not_premium() =
-        assertFalse(CaribbeanPremiumNANP.isPremiumNANP("+12"))
-
-    @Test fun us_202_dc_is_not_premium() =
-        assertFalse(CaribbeanPremiumNANP.isPremiumNANP("+12025551234"))
-
-    @Test fun us_212_nyc_is_not_premium() =
-        assertFalse(CaribbeanPremiumNANP.isPremiumNANP("+12125551234"))
-}
-
-
+/**
+ * RepeatCallerTracker component tests.
+ *
+ * PoliceStationDirectoryTest and CaribbeanPremiumNANPTest were originally
+ * in this file but moved to their own files for coverage breadth. The
+ * duplicate class names caused a Kotlin compilation error; only
+ * RepeatCallerTrackerComponentTest remains here (its companion
+ * RepeatCallerTrackerTest.kt covers additional hash/serialization cases).
+ */
 class RepeatCallerTrackerComponentTest {
 
     @Test fun first_two_calls_not_flagged() {
