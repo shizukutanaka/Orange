@@ -102,10 +102,10 @@ class SilentBlockerService : CallScreeningService() {
         // stored form matches — without this, a number the user or directory trusts is
         // silenced (or triggers a false PostCallAdvisor advisory after a legit call).
         val cc = callingCodeOf(simCountryIso())
+        val variants = phoneVariants(number, cc)
         val outbound = p.getStringSet(KEY_OUTBOUND, emptySet()).orEmpty()
         val family = familyNumbers(p)
         val businesses = BusinessDirectoryBundle.load(this).keys
-        val variants = phoneVariants(number, cc)
         if (number.isNotEmpty() && variants.any {
                 SpamCache.hash(p, it) in outbound || it in family || it in businesses
             }) {
@@ -123,7 +123,7 @@ class SilentBlockerService : CallScreeningService() {
         }
 
         val wangiriSnapshot = WangiriTracker.snapshot(p, now)
-        val wangiriRingAt = phoneVariants(number, cc).firstNotNullOfOrNull { variant ->
+        val wangiriRingAt = variants.firstNotNullOfOrNull { variant ->
             wangiriSnapshot[SpamCache.hash(p, variant)]
         }
 
