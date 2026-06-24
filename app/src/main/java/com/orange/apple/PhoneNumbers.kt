@@ -39,8 +39,12 @@ internal object PhoneNumbers {
      * Mask a phone number for display: show only the last 4 digits.
      * Used by BlockHistoryStore and TrustNotifier for privacy-safe history entries.
      */
-    fun mask(n: String): String =
-        if (n.length <= 4) "****" else "****" + n.takeLast(4)
+    fun mask(n: String): String {
+        // Short codes (110, 119, 188, etc.) are public and non-PII. Show them fully.
+        if (n.length <= 4) return n
+        // Normal phone numbers: show last 4 digits, mask the rest.
+        return "****" + n.takeLast(4)
+    }
 
     /** Map full-width '＋' and '０'-'９' to ASCII; pass everything else through. */
     private fun foldFullWidth(ch: Char): Char = when (ch) {

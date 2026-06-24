@@ -40,14 +40,14 @@ class PhoneNumbersTest {
     @Test fun `mask hides all but last 4 digits`() =
         assertEquals("****5678", PhoneNumbers.mask("09012345678"))
 
-    @Test fun `mask of exactly 4 digits returns four stars`() =
-        assertEquals("****", PhoneNumbers.mask("1234"))
+    @Test fun `mask of exactly 4 digits shows number unmasked`() =
+        assertEquals("1234", PhoneNumbers.mask("1234"))
 
-    @Test fun `mask of 3 digits returns four stars`() =
-        assertEquals("****", PhoneNumbers.mask("110"))
+    @Test fun `mask of short code shows number unmasked`() =
+        assertEquals("110", PhoneNumbers.mask("110"))
 
-    @Test fun `mask of empty string returns four stars`() =
-        assertEquals("****", PhoneNumbers.mask(""))
+    @Test fun `mask of empty string returns empty string`() =
+        assertEquals("", PhoneNumbers.mask(""))
 
     @Test fun `mask of E164 number hides all but last 4`() =
         assertEquals("****4321", PhoneNumbers.mask("+81335814321"))
