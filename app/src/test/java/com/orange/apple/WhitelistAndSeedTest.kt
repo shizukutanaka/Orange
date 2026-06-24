@@ -53,6 +53,9 @@ class WhitelistAndSeedTest {
     @Test fun elevated_cambodia() = assertTrue("855" in ScamPrefixSeed.elevatedRiskCountryCodes)
     @Test fun cambodia_resolves_country_code() =
         assertEquals("855", ScamPrefixSeed.countryCodeOf("+85512345678"))
+    @Test fun elevated_myanmar() = assertTrue("95" in ScamPrefixSeed.elevatedRiskCountryCodes)
+    @Test fun myanmar_resolves_country_code() =
+        assertEquals("95", ScamPrefixSeed.countryCodeOf("+9512345678"))
 
     // Caribbean premium NANP ---------------------------------------------------
 

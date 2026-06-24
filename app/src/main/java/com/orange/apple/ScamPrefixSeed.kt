@@ -55,7 +55,13 @@ internal object ScamPrefixSeed {
         "682",  // Cook Islands — Pacific IPRN range
         "676",  // Tonga — Pacific IPRN range
         "678",  // Vanuatu — Pacific IPRN range
-        "855"   // Cambodia — documented scam-center corridor (2025-2026)
+        "855",  // Cambodia — documented scam-center corridor (2025-2026)
+        // Myanmar: KK Park (カンコー特区) and Myawaddy border SEZs are large-scale
+        // scam operation hubs targeting JP victims; NPA 2025 白書 identifies
+        // Myanmar-based call centers as a primary origin for 国際電話詐欺.
+        // Legitimate inbound +95 calls to JP mobile numbers are extremely rare,
+        // making the signal high-precision for JP users.
+        "95"    // Myanmar — Myawaddy/KK Park scam-compound corridor
     )
 
     /**

@@ -272,7 +272,8 @@ fun decide(ctx: CallContext, state: CallState): Decision {
 internal val WANGIRI_WINDOW_MS get() = WangiriTracker.WANGIRI_WINDOW_MS
 
 /**
- * Returns true during アポ電 peak hours: Mon-Fri 09:00-12:00 and 13:00-16:00 JST.
+ * Returns true during アポ電 peak hours: Mon-Fri 09:xx–12:xx and 13:xx–16:xx JST
+ * (i.e. HOUR_OF_DAY in 9..12 or 13..16; full hours including minutes 00-59).
  * Source: prefectural police advisory logs (大阪狭山市, 愛知県警, etc.) show
  * scam reconnaissance calls clustered in business hours when elderly are home.
  */
