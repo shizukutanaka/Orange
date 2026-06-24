@@ -83,7 +83,13 @@ private fun HistoryScreen() {
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text(stringResource(R.string.history_title), fontWeight = FontWeight.SemiBold) },
+                title = {
+                    Text(
+                        stringResource(R.string.history_title),
+                        fontWeight = FontWeight.SemiBold,
+                        modifier = Modifier.semantics { contentDescription = stringResource(R.string.history_title) }
+                    )
+                },
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = Color(0xFFFF8C42),
                     titleContentColor = Color.White,
@@ -202,7 +208,8 @@ private fun ConsultBanner() {
                         Intent(Intent.ACTION_DIAL, Uri.parse("tel:%239110"))
                             .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
                     )
-                }
+                },
+                modifier = Modifier.semantics { contentDescription = stringResource(R.string.postcall_action_9110) }
             ) {
                 Text(
                     stringResource(R.string.postcall_action_9110),
