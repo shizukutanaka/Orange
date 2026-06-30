@@ -729,6 +729,12 @@ class CallDecisionTest {
     @Test fun calling_code_of_jp_is_81() = assertEquals("81", callingCodeOf("JP"))
     @Test fun calling_code_of_us_is_1()  = assertEquals("1",  callingCodeOf("US"))
     @Test fun calling_code_of_kr_is_82() = assertEquals("82", callingCodeOf("KR"))
+    @Test fun calling_code_of_ca_is_1()   = assertEquals("1",   callingCodeOf("CA"))  // NANP like US
+    @Test fun calling_code_of_tw_is_886() = assertEquals("886", callingCodeOf("TW"))
+    @Test fun calling_code_of_hk_is_852() = assertEquals("852", callingCodeOf("HK"))
+    @Test fun calling_code_of_sg_is_65()  = assertEquals("65",  callingCodeOf("SG"))
+    @Test fun calling_code_of_my_is_60()  = assertEquals("60",  callingCodeOf("MY"))
+    @Test fun calling_code_of_nz_is_64()  = assertEquals("64",  callingCodeOf("NZ"))
     @Test fun calling_code_of_null_is_null() = assertNull(callingCodeOf(null))
     @Test fun calling_code_of_unknown_iso_is_null() = assertNull(callingCodeOf("ZZ"))
 
