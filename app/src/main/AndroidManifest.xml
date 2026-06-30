@@ -82,10 +82,15 @@
           Settings → Default apps → Caller ID, we update the widget glyph
           on next boot/package replace so the user notices. No notification
           is fired; the widget change is the only signal.
+
+          exported="false": BOOT_COMPLETED and MY_PACKAGE_REPLACED are both
+          protected broadcasts (only system can send them). No other app needs
+          to target this receiver, so false is both correct and more secure.
+          The system delivers protected broadcasts to non-exported receivers.
         -->
         <receiver
             android:name=".RoleMonitorReceiver"
-            android:exported="true">
+            android:exported="false">
             <intent-filter>
                 <action android:name="android.intent.action.BOOT_COMPLETED"/>
                 <action android:name="android.intent.action.MY_PACKAGE_REPLACED"/>
@@ -97,10 +102,17 @@
           (A) Wangiri short-ring detection, (B) Outbound call logging.
           Does NOT require READ_PHONE_STATE (Android 12+ delivers number
           without it; degrades gracefully on earlier versions).
+
+          exported="false": PHONE_STATE is a protected broadcast (only the
+          Telephony framework can send it). Third-party apps cannot send fake
+          PHONE_STATE intents via sendBroadcast() regardless of exported status,
+          but explicit-intent targeting of an exported receiver remains possible.
+          Setting false closes that vector while the system still delivers the
+          real broadcast (protected broadcasts bypass the exported gate).
         -->
         <receiver
             android:name=".CallStateObserver"
-            android:exported="true">
+            android:exported="false">
             <intent-filter>
                 <action android:name="android.intent.action.PHONE_STATE"/>
             </intent-filter>
