@@ -131,7 +131,7 @@ data class Decision(
 enum class WarnReason {
     POLICE_IMPERSONATION,
     POLICE_IMPERSONATION_HIGH,
-    /** Unknown domestic mobile during アポ電 peak hours (09-12, 13-16 weekday JST). */
+    /** Unknown domestic mobile during アポ電 peak hours (09-12, 13-16, 18-20 weekday JST). */
     HIGH_RISK_HOUR_DOMESTIC,
 }
 
@@ -257,8 +257,8 @@ fun decide(ctx: CallContext, state: CallState): Decision {
     }
 
     // Layer 15: Time-of-day risk multiplier for unknown domestic mobile numbers.
-    // アポ電 (scam reconnaissance calls) peak in 09:00-12:00 and 13:00-16:00 JST
-    // on weekdays, per prefectural police advisory logs (e.g., 大阪狭山市, 愛知県警).
+    // アポ電 (scam reconnaissance calls) peak in 09:00-12:00, 13:00-16:00, and 18:00-20:00 JST
+    // on weekdays, per prefectural police advisory logs + NPA 2025 特殊詐欺白書 §3-2.
     // Unknown 090/080/070/060 numbers during these windows get a soft warning.
     // No new permissions; nowMillis is already injected.
     if (isHighRiskHour(ctx.nowMillis) && isUnknownDomesticMobile(ctx.number)) {
