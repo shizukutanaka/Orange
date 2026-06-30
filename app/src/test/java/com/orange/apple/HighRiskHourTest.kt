@@ -53,6 +53,22 @@ class HighRiskHourTest {
         assertFalse(isHighRiskHour(jstHour(MON_09_00_JST, 17)))
     }
 
+    @Test fun weekday_18_is_peak() {
+        assertTrue(isHighRiskHour(jstHour(MON_09_00_JST, 18)))
+    }
+
+    @Test fun weekday_19_is_peak() {
+        assertTrue(isHighRiskHour(jstHour(MON_09_00_JST, 19)))
+    }
+
+    @Test fun weekday_20_is_peak() {
+        assertTrue(isHighRiskHour(jstHour(MON_09_00_JST, 20)))
+    }
+
+    @Test fun weekday_21_is_off_peak() {
+        assertFalse(isHighRiskHour(jstHour(MON_09_00_JST, 21)))
+    }
+
     @Test fun weekday_00_is_off_peak() {
         assertFalse(isHighRiskHour(jstHour(MON_09_00_JST, 0)))
     }
