@@ -86,14 +86,9 @@ object FamilyCallback {
     /**
      * Launch the dialer with the first configured slot. No CALL_PHONE permission
      * needed — ACTION_DIAL opens the dialer, the user confirms.
-     * Checks slots in order (1, 2, 3) and dials the first non-empty one so
-     * users who skipped slot 1 but filled slot 2 can still use the tile.
      */
     fun dialPrimary(ctx: Context): Boolean {
-        val prefs = ctx.getSharedPreferences(SilentBlockerService.PREFS, Context.MODE_PRIVATE)
-        val num = (1..MAX_SLOTS)
-            .mapNotNull { i -> prefs.getString("$KEY_PREFIX$i", null)?.takeIf { it.isNotBlank() } }
-            .firstOrNull() ?: return false
+        val num = primaryNumber(ctx) ?: return false
         val intent = Intent(Intent.ACTION_DIAL, Uri.parse("tel:$num")).apply {
             addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
         }

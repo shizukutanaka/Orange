@@ -25,11 +25,12 @@ internal object AllowSuffixStore {
 
     private const val KEY = "allow_suffix"
     private const val MAX = 100
+    private const val SUFFIX_DIGITS = 4  // must match BlockHistoryStore's mask length
 
     @Synchronized
     fun allow(prefs: SharedPreferences, maskedNumber: String) {
-        val suffix = maskedNumber.filter { it.isDigit() }.takeLast(4)
-        if (suffix.length < 4) return
+        val suffix = maskedNumber.filter { it.isDigit() }.takeLast(SUFFIX_DIGITS)
+        if (suffix.length < SUFFIX_DIGITS) return
         val ordered = loadOrdered(prefs).toMutableList()
         if (suffix !in ordered) {
             ordered.add(suffix)
@@ -45,24 +46,24 @@ internal object AllowSuffixStore {
      */
     @Synchronized
     fun revoke(prefs: SharedPreferences, maskedNumber: String) {
-        val suffix = maskedNumber.filter { it.isDigit() }.takeLast(4)
-        if (suffix.length < 4) return
+        val suffix = maskedNumber.filter { it.isDigit() }.takeLast(SUFFIX_DIGITS)
+        if (suffix.length < SUFFIX_DIGITS) return
         val ordered = loadOrdered(prefs).toMutableList()
         if (ordered.remove(suffix)) save(prefs, ordered)
     }
 
     @Synchronized
     fun isAllowed(prefs: SharedPreferences, number: String): Boolean {
-        if (number.length < 4) return false
-        val suffix = number.filter { it.isDigit() }.takeLast(4)
-        if (suffix.length < 4) return false
+        if (number.length < SUFFIX_DIGITS) return false
+        val suffix = number.filter { it.isDigit() }.takeLast(SUFFIX_DIGITS)
+        if (suffix.length < SUFFIX_DIGITS) return false
         return suffix in loadOrdered(prefs)
     }
 
     private fun loadOrdered(prefs: SharedPreferences): List<String> {
         val raw = prefs.getString(KEY, "") ?: ""
         return if (raw.isBlank()) emptyList()
-        else raw.split(' ').filter { it.length == 4 && it.all { c -> c.isDigit() } }
+        else raw.split(' ').filter { it.length == SUFFIX_DIGITS && it.all { c -> c.isDigit() } }
     }
 
     private fun save(prefs: SharedPreferences, ordered: List<String>) {
