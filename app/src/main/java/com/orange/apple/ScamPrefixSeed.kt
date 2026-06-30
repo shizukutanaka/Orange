@@ -56,6 +56,10 @@ internal object ScamPrefixSeed {
         "676",  // Tonga — Pacific IPRN range
         "678",  // Vanuatu — Pacific IPRN range
         "855",  // Cambodia — documented scam-center corridor (2025-2026)
+        // Laos: Bokeo Golden Triangle SEZ — same NPA-identified corridor as Myanmar/Cambodia.
+        // ゴールデン・トライアングル経済特区はミャンマー・カンボジアの詐欺拠点と並び
+        // NPA 2025 特殊詐欺白書でも言及 (詐欺コールセンターのSEZ隣接地帯).
+        "856",  // Laos — Golden Triangle SEZ scam-compound corridor
         // Myanmar: KK Park (カンコー特区) and Myawaddy border SEZs are large-scale
         // scam operation hubs targeting JP victims; NPA 2025 白書 identifies
         // Myanmar-based call centers as a primary origin for 国際電話詐欺.
