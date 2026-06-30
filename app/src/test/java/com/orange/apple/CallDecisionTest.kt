@@ -575,6 +575,46 @@ class CallDecisionTest {
         assertEquals(WarnReason.HIGH_RISK_HOUR_DOMESTIC, d.warning)
     }
 
+    @Test fun evening_peak_19_gets_warning() {
+        // 19:00 JST Tuesday — in the 18:00-20:59 evening peak window (NPA 2025 after-work spike).
+        val cal = java.util.Calendar.getInstance(java.util.TimeZone.getTimeZone("Asia/Tokyo"))
+        cal.set(2025, java.util.Calendar.MAY, 6, 19, 0, 0)
+        cal.set(java.util.Calendar.MILLISECOND, 0)
+        val d = decide(call("09012345678").copy(nowMillis = cal.timeInMillis), emptyState)
+        assertEquals(Verdict.RING, d.verdict)
+        assertEquals(WarnReason.HIGH_RISK_HOUR_DOMESTIC, d.warning)
+    }
+
+    @Test fun evening_peak_20_boundary_gets_warning() {
+        // 20:00 JST Tuesday — upper boundary of evening window (should be included).
+        val cal = java.util.Calendar.getInstance(java.util.TimeZone.getTimeZone("Asia/Tokyo"))
+        cal.set(2025, java.util.Calendar.MAY, 6, 20, 0, 0)
+        cal.set(java.util.Calendar.MILLISECOND, 0)
+        val d = decide(call("08012345678").copy(nowMillis = cal.timeInMillis), emptyState)
+        assertEquals(Verdict.RING, d.verdict)
+        assertEquals(WarnReason.HIGH_RISK_HOUR_DOMESTIC, d.warning)
+    }
+
+    @Test fun late_evening_21_no_warning() {
+        // 21:00 JST Tuesday — outside all peak windows (should NOT warn).
+        val cal = java.util.Calendar.getInstance(java.util.TimeZone.getTimeZone("Asia/Tokyo"))
+        cal.set(2025, java.util.Calendar.MAY, 6, 21, 0, 0)
+        cal.set(java.util.Calendar.MILLISECOND, 0)
+        val d = decide(call("09012345678").copy(nowMillis = cal.timeInMillis), emptyState)
+        assertEquals(Verdict.RING, d.verdict)
+        assertNull(d.warning)
+    }
+
+    @Test fun evening_gap_17_no_warning() {
+        // 17:00 JST Tuesday — gap between afternoon and evening windows (should NOT warn).
+        val cal = java.util.Calendar.getInstance(java.util.TimeZone.getTimeZone("Asia/Tokyo"))
+        cal.set(2025, java.util.Calendar.MAY, 6, 17, 0, 0)
+        cal.set(java.util.Calendar.MILLISECOND, 0)
+        val d = decide(call("09012345678").copy(nowMillis = cal.timeInMillis), emptyState)
+        assertEquals(Verdict.RING, d.verdict)
+        assertNull(d.warning)
+    }
+
     // --- STIR/SHAKEN escalation to POLICE_IMPERSONATION_HIGH -----------------
 
     @Test fun police_hq_plus_stir_shaken_fail_escalates() {

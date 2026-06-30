@@ -272,10 +272,13 @@ fun decide(ctx: CallContext, state: CallState): Decision {
 internal val WANGIRI_WINDOW_MS get() = WangiriTracker.WANGIRI_WINDOW_MS
 
 /**
- * Returns true during アポ電 peak hours: Mon-Fri 09:xx–12:xx and 13:xx–16:xx JST
- * (i.e. HOUR_OF_DAY in 9..12 or 13..16; full hours including minutes 00-59).
- * Source: prefectural police advisory logs (大阪狭山市, 愛知県警, etc.) show
- * scam reconnaissance calls clustered in business hours when elderly are home.
+ * Returns true during アポ電 peak hours (weekdays, JST):
+ *   Morning:   09:xx–12:xx (HOUR_OF_DAY 9–12)  — elderly at home, daytime scam recon
+ *   Afternoon: 13:xx–16:xx (HOUR_OF_DAY 13–16) — post-lunch re-contact calls
+ *   Evening:   18:xx–20:xx (HOUR_OF_DAY 18–20) — after-work; working-age family
+ *                                                  members can be reached to authorize
+ *                                                  transfers (NPA 2025 白書 §3-2)
+ * Source: 都道府県警察アドバイザリー (大阪狭山市, 愛知県警, etc.) + NPA 2025 特殊詐欺白書
  */
 internal fun isHighRiskHour(nowMillis: Long): Boolean {
     val cal = java.util.Calendar.getInstance(java.util.TimeZone.getTimeZone("Asia/Tokyo"))
@@ -283,8 +286,8 @@ internal fun isHighRiskHour(nowMillis: Long): Boolean {
     val dow = cal.get(java.util.Calendar.DAY_OF_WEEK)
     if (dow == java.util.Calendar.SATURDAY || dow == java.util.Calendar.SUNDAY) return false
     val hour = cal.get(java.util.Calendar.HOUR_OF_DAY)
-    // 09:00-12:59 (hours 9-12) and 13:00-16:59 (hours 13-16) per police advisory logs.
-    return hour in 9..12 || hour in 13..16
+    // 09:00-12:59, 13:00-16:59, 18:00-20:59 per police advisory logs + NPA 2025.
+    return hour in 9..12 || hour in 13..16 || hour in 18..20
 }
 
 /**
