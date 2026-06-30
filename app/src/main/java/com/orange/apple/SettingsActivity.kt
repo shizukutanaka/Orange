@@ -139,7 +139,15 @@ fun SettingsScreen() {
                             OutlinedTextField(
                                 value = fieldValue,
                                 onValueChange = {
-                                    fieldValue = it.filter { c -> c.isDigit() || c == '+' || c == '-' }
+                                    // Allow digits (incl. full-width ０-９ via isDigit()),
+                                    // ASCII/full-width '+' and '-' so users who paste
+                                    // "+81..." or "090-..." in either width don't lose
+                                    // the punctuation mid-edit. normalize() folds all
+                                    // full-width chars to ASCII on save.
+                                    fieldValue = it.filter { c ->
+                                        c.isDigit() || c == '+' || c == '-' ||
+                                            c == '＋' || c == '－'  // ＋ and －
+                                    }
                                     saved = false
                                     saveError = false
                                 },
