@@ -36,23 +36,23 @@
     <string name="tile_label_paused">Orange paused</string>
     <string name="digest_text">Silenced %1$d calls this week.</string>
     <string name="notif_channel_police_warn">Police impersonation warning</string>
-    <string name="police_warn_title">%1$s の番号です</string>
-    <string name="police_warn_body">偽装の可能性があります。一度切って #9110 にかけ直してください</string>
-    <string name="police_warn_family">家族に連絡</string>
+    <string name="police_warn_title">Possible %1$s impersonation</string>
+    <string name="police_warn_body">Caller ID may be spoofed. Hang up and call #9110 to verify.</string>
+    <string name="police_warn_family">Call Family</string>
     <string name="tile_label_family">Call Family</string>
     <string name="notif_channel_outbound_warn">Outbound call warning</string>
     <string name="outbound_warn_title">Warning: recently flagged</string>
     <string name="outbound_warn_body">This number was recently blocked. Consider hanging up.</string>
     <string name="notif_channel_digest">Weekly summary</string>
-    <string name="police_warn_title_high">🚨 %1$s の番号 — 偽装の疑い極めて高</string>
+    <string name="police_warn_title_high">🚨 Likely %1$s impersonation</string>
     <string name="notif_channel_highrisk">High-risk hour warning</string>
-    <string name="highrisk_warn_title">⚠️ 不審な着信</string>
-    <string name="highrisk_warn_body">業務時間帯の携帯からの不審な着信です。折り返さないでください</string>
+    <string name="highrisk_warn_title">⚠️ Suspicious call</string>
+    <string name="highrisk_warn_body">Unknown mobile during high-risk hours. Do not call back.</string>
     <string name="notif_channel_postcall">Post-call safety</string>
-    <string name="postcall_title">通話後のご確認</string>
-    <string name="postcall_body">#9110 に相談できます</string>
-    <string name="postcall_body_big">#9110 警察相談 / 188 消費者 / 0120-210-364 国際電話不取扱受付（無料）</string>
-    <string name="postcall_action_9110">#9110 に電話</string>
+    <string name="postcall_title">Post-call safety check</string>
+    <string name="postcall_body">You can consult the police at #9110 (free).</string>
+    <string name="postcall_body_big">#9110 Police consultation (free) / 188 Consumer hotline / 0120-210-364 Int\'l call opt-out (free)</string>
+    <string name="postcall_action_9110">Call #9110</string>
 
     <!-- History screen -->
     <string name="history_consult_banner">Blocked calls reported to police? #9110 is free.</string>
