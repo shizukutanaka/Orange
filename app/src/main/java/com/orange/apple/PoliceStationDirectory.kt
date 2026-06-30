@@ -1,7 +1,7 @@
 package com.orange.apple
 
 /**
- * Bundled directory of 47 prefectural police HQ + 6 major Tokyo station numbers.
+ * Bundled directory of 47 prefectural police HQ + Tokyo area major police stations.
  *
  * 2025年のニセ警察詐欺 (9,642件, ¥831.9億円, 過去最悪) の主要手口:
  *   scammer → 被害者端末に"警視庁新宿署"の代表番号を偽装表示
@@ -17,13 +17,14 @@ package com.orange.apple
  *   「この番号は○○警察の番号です。偽装の可能性があります。
  *    一度切って、#9110 にかけ直してください」
  *
- * Source: 各都道府県警察公式サイト (2026-04時点)
- * 番号は代表電話のみ。個別署は含まない (1,200+件は将来拡張)。
+ * Source: 各都道府県警察公式サイト + 警視庁公式サイト (2026-06時点)
+ * 都道府県警察本部 (47件) + 警視庁管内 主要警察署 (実際のアポ電被害で偽装確認済)。
+ * 個別署番号は公式サイトで確認が取れた番号のみ収録 (不確かな番号は除外)。
  */
 internal object PoliceStationDirectory {
 
     /**
-     * Map of domestic 10-digit number → display name (prefecture police HQ).
+     * Map of domestic number → display name (police HQ or verified major station).
      * Keys are stored in domestic form ("0335814321", not "+81335814321").
      * lookup() accepts both forms and converts as needed.
      * If an incoming call matches, the decision engine returns RING

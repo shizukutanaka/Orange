@@ -78,7 +78,7 @@ internal object WarningNotifier {
         val key = "highrisk_last_${SpamCache.hash(prefs, keyNumber).take(16)}"
         val now = System.currentTimeMillis()
         val last = prefs.getLong(key, 0L)
-        if (last > 0L && (now < last || now - last < 24L * 60 * 60 * 1000)) return
+        if (last > 0L && (now < last || now - last < HIGHRISK_WARN_WINDOW_MS)) return
         prefs.edit { putLong(key, now) }  // putLong overwrites in place — no need to remove first
 
         val mgr = notifManager(ctx) ?: return
