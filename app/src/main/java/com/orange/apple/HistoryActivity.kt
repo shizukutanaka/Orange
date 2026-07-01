@@ -114,7 +114,15 @@ private fun HistoryScreen() {
             // Count how many times each masked number appears in the last 30 days.
             // Passed to each card so a number that called multiple times shows "3×"
             // without needing a separate BlockHistoryStore aggregation query.
-            val blockCounts = entries.groupingBy { it.maskedNumber }.eachCount()
+            // MANUAL_BLOCK entries are excluded: they represent a user action (Settings
+            // "Block a number"), not an actual incoming call. Counting them here would
+            // inflate the "N× blocked" badge with an event that was never a real call —
+            // e.g. a number manually blocked, then later actually calling and getting
+            // silenced for real, would incorrectly show "2×" for one genuine call attempt.
+            val blockCounts = entries
+                .filter { it.reason != BlockReason.MANUAL_BLOCK }
+                .groupingBy { it.maskedNumber }
+                .eachCount()
             LazyColumn(
                 Modifier.fillMaxSize().padding(padding),
                 state = lazyListState,
@@ -285,6 +293,16 @@ private fun HistoryCard(
                     Spacer(Modifier.height(2.dp))
                     Text(
                         stringResource(R.string.history_dnd_tip),
+                        fontSize = 11.sp,
+                        color = Color(0xFFAAAAAA)
+                    )
+                }
+                if (entry.reason == BlockReason.MANUAL_BLOCK) {
+                    // This row records a Settings action, not an actual incoming call —
+                    // make that explicit so it isn't mistaken for a call that rang in.
+                    Spacer(Modifier.height(2.dp))
+                    Text(
+                        stringResource(R.string.history_manual_block_tip),
                         fontSize = 11.sp,
                         color = Color(0xFFAAAAAA)
                     )

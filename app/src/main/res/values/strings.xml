@@ -70,6 +70,7 @@
     <string name="history_spoof_no_allow">Invalid JP number — cannot be restored</string>
     <string name="history_foreign_tip">Call them first to trust permanently</string>
     <string name="history_dnd_tip">Allow adds a permanent exception — rings through even when DND is on</string>
+    <string name="history_manual_block_tip">You blocked this number from Settings — it hasn\'t called yet</string>
     <string name="history_allowed_notice">Allowed %s</string>
     <string name="history_undo">Undo</string>
 
