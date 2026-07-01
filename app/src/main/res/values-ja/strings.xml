@@ -38,6 +38,8 @@
     <string name="notif_channel_outbound_warn">発信警告</string>
     <string name="outbound_warn_title">警告: 直前にブロックされた番号</string>
     <string name="outbound_warn_body">この番号は先ほどブロック対象。通話を切ることを推奨</string>
+    <string name="outbound_warn_title_urgent">🚨 発信しないで — 数分前に警告した番号</string>
+    <string name="outbound_warn_body_urgent">この番号から数分前に着信があり警告済みです。お金の送金や確認コードの共有はしないでください。先に家族に連絡を。</string>
     <string name="notif_channel_digest">週次サマリ</string>
     <string name="police_warn_title_high">🚨 %1$s の番号 — 偽装の疑い極めて高</string>
     <string name="notif_channel_tax_warn">税務署偽装警告</string>

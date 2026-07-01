@@ -76,10 +76,17 @@ class SilentBlockerService : CallScreeningService() {
             // OutboundGuard only fires after Orange has formally blocked something; without
             // the WangiriTracker check, this callback window is a silent blind spot.
             val wangiriCandidates = WangiriTracker.snapshot(p, now)
-            val flagged = variants.any { v ->
-                OutboundGuard.wasRecentlyFlagged(p, v, now) || wangiriCandidates.containsKey(SpamCache.hash(p, v))
+            // Track the MOST RECENT flag timestamp (not just "was it flagged?") so we
+            // can tell "flagged 23 hours ago" from "flagged 90 seconds ago" — the latter
+            // means the user is very likely calling back mid-scam and gets a stronger
+            // warning than a routine same-day callback (see OutboundGuard.ACTIVE_SCAM_WINDOW_MS).
+            val mostRecentFlagAt = variants.mapNotNull { v ->
+                OutboundGuard.flaggedAt(p, v, now) ?: wangiriCandidates[SpamCache.hash(p, v)]
+            }.maxOrNull()
+            if (mostRecentFlagAt != null) {
+                val urgent = now - mostRecentFlagAt < OutboundGuard.ACTIVE_SCAM_WINDOW_MS
+                WarningNotifier.showOutboundWarning(this, number, urgent = urgent)
             }
-            if (flagged) WarningNotifier.showOutboundWarning(this, number)
         }
     }
 

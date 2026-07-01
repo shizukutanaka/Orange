@@ -43,6 +43,8 @@
     <string name="notif_channel_outbound_warn">Outbound call warning</string>
     <string name="outbound_warn_title">Warning: recently flagged</string>
     <string name="outbound_warn_body">This number was recently blocked. Consider hanging up.</string>
+    <string name="outbound_warn_title_urgent">🚨 Don\'t call — flagged moments ago</string>
+    <string name="outbound_warn_body_urgent">This number contacted you minutes ago and was flagged. Do not send money or share codes. Call a family member first.</string>
     <string name="notif_channel_digest">Weekly summary</string>
     <string name="police_warn_title_high">🚨 Likely %1$s impersonation</string>
     <string name="notif_channel_tax_warn">Tax agency impersonation warning</string>

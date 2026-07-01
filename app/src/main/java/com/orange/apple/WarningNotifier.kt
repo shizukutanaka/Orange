@@ -132,9 +132,15 @@ internal object WarningNotifier {
      * 24 hours, meaning repeated dials to the same number within a day would
      * generate a new heads-up notification each time. One warning per hour is
      * enough — the user has already been told.
+     *
+     * @param urgent true when the number was flagged within OutboundGuard.ACTIVE_SCAM_WINDOW_MS
+     *   (15 min) of this dial — the user is very likely calling back mid-scam rather than
+     *   redialing a number from earlier in the day. Shows a stronger 🚨 warning instead of
+     *   the routine one. Never blocks the call either way — outbound calls are always the
+     *   user's choice; this only changes how loudly Orange asks them to reconsider.
      */
     @Synchronized
-    fun showOutboundWarning(ctx: Context, number: String) {
+    fun showOutboundWarning(ctx: Context, number: String, urgent: Boolean = false) {
         val prefs = ctx.getSharedPreferences(SilentBlockerService.PREFS, Context.MODE_PRIVATE)
         pruneStaleRateLimitKeys(prefs, System.currentTimeMillis())
         // Hash so the SharedPreferences key name doesn't expose the dialled number to
@@ -151,10 +157,19 @@ internal object WarningNotifier {
             ctx.getString(R.string.notif_channel_outbound_warn),
             NotificationManager.IMPORTANCE_HIGH)
 
+        val title = if (urgent)
+            ctx.getString(R.string.outbound_warn_title_urgent)
+        else
+            ctx.getString(R.string.outbound_warn_title)
+        val body = if (urgent)
+            ctx.getString(R.string.outbound_warn_body_urgent)
+        else
+            ctx.getString(R.string.outbound_warn_body)
+
         val builder = NotificationCompat.Builder(ctx, CHANNEL_OUTBOUND)
             .setSmallIcon(android.R.drawable.ic_dialog_alert)
-            .setContentTitle(ctx.getString(R.string.outbound_warn_title))
-            .setContentText(ctx.getString(R.string.outbound_warn_body))
+            .setContentTitle(title)
+            .setContentText(body)
             .setPriority(NotificationCompat.PRIORITY_HIGH)
             .setAutoCancel(true)
 

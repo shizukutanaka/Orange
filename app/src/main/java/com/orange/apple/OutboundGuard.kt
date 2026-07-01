@@ -27,6 +27,17 @@ internal object OutboundGuard {
     const val MAX_ENTRIES = 64
     private const val KEY = "outbound_guard"
 
+    /**
+     * If the callback happens within this window of the original flag, the user
+     * is very likely mid-scam (redialing while still on the phone with, or
+     * moments after hanging up on, whoever just contacted them) rather than
+     * absent-mindedly calling back a number from hours ago. Used to escalate
+     * the outbound-warning notification's urgency. 15 minutes covers the
+     * typical "hang up, panic, call back" window described in elder-fraud
+     * recovery literature without over-firing on a same-day-but-unrelated dial.
+     */
+    const val ACTIVE_SCAM_WINDOW_MS = 15L * 60 * 1000
+
     /** Record a number that was blocked or warned.
      * Silently ignores empty strings (withheld calls have number=""). */
     @Synchronized
@@ -50,6 +61,16 @@ internal object OutboundGuard {
     @Synchronized
     fun wasRecentlyFlagged(prefs: SharedPreferences, number: String, nowMs: Long): Boolean =
         snapshot(prefs, nowMs).containsKey(SpamCache.hash(prefs, number))
+
+    /**
+     * Returns the timestamp the number was flagged at, or null if not currently
+     * flagged. Lets a caller distinguish "flagged 23 hours ago" from "flagged
+     * 90 seconds ago" — the latter means the user is very likely calling back
+     * mid-scam, which warrants a stronger warning than the generic one.
+     */
+    @Synchronized
+    fun flaggedAt(prefs: SharedPreferences, number: String, nowMs: Long): Long? =
+        snapshot(prefs, nowMs)[SpamCache.hash(prefs, number)]
 
     /** Remove a number from the guard (called when user restores a false positive). */
     @Synchronized

@@ -78,6 +78,48 @@ class OutboundGuardTest {
         assertFalse(OutboundGuard.wasRecentlyFlagged(p, oldestNum, now + OutboundGuard.MAX_ENTRIES + 1))
     }
 
+    @Test fun `flaggedAt returns the recorded timestamp`() {
+        val p = FakePrefs()
+        val now = 1_000_000L
+        OutboundGuard.record(p, "09012345678", now)
+        assertEquals(now, OutboundGuard.flaggedAt(p, "09012345678", now + 1000L))
+    }
+
+    @Test fun `flaggedAt returns null when not flagged`() {
+        val p = FakePrefs()
+        assertNull(OutboundGuard.flaggedAt(p, "09012345678", 1_000_000L))
+    }
+
+    @Test fun `flaggedAt returns null after expiry`() {
+        val p = FakePrefs()
+        val now = 1_000_000L
+        OutboundGuard.record(p, "09012345678", now)
+        val expired = now + OutboundGuard.WINDOW_MS + 1L
+        assertNull(OutboundGuard.flaggedAt(p, "09012345678", expired))
+    }
+
+    @Test fun `flaggedAt within ACTIVE_SCAM_WINDOW_MS is urgent-eligible`() {
+        val p = FakePrefs()
+        val now = 1_000_000L
+        OutboundGuard.record(p, "09012345678", now)
+        val callbackAt = now + OutboundGuard.ACTIVE_SCAM_WINDOW_MS - 1L
+        val flaggedAt = OutboundGuard.flaggedAt(p, "09012345678", callbackAt)
+        assertNotNull(flaggedAt)
+        assertTrue("callback within the active-scam window should be urgent",
+            callbackAt - flaggedAt!! < OutboundGuard.ACTIVE_SCAM_WINDOW_MS)
+    }
+
+    @Test fun `flaggedAt outside ACTIVE_SCAM_WINDOW_MS is not urgent-eligible`() {
+        val p = FakePrefs()
+        val now = 1_000_000L
+        OutboundGuard.record(p, "09012345678", now)
+        val callbackAt = now + OutboundGuard.ACTIVE_SCAM_WINDOW_MS + 1L
+        val flaggedAt = OutboundGuard.flaggedAt(p, "09012345678", callbackAt)
+        assertNotNull(flaggedAt)
+        assertFalse("callback outside the active-scam window should not be urgent",
+            callbackAt - flaggedAt!! < OutboundGuard.ACTIVE_SCAM_WINDOW_MS)
+    }
+
     @Test fun `raw number not stored in prefs value`() {
         val p = FakePrefs()
         val number = "09012345678"
