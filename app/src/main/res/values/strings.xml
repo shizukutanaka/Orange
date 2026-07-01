@@ -100,4 +100,5 @@
     <string name="settings_allowed_suffix">Ends in %1$s</string>
     <string name="settings_allowed_revoke">Remove</string>
     <string name="settings_footer">Orange stores no data outside this device. Numbers in history are masked. No account, no sync, no ads.</string>
+    <string name="settings_data_version">Protection data verified: %1$s. Orange never connects to the internet, so this list only updates when you install a new version of the app.</string>
 </resources>

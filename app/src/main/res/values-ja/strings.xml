@@ -95,4 +95,5 @@
     <string name="settings_allowed_suffix">末尾 %1$s</string>
     <string name="settings_allowed_revoke">削除</string>
     <string name="settings_footer">Orangeはすべてのデータを端末内にのみ保存します。番号は末尾4桁のみ表示。アカウント不要・同期なし・広告なし。</string>
+    <string name="settings_data_version">保護データの確認日: %1$s。Orangeはインターネットに接続しないため、このリストはアプリを更新したときのみ最新になります。</string>
 </resources>

@@ -281,6 +281,13 @@ fun SettingsScreen() {
                 color = Color.LightGray,
                 modifier = Modifier.padding(horizontal = 4.dp)
             )
+            Spacer(Modifier.height(4.dp))
+            Text(
+                stringResource(R.string.settings_data_version, ProtectionDataVersion.LAST_UPDATED),
+                fontSize = 11.sp,
+                color = Color.LightGray,
+                modifier = Modifier.padding(horizontal = 4.dp)
+            )
         }
     }
 }
