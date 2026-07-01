@@ -1,9 +1,11 @@
 package com.orange.apple
 
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import java.io.BufferedReader
+import java.io.File
 import java.io.StringReader
 
 /**
@@ -91,5 +93,22 @@ class BusinessDirectoryBundleTest {
         assertEquals("総務省", m["+81354737800"])
         assertEquals("ヤマト運輸", m["+81570200000"])
         assertEquals("三井住友銀行", m["+81120860862"])
+    }
+
+    @Test fun shipped_csv_does_not_bundle_police_numbers() {
+        // Regression guard: BusinessDirectoryBundle grants unconditional silent
+        // trust (Layer 5 — rings with NO impersonation warning, bypasses even
+        // STIR/SHAKEN checks). Police representative numbers are exactly what
+        // ニセ警察詐欺 scammers spoof, so they must only ever be reachable via
+        // PoliceStationDirectory (Layer 9), which always shows the warning.
+        // The National Police Agency (警察庁, +81335810141) was previously
+        // mis-bundled here; this guards against that regression.
+        val csvFile = File("src/main/assets/business_directory.csv")
+        assertTrue("expected asset to exist at ${csvFile.absolutePath}", csvFile.exists())
+        val m = parse(csvFile.readText())
+        assertFalse("警察庁 must not be silently trusted via the business bundle",
+            m.containsKey("+81335810141"))
+        assertTrue("no bundled entry should be named 警察庁",
+            m.values.none { it.contains("警察庁") })
     }
 }

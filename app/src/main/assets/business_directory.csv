@@ -13,7 +13,11 @@
 
 # === 中央省庁 (soumu.go.jp公表 代表電話) ===
 +81352535111,総務省
-+81335810141,警察庁
+# 警察庁 (+81335810141) is intentionally NOT here — see PoliceStationDirectory.kt.
+# This bundle grants unconditional silent trust (Layer 5, rings with NO warning,
+# bypasses even STIR/SHAKEN failure). Police numbers are exactly what ニセ警察詐欺
+# scammers spoof, so they must go through PoliceStationDirectory (Layer 9) instead,
+# which rings but always shows the impersonation warning.
 +81335078800,消費者庁
 +81352532111,内閣府
 +81335811271,内閣官房

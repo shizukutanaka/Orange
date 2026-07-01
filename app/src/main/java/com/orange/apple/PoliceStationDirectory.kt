@@ -31,6 +31,10 @@ internal object PoliceStationDirectory {
      * (we do NOT block police) but flags it for post-pickup warning.
      */
     val entries: Map<String, String> = mapOf(
+        // 警察庁 (National Police Agency) — moved here from business_directory.csv:
+        // that bundle grants unconditional silent trust with no warning, which is
+        // the wrong treatment for a number scammers impersonate.
+        "0335810141" to "警察庁",
         // 北海道
         "0112510110" to "北海道警察",
         // 東北

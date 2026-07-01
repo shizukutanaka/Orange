@@ -15,6 +15,17 @@ class PoliceStationDirectoryTest {
         assertEquals("大阪府警察", PoliceStationDirectory.lookup("0669430110"))
     }
 
+    @Test fun npa_domestic_matches() {
+        // National Police Agency (警察庁) must be covered here — not in
+        // BusinessDirectoryBundle, where it would ring with NO impersonation
+        // warning and bypass STIR/SHAKEN verification (see business_directory.csv).
+        assertEquals("警察庁", PoliceStationDirectory.lookup("0335810141"))
+    }
+
+    @Test fun npa_e164_matches() {
+        assertEquals("警察庁", PoliceStationDirectory.lookup("+81335810141"))
+    }
+
     @Test fun all_47_entries_are_non_empty() {
         assertTrue(PoliceStationDirectory.entries.isNotEmpty())
         // All 47 prefectural HQ should be present.
