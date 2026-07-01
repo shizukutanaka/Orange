@@ -220,6 +220,60 @@ fun SettingsScreen() {
                 }
             }
 
+            Spacer(Modifier.height(8.dp))
+            SectionHeader(stringResource(R.string.settings_section_allowed))
+            Text(
+                stringResource(R.string.settings_allowed_description),
+                fontSize = 13.sp,
+                color = Color.Gray,
+                modifier = Modifier.padding(bottom = 4.dp)
+            )
+
+            var allowed by remember { mutableStateOf(AllowSuffixStore.listAllowed(prefs)) }
+            if (allowed.isEmpty()) {
+                Text(
+                    stringResource(R.string.settings_allowed_empty),
+                    fontSize = 13.sp,
+                    color = Color.Gray
+                )
+            } else {
+                Card(
+                    shape = RoundedCornerShape(12.dp),
+                    colors = CardDefaults.cardColors(containerColor = Color.White),
+                    elevation = CardDefaults.cardElevation(1.dp),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Column {
+                        allowed.forEachIndexed { index, suffix ->
+                            Row(
+                                Modifier.padding(horizontal = 16.dp, vertical = 10.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text(
+                                    stringResource(R.string.settings_allowed_suffix, suffix),
+                                    fontSize = 15.sp,
+                                    modifier = Modifier.weight(1f),
+                                    color = Color(0xFF1C1C1E)
+                                )
+                                TextButton(onClick = {
+                                    AllowSuffixStore.revoke(prefs, "****$suffix")
+                                    allowed = AllowSuffixStore.listAllowed(prefs)
+                                }) {
+                                    Text(
+                                        stringResource(R.string.settings_allowed_revoke),
+                                        color = Color(0xFFFF3B30),
+                                        fontSize = 13.sp
+                                    )
+                                }
+                            }
+                            if (index != allowed.lastIndex) {
+                                HorizontalDivider(color = Color(0xFFF0F0F0))
+                            }
+                        }
+                    }
+                }
+            }
+
             Spacer(Modifier.height(24.dp))
             Text(
                 stringResource(R.string.settings_footer),

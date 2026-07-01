@@ -124,4 +124,25 @@ class AllowSuffixStoreTest {
         assertFalse("suffix must be removed even with trailing non-digit in masked arg",
             AllowSuffixStore.isAllowed(prefs, "09012341234"))
     }
+
+    @Test
+    fun `listAllowed returns empty list initially`() {
+        assertTrue(AllowSuffixStore.listAllowed(prefs).isEmpty())
+    }
+
+    @Test
+    fun `listAllowed returns newest first`() {
+        AllowSuffixStore.allow(prefs, "****1111")
+        AllowSuffixStore.allow(prefs, "****2222")
+        AllowSuffixStore.allow(prefs, "****3333")
+        assertEquals(listOf("3333", "2222", "1111"), AllowSuffixStore.listAllowed(prefs))
+    }
+
+    @Test
+    fun `listAllowed reflects revoke`() {
+        AllowSuffixStore.allow(prefs, "****1111")
+        AllowSuffixStore.allow(prefs, "****2222")
+        AllowSuffixStore.revoke(prefs, "****1111")
+        assertEquals(listOf("2222"), AllowSuffixStore.listAllowed(prefs))
+    }
 }
