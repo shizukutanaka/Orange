@@ -96,6 +96,27 @@ class TaxAgencyDirectoryTest {
         assertNull(d.warning)
     }
 
+    @Test fun decide_tax_warning_survives_pause() {
+        // Same rationale as the police-warning pause test: pause exists for
+        // call-volume fatigue, not to silence active-fraud impersonation warnings.
+        val ctx = CallContext(
+            number = "0352533111",
+            calleeCountryIso = "JP",
+            nowMillis = 1_000_000L
+        )
+        val state = CallState(
+            outboundKnown = emptySet(),
+            isSpamCached = false,
+            knownBusinesses = emptySet(),
+            pausedUntilMillis = Long.MAX_VALUE,
+            wangiriRingAt = null
+        )
+        val d = decide(ctx, state)
+        assertEquals(Verdict.RING, d.verdict)
+        assertEquals(WarnReason.TAX_AGENCY_IMPERSONATION, d.warning)
+        assertEquals("国税庁", d.warnPayload)
+    }
+
     @Test fun decide_outbound_known_bypasses_tax_warning() {
         // A tax-agency number the user has previously dialed rings with no warning —
         // outbound-known (Layer 4) fires before the tax-agency check (Layer 9b).

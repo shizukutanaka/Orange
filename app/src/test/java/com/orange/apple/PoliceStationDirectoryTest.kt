@@ -164,6 +164,48 @@ class PoliceStationDirectoryTest {
         assertEquals("新宿警察署", PoliceStationDirectory.lookup("0333460110"))
     }
 
+    @Test fun decide_police_warning_survives_pause() {
+        // Pause exists for call-volume fatigue, not to disable active-fraud
+        // warnings. The call rings either way during pause; this asserts the
+        // warning still surfaces rather than being silently dropped.
+        val ctx = CallContext(
+            number = "0335814321",
+            calleeCountryIso = "JP",
+            nowMillis = 1_000_000L
+        )
+        val state = CallState(
+            outboundKnown = emptySet(),
+            isSpamCached = false,
+            knownBusinesses = emptySet(),
+            pausedUntilMillis = Long.MAX_VALUE,
+            wangiriRingAt = null
+        )
+        val d = decide(ctx, state)
+        assertEquals(Verdict.RING, d.verdict)
+        assertEquals(WarnReason.POLICE_IMPERSONATION, d.warning)
+        assertEquals("警視庁", d.warnPayload)
+    }
+
+    @Test fun decide_rings_with_no_warning_while_paused_for_non_gov_number() {
+        // A regular unknown number during pause still just rings, no warning —
+        // pause's blanket RING behaviour is otherwise unchanged.
+        val ctx = CallContext(
+            number = "09099998888",
+            calleeCountryIso = "JP",
+            nowMillis = 1_000_000L
+        )
+        val state = CallState(
+            outboundKnown = emptySet(),
+            isSpamCached = false,
+            knownBusinesses = emptySet(),
+            pausedUntilMillis = Long.MAX_VALUE,
+            wangiriRingAt = null
+        )
+        val d = decide(ctx, state)
+        assertEquals(Verdict.RING, d.verdict)
+        assertNull(d.warning)
+    }
+
     @Test fun decide_no_police_warning_outside_jp() {
         // Police directory is JP-specific; same number from non-JP callee gets no Layer 9 check.
         val ctx = CallContext(

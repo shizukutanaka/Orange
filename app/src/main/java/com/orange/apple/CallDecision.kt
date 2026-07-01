@@ -148,8 +148,18 @@ fun decide(ctx: CallContext, state: CallState): Decision {
     // Layer 2: Paused. User asked for silence to stop — respect it for ALL
     // calls including withheld. If pause didn't override withheld, a user
     // expecting a callback from a hospital (restricted ID) who paused Orange
-    // would still have that call silenced. Pause means "everything rings."
-    if (ctx.nowMillis < state.pausedUntilMillis) return Decision(Verdict.RING)
+    // would still have that call silenced. Pause means "every call rings."
+    //
+    // It does NOT mean "every impersonation warning goes silent too": Pause
+    // exists for call-volume fatigue (too many calls, need an hour of quiet),
+    // a different concern from active-fraud protection. A user who pauses
+    // Orange to skip a busy afternoon of work calls should not also lose the
+    // warning that the next call is spoofing 警察庁/国税庁 — the call rings
+    // either way, so surfacing the warning costs nothing in call-silencing
+    // terms and closes a real gap in active-fraud protection.
+    if (ctx.nowMillis < state.pausedUntilMillis) {
+        return govAgencyImpersonationWarning(ctx) ?: Decision(Verdict.RING)
+    }
 
     // Layer 3: Withheld caller ID (非通知). Placed AFTER pause so the user
     // can temporarily allow withheld calls by tapping the Quick Settings tile.
@@ -184,45 +194,21 @@ fun decide(ctx: CallContext, state: CallState): Decision {
         return Decision(Verdict.SILENCE, BlockReason.DOMESTIC_SPOOF)
     }
 
-    // Layer 9: Police HQ number impersonation detection.
-    // Police numbers MUST ring even when STIR/SHAKEN reports FAILED — a real
-    // officer calling from their HQ phone must not be silenced by Layer 10.
-    // This layer runs BEFORE the STIR/SHAKEN check so that the verification
-    // failure can be used to escalate the warning severity rather than block
-    // the call. If Layer 10 ran first and silenced on verificationFailed, a
-    // real police HQ call with spoofed carrier data would be blocked silently.
+    // Layer 9/9b: Police HQ and tax-authority number impersonation detection.
+    // These numbers MUST ring even when STIR/SHAKEN reports FAILED — a real
+    // officer or tax officer calling from their own office phone must not be
+    // silenced by Layer 10. This runs BEFORE the STIR/SHAKEN check so that the
+    // verification failure can be used to escalate the warning severity rather
+    // than block the call. If Layer 10 ran first and silenced on
+    // verificationFailed, a real government call with spoofed carrier data
+    // would be blocked silently.
     //
-    // 2025 ニセ警察詐欺 (9,642件, ¥831.9億円): scammers spoof real police
-    // HQ representative numbers. We RING with a post-pickup warning instead.
-    // The old 0110-tail heuristic was too broad; directory exact-match is correct.
-    // Single lookup — result goes into warnPayload so the adapter
-    // does not need a second map traversal.
-    if (ctx.calleeCountryIso == "JP") {
-        val hqName = PoliceStationDirectory.lookup(ctx.number)
-        if (hqName != null) {
-            val warnSeverity = if (ctx.verificationFailed)
-                WarnReason.POLICE_IMPERSONATION_HIGH
-            else
-                WarnReason.POLICE_IMPERSONATION
-            return Decision(Verdict.RING, warning = warnSeverity, warnPayload = hqName)
-        }
-    }
-
-    // Layer 9b: Tax-authority number impersonation detection. Same rationale and
-    // ordering as Layer 9 (police): a real tax office call must not be silenced
-    // by Layer 10's STIR/SHAKEN check, and verification failure escalates the
-    // warning instead of blocking. 還付金詐欺/税金未納詐欺 scammers spoof exactly
-    // these numbers, so a match rings with a warning rather than silent trust.
-    if (ctx.calleeCountryIso == "JP") {
-        val taxName = TaxAgencyDirectory.lookup(ctx.number)
-        if (taxName != null) {
-            val warnSeverity = if (ctx.verificationFailed)
-                WarnReason.TAX_AGENCY_IMPERSONATION_HIGH
-            else
-                WarnReason.TAX_AGENCY_IMPERSONATION
-            return Decision(Verdict.RING, warning = warnSeverity, warnPayload = taxName)
-        }
-    }
+    // 2025 ニセ警察詐欺 (9,642件, ¥831.9億円) and 還付金詐欺/税金未納詐欺 both
+    // spoof real government representative numbers. We RING with a post-pickup
+    // warning instead. The old 0110-tail heuristic was too broad; directory
+    // exact-match is correct. Single lookup — result goes into warnPayload so
+    // the adapter does not need a second map traversal.
+    govAgencyImpersonationWarning(ctx)?.let { return it }
 
     // Layer 10: STIR/SHAKEN carrier verification failed.
     // Reached only for non-emergency, non-paused, non-withheld, non-outbound,
@@ -286,6 +272,34 @@ fun decide(ctx: CallContext, state: CallState): Decision {
 
     // Layer 16: Allow. Silence-on-uncertainty is how users lose trust.
     return Decision(Verdict.RING)
+}
+
+/**
+ * Checks the caller number against both government-impersonation-target
+ * directories (police HQ/stations, tax authority) and returns a RING decision
+ * with the appropriate warning if either matches, or null if neither does.
+ *
+ * Shared between the pause-time check (Layer 2 — pause never silences these
+ * warnings) and the main Layer 9/9b position, so the lookup and severity-
+ * escalation logic lives in exactly one place.
+ */
+private fun govAgencyImpersonationWarning(ctx: CallContext): Decision? {
+    if (ctx.calleeCountryIso != "JP") return null
+    PoliceStationDirectory.lookup(ctx.number)?.let { hqName ->
+        val warnSeverity = if (ctx.verificationFailed)
+            WarnReason.POLICE_IMPERSONATION_HIGH
+        else
+            WarnReason.POLICE_IMPERSONATION
+        return Decision(Verdict.RING, warning = warnSeverity, warnPayload = hqName)
+    }
+    TaxAgencyDirectory.lookup(ctx.number)?.let { taxName ->
+        val warnSeverity = if (ctx.verificationFailed)
+            WarnReason.TAX_AGENCY_IMPERSONATION_HIGH
+        else
+            WarnReason.TAX_AGENCY_IMPERSONATION
+        return Decision(Verdict.RING, warning = warnSeverity, warnPayload = taxName)
+    }
+    return null
 }
 
 internal val WANGIRI_WINDOW_MS get() = WangiriTracker.WANGIRI_WINDOW_MS
