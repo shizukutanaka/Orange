@@ -40,6 +40,7 @@ internal object CaribbeanPremiumNANP {
         "767",  // Dominica
         "784",  // Saint Vincent & Grenadines
         "787",  // Puerto Rico (lower risk)
+        "939",  // Puerto Rico (overlay of 787)
         "809",  // Dominican Republic
         "829",  // Dominican Republic (overlay)
         "849",  // Dominican Republic (overlay)

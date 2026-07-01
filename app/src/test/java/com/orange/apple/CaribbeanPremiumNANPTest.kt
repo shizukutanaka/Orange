@@ -52,4 +52,9 @@ class CaribbeanPremiumNANPTest {
         assertTrue(CaribbeanPremiumNANP.isPremiumNANP("+14415551234"))  // Bermuda
         assertTrue(CaribbeanPremiumNANP.isPremiumNANP("+18095551234"))  // Dominican Republic
     }
+
+    @Test fun puerto_rico_overlay_939_recognized() {
+        // 939 is the overlay area code sharing Puerto Rico's geography with 787.
+        assertTrue(CaribbeanPremiumNANP.isPremiumNANP("+19395551234"))
+    }
 }
