@@ -124,6 +124,9 @@
 
 # === 官公庁 追加 ===
 +81352536600,デジタル庁
-# +81335811271,個人情報保護委員会  # TODO: verify correct number — duplicate of 内閣官房 line 19
+# 個人情報保護委員会 omitted: the only number found matched 内閣官房's own line
+# above and could not be independently verified from the commission's own
+# public page. Per this file's rule #1 (own-source verification only), it
+# is left out rather than shipped as an unverified guess.
 +81333578023,特許庁
 +81335815321,気象庁
