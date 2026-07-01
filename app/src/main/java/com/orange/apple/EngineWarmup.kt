@@ -34,9 +34,13 @@ class EngineWarmup : ContentProvider() {
         // Pre-load caches. Both are lazy-init singletons; calling load() here
         // ensures subsequent reads are O(1) HashMap lookups.
         BusinessDirectoryBundle.load(ctx)
-        // PoliceStationDirectory is a static Map — already initialized.
-        // Touch it here to force class loading at app start, not at first call.
+        // PoliceStationDirectory and TaxAgencyDirectory are static Maps — already
+        // initialized. Touch both here to force class loading at app start, not
+        // at first call (TaxAgencyDirectory was added after this warmup path and
+        // was missed the first time; Layer 9b in CallDecision.kt depends on it
+        // being loaded just as much as Layer 9 depends on PoliceStationDirectory).
         PoliceStationDirectory.entries.size
+        TaxAgencyDirectory.entries.size
         return true
     }
 
