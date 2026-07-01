@@ -131,6 +131,9 @@ data class Decision(
 enum class WarnReason {
     POLICE_IMPERSONATION,
     POLICE_IMPERSONATION_HIGH,
+    /** Caller ID matches a known tax-authority number (還付金詐欺/税金未納詐欺 target). */
+    TAX_AGENCY_IMPERSONATION,
+    TAX_AGENCY_IMPERSONATION_HIGH,
     /** Unknown domestic mobile during アポ電 peak hours (09-12, 13-16, 18-20 weekday JST). */
     HIGH_RISK_HOUR_DOMESTIC,
 }
@@ -205,9 +208,25 @@ fun decide(ctx: CallContext, state: CallState): Decision {
         }
     }
 
+    // Layer 9b: Tax-authority number impersonation detection. Same rationale and
+    // ordering as Layer 9 (police): a real tax office call must not be silenced
+    // by Layer 10's STIR/SHAKEN check, and verification failure escalates the
+    // warning instead of blocking. 還付金詐欺/税金未納詐欺 scammers spoof exactly
+    // these numbers, so a match rings with a warning rather than silent trust.
+    if (ctx.calleeCountryIso == "JP") {
+        val taxName = TaxAgencyDirectory.lookup(ctx.number)
+        if (taxName != null) {
+            val warnSeverity = if (ctx.verificationFailed)
+                WarnReason.TAX_AGENCY_IMPERSONATION_HIGH
+            else
+                WarnReason.TAX_AGENCY_IMPERSONATION
+            return Decision(Verdict.RING, warning = warnSeverity, warnPayload = taxName)
+        }
+    }
+
     // Layer 10: STIR/SHAKEN carrier verification failed.
     // Reached only for non-emergency, non-paused, non-withheld, non-outbound,
-    // non-business, non-spam, non-wangiri, non-spoof, non-police numbers.
+    // non-business, non-spam, non-wangiri, non-spoof, non-police, non-tax numbers.
     if (ctx.verificationFailed) {
         return Decision(Verdict.SILENCE, BlockReason.CARRIER_VERIFICATION_FAILED)
     }

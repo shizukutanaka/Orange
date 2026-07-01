@@ -24,7 +24,9 @@
 +81352536111,法務省
 +81355018000,外務省
 +81335814111,財務省
-+81352533111,国税庁
+# 国税庁 (+81352533111) is intentionally NOT here — see TaxAgencyDirectory.kt.
+# 還付金詐欺/税金未納詐欺 scammers spoof this exact number; it must go through
+# TaxAgencyDirectory (warn-but-ring) instead of this bundle's silent trust.
 +81352534111,文部科学省
 +81352531111,厚生労働省
 +81335028111,農林水産省

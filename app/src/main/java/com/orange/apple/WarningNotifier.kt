@@ -25,6 +25,7 @@ import androidx.core.content.edit
 internal object WarningNotifier {
 
     private const val CHANNEL_POLICE = "orange_police_warn"
+    private const val CHANNEL_TAX = "orange_tax_warn"
     private const val CHANNEL_HIGHRISK = "orange_highrisk"
     private const val CHANNEL_OUTBOUND = "orange_outbound_warn"
 
@@ -52,6 +53,33 @@ internal object WarningNotifier {
 
         addFamilyAction(ctx, builder)
         mgr.notify(TrustNotifier.notifIdFor(number) xor 0x0BADE, builder.build())
+    }
+
+    /** Tax-authority impersonation warning. Call RINGS but user sees heads-up.
+     *  Mirrors showPoliceWarning — same rationale, distinct channel and copy.
+     *  @param highSeverity true when STIR/SHAKEN also reports FAILED — escalated 🚨 alert. */
+    @Synchronized
+    fun showTaxAgencyWarning(ctx: Context, number: String, agencyName: String, highSeverity: Boolean = false) {
+        val mgr = notifManager(ctx) ?: return
+        ensureChannel(ctx, mgr, CHANNEL_TAX,
+            ctx.getString(R.string.notif_channel_tax_warn),
+            NotificationManager.IMPORTANCE_HIGH)
+
+        val title = if (highSeverity)
+            ctx.getString(R.string.tax_warn_title_high, agencyName)
+        else
+            ctx.getString(R.string.tax_warn_title, agencyName)
+
+        val builder = NotificationCompat.Builder(ctx, CHANNEL_TAX)
+            .setSmallIcon(android.R.drawable.ic_dialog_alert)
+            .setContentTitle(title)
+            .setContentText(ctx.getString(R.string.tax_warn_body))
+            .setPriority(NotificationCompat.PRIORITY_HIGH)
+            .setAutoCancel(true)
+            .setCategory(NotificationCompat.CATEGORY_ALARM)
+
+        addFamilyAction(ctx, builder)
+        mgr.notify(TrustNotifier.notifIdFor(number) xor 0x07A400, builder.build())
     }
 
     /**

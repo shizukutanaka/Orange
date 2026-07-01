@@ -45,6 +45,10 @@
     <string name="outbound_warn_body">This number was recently blocked. Consider hanging up.</string>
     <string name="notif_channel_digest">Weekly summary</string>
     <string name="police_warn_title_high">🚨 Likely %1$s impersonation</string>
+    <string name="notif_channel_tax_warn">Tax agency impersonation warning</string>
+    <string name="tax_warn_title">Possible %1$s impersonation</string>
+    <string name="tax_warn_title_high">🚨 Likely %1$s impersonation</string>
+    <string name="tax_warn_body">Tax agencies never demand payment by phone. Hang up and call back using the number on their official site.</string>
     <string name="notif_channel_highrisk">High-risk hour warning</string>
     <string name="highrisk_warn_title">⚠️ Suspicious call</string>
     <string name="highrisk_warn_body">Unknown mobile during high-risk hours. Do not call back.</string>

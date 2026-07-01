@@ -95,20 +95,32 @@ class BusinessDirectoryBundleTest {
         assertEquals("三井住友銀行", m["+81120860862"])
     }
 
-    @Test fun shipped_csv_does_not_bundle_police_numbers() {
-        // Regression guard: BusinessDirectoryBundle grants unconditional silent
-        // trust (Layer 5 — rings with NO impersonation warning, bypasses even
-        // STIR/SHAKEN checks). Police representative numbers are exactly what
-        // ニセ警察詐欺 scammers spoof, so they must only ever be reachable via
-        // PoliceStationDirectory (Layer 9), which always shows the warning.
-        // The National Police Agency (警察庁, +81335810141) was previously
-        // mis-bundled here; this guards against that regression.
+    /**
+     * Regression guard: BusinessDirectoryBundle grants unconditional silent trust
+     * (Layer 5 — rings with NO impersonation warning, bypasses even STIR/SHAKEN
+     * checks). Numbers listed in PoliceStationDirectory or TaxAgencyDirectory are
+     * exactly what ニセ警察詐欺/還付金詐欺 scammers spoof, so they must only ever
+     * be reachable via their dedicated warn-but-ring directory, never via this
+     * bundle's blind trust. Both 警察庁 and 国税庁 were previously mis-bundled
+     * here; this checks EVERY entry in both directories generically so a future
+     * addition to either can't silently reintroduce the same bug.
+     */
+    @Test fun shipped_csv_never_bundles_a_warn_directory_number() {
         val csvFile = File("src/main/assets/business_directory.csv")
         assertTrue("expected asset to exist at ${csvFile.absolutePath}", csvFile.exists())
         val m = parse(csvFile.readText())
-        assertFalse("警察庁 must not be silently trusted via the business bundle",
-            m.containsKey("+81335810141"))
-        assertTrue("no bundled entry should be named 警察庁",
-            m.values.none { it.contains("警察庁") })
+
+        val warnDirectories = listOf(
+            "PoliceStationDirectory" to PoliceStationDirectory.entries,
+            "TaxAgencyDirectory" to TaxAgencyDirectory.entries,
+        )
+        for ((dirName, entries) in warnDirectories) {
+            for ((domesticKey, name) in entries) {
+                val e164 = "+81" + domesticKey.removePrefix("0")
+                assertFalse("$name ($domesticKey, from $dirName) must not be silently " +
+                    "trusted via the business bundle as $e164",
+                    m.containsKey(e164))
+            }
+        }
     }
 }

@@ -207,6 +207,13 @@ class SilentBlockerService : CallScreeningService() {
             WarningNotifier.showPoliceWarning(this, number, hqName,
                 highSeverity = decision.warning == WarnReason.POLICE_IMPERSONATION_HIGH)
         }
+        if (decision.warning == WarnReason.TAX_AGENCY_IMPERSONATION ||
+            decision.warning == WarnReason.TAX_AGENCY_IMPERSONATION_HIGH) {
+            val agencyName = decision.warnPayload ?: "国税庁"
+            if (number.isNotEmpty()) OutboundGuard.record(p, number, now)
+            WarningNotifier.showTaxAgencyWarning(this, number, agencyName,
+                highSeverity = decision.warning == WarnReason.TAX_AGENCY_IMPERSONATION_HIGH)
+        }
         if (decision.warning == WarnReason.HIGH_RISK_HOUR_DOMESTIC) {
             // Record in OutboundGuard so if the user calls back, they see the
             // outbound-warning notification — same behaviour as police warnings.
