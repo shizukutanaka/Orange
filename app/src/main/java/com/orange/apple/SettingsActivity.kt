@@ -223,6 +223,95 @@ fun SettingsScreen() {
             }
 
             Spacer(Modifier.height(8.dp))
+            SectionHeader(stringResource(R.string.settings_section_block))
+            Text(
+                stringResource(R.string.settings_block_description),
+                fontSize = 13.sp,
+                color = Color.Gray,
+                modifier = Modifier.padding(bottom = 4.dp)
+            )
+
+            var blockValue by remember { mutableStateOf("") }
+            var blockSaved by remember { mutableStateOf(false) }
+            var blockError by remember { mutableStateOf(false) }
+            val blockFocusRequester = remember { FocusRequester() }
+
+            val submitBlock = {
+                focusManager.clearFocus()
+                if (ManualBlock.block(ctx, blockValue)) {
+                    blockValue = ""
+                    blockSaved = true
+                    blockError = false
+                } else {
+                    blockSaved = false
+                    blockError = true
+                }
+            }
+
+            Card(
+                shape = RoundedCornerShape(12.dp),
+                colors = CardDefaults.cardColors(containerColor = Color.White),
+                elevation = CardDefaults.cardElevation(1.dp),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Column(Modifier.padding(16.dp)) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        OutlinedTextField(
+                            value = blockValue,
+                            onValueChange = {
+                                blockValue = it.filter { c ->
+                                    c.isDigit() || c == '+' || c == '-' ||
+                                        c == '＋' || c == '－'
+                                }
+                                blockSaved = false
+                                blockError = false
+                            },
+                            modifier = Modifier.weight(1f).focusRequester(blockFocusRequester),
+                            placeholder = { Text(stringResource(R.string.settings_block_placeholder)) },
+                            keyboardOptions = KeyboardOptions(
+                                keyboardType = KeyboardType.Phone,
+                                imeAction = ImeAction.Done
+                            ),
+                            keyboardActions = KeyboardActions(onDone = { submitBlock() }),
+                            singleLine = true,
+                            colors = OutlinedTextFieldDefaults.colors(
+                                focusedBorderColor = Color(0xFFFF8C42),
+                                cursorColor = Color(0xFFFF8C42),
+                            )
+                        )
+                        Button(
+                            onClick = { submitBlock() },
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = Color(0xFFFF8C42)
+                            ),
+                            shape = RoundedCornerShape(8.dp)
+                        ) {
+                            Text(stringResource(R.string.settings_block_button))
+                        }
+                    }
+                    if (blockSaved) {
+                        Spacer(Modifier.height(4.dp))
+                        Text(
+                            stringResource(R.string.settings_block_saved),
+                            fontSize = 12.sp,
+                            color = Color(0xFF34C759)
+                        )
+                    }
+                    if (blockError) {
+                        Spacer(Modifier.height(4.dp))
+                        Text(
+                            stringResource(R.string.settings_block_invalid),
+                            fontSize = 12.sp,
+                            color = Color(0xFFFF3B30)
+                        )
+                    }
+                }
+            }
+
+            Spacer(Modifier.height(8.dp))
             SectionHeader(stringResource(R.string.settings_section_allowed))
             Text(
                 stringResource(R.string.settings_allowed_description),
