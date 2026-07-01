@@ -26,6 +26,18 @@ class BlockHistoryStoreTest {
     }
 
     @Test
+    fun `manual block round-trips through record and load`() {
+        // BlockReason.valueOf(parts[2]) is reflection-based string matching against
+        // the serialized enum name — this guards the round trip for the newly added
+        // MANUAL_BLOCK reason specifically (ManualBlock.block() writes this reason).
+        val now = 1_700_000_000_000L
+        BlockHistoryStore.record(prefs, "09012345678", BlockReason.MANUAL_BLOCK, now)
+        val entries = BlockHistoryStore.load(prefs, now)
+        assertEquals(1, entries.size)
+        assertEquals(BlockReason.MANUAL_BLOCK, entries[0].reason)
+    }
+
+    @Test
     fun `load drops entries older than 30 days`() {
         val now = 1_700_000_000_000L
         val old = now - (31L * 24 * 60 * 60 * 1000)

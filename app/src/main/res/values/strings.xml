@@ -84,6 +84,7 @@
     <string name="reason_premium_rate">Premium rate</string>
     <string name="reason_dnd">DND active</string>
     <string name="reason_repeat_caller">Repeat caller</string>
+    <string name="reason_manual_block">Blocked manually</string>
 
     <!-- Settings screen -->
     <string name="settings_title">Settings</string>

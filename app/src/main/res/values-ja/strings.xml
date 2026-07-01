@@ -79,6 +79,7 @@
     <string name="reason_premium_rate">国際有料番号</string>
     <string name="reason_dnd">サイレントモード中</string>
     <string name="reason_repeat_caller">連続着信</string>
+    <string name="reason_manual_block">手動でブロック</string>
 
     <!-- 設定画面 -->
     <string name="settings_title">設定</string>

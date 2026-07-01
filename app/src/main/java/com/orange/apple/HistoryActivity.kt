@@ -320,4 +320,5 @@ private fun BlockReason.toDisplayString(ctx: Context): String = when (this) {
     BlockReason.PREMIUM_RATE_INTERNATIONAL -> ctx.getString(R.string.reason_premium_rate)
     BlockReason.DND_HONOR -> ctx.getString(R.string.reason_dnd)
     BlockReason.REPEAT_CALLER -> ctx.getString(R.string.reason_repeat_caller)
+    BlockReason.MANUAL_BLOCK -> ctx.getString(R.string.reason_manual_block)
 }

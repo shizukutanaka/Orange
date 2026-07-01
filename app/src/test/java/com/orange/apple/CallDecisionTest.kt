@@ -301,6 +301,7 @@ class CallDecisionTest {
             BlockReason.SPAM_CACHE, BlockReason.FOREIGN_ELEVATED, BlockReason.FOREIGN_GENERIC,
             BlockReason.DOMESTIC_SPOOF, BlockReason.WANGIRI_CALLBACK,
             BlockReason.CARRIER_VERIFICATION_FAILED, BlockReason.PREMIUM_RATE_INTERNATIONAL,
+            BlockReason.MANUAL_BLOCK,
         )) {
             assertEquals("$r should be cacheable", true, isCacheableSilence(r))
         }

@@ -51,6 +51,8 @@ enum class BlockReason {
     DND_HONOR,
     /** Repeat-caller velocity: same number called N+ times in T minutes. */
     REPEAT_CALLER,
+    /** User explicitly blocked this number via Settings, not derived from any decision layer. */
+    MANUAL_BLOCK,
 }
 
 /** Everything the engine learns about ONE incoming call. */
@@ -398,6 +400,11 @@ internal fun isCacheableSilence(reason: BlockReason): Boolean = when (reason) {
     // one false-positive Restore. Explicitly false to make the invariant visible.
     BlockReason.WITHHELD_NUMBER             -> false
     BlockReason.PREMIUM_RATE_INTERNATIONAL  -> true
+    // MANUAL_BLOCK is never produced by decide() itself — ManualBlock.block()
+    // writes directly into SpamCache — so this branch is moot in practice.
+    // True for consistency: a manual block is the most persistent kind of
+    // property a number can have (explicit, permanent user intent).
+    BlockReason.MANUAL_BLOCK                -> true
     // NOTE: adding a new BlockReason enum entry will cause a compile error here,
     // forcing the author to decide whether it should be cached or not.
 }

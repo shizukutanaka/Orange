@@ -51,6 +51,14 @@ internal object ManualBlock {
      * Adds every domestic↔E.164 variant, same as SilentBlockerService does for
      * an automatic SILENCE — otherwise a manually-blocked domestic-form number
      * would not match a later call delivered in E.164 form, or vice versa.
+     *
+     * Also records a BlockHistoryStore entry immediately (reason MANUAL_BLOCK),
+     * unlike waiting for the number to actually call again. Every OTHER block
+     * in this app gets an immediate, visible, undoable History entry the moment
+     * it happens; a manual block that only became visible after the number
+     * happened to call back again would be the one silent, unrecoverable action
+     * in an otherwise fully auditable product — a mistaken block (wrong number,
+     * a family member's number typo'd) would have no trail until it was too late.
      */
     fun block(ctx: Context, number: String): Boolean {
         val cleaned = normalizeAndValidate(number) ?: return false
@@ -60,6 +68,7 @@ internal object ManualBlock {
             ?: tm?.networkCountryIso?.takeIf { it.isNotEmpty() }
         val cc = callingCodeOf(iso?.uppercase(java.util.Locale.ROOT))
         phoneVariants(cleaned, cc).forEach { v -> SpamCache.add(prefs, v) }
+        BlockHistoryStore.record(prefs, cleaned, BlockReason.MANUAL_BLOCK, System.currentTimeMillis())
         return true
     }
 }
