@@ -104,6 +104,7 @@
     <string name="settings_block_button">Block</string>
     <string name="settings_block_saved">Blocked</string>
     <string name="settings_block_invalid">Invalid or emergency number</string>
+    <string name="settings_block_trusted">This number is already trusted (family, a registered business, or a number you\'ve called) — it always rings and can\'t be blocked.</string>
     <string name="settings_section_allowed">Allowed numbers</string>
     <string name="settings_allowed_description">Numbers you\'ve allowed from history. Ending in these last 4 digits always rings through.</string>
     <string name="settings_allowed_empty">No numbers allowed yet</string>

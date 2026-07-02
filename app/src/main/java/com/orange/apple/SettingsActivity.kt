@@ -232,20 +232,14 @@ fun SettingsScreen() {
             )
 
             var blockValue by remember { mutableStateOf("") }
-            var blockSaved by remember { mutableStateOf(false) }
-            var blockError by remember { mutableStateOf(false) }
+            var blockResult by remember { mutableStateOf<ManualBlock.Result?>(null) }
             val blockFocusRequester = remember { FocusRequester() }
 
             val submitBlock = {
                 focusManager.clearFocus()
-                if (ManualBlock.block(ctx, blockValue)) {
-                    blockValue = ""
-                    blockSaved = true
-                    blockError = false
-                } else {
-                    blockSaved = false
-                    blockError = true
-                }
+                val result = ManualBlock.block(ctx, blockValue)
+                blockResult = result
+                if (result == ManualBlock.Result.BLOCKED) blockValue = ""
             }
 
             Card(
@@ -266,8 +260,7 @@ fun SettingsScreen() {
                                     c.isDigit() || c == '+' || c == '-' ||
                                         c == '＋' || c == '－'
                                 }
-                                blockSaved = false
-                                blockError = false
+                                blockResult = null
                             },
                             modifier = Modifier.weight(1f).focusRequester(blockFocusRequester),
                             placeholder = { Text(stringResource(R.string.settings_block_placeholder)) },
@@ -292,21 +285,32 @@ fun SettingsScreen() {
                             Text(stringResource(R.string.settings_block_button))
                         }
                     }
-                    if (blockSaved) {
-                        Spacer(Modifier.height(4.dp))
-                        Text(
-                            stringResource(R.string.settings_block_saved),
-                            fontSize = 12.sp,
-                            color = Color(0xFF34C759)
-                        )
-                    }
-                    if (blockError) {
-                        Spacer(Modifier.height(4.dp))
-                        Text(
-                            stringResource(R.string.settings_block_invalid),
-                            fontSize = 12.sp,
-                            color = Color(0xFFFF3B30)
-                        )
+                    when (blockResult) {
+                        ManualBlock.Result.BLOCKED -> {
+                            Spacer(Modifier.height(4.dp))
+                            Text(
+                                stringResource(R.string.settings_block_saved),
+                                fontSize = 12.sp,
+                                color = Color(0xFF34C759)
+                            )
+                        }
+                        ManualBlock.Result.ALREADY_TRUSTED -> {
+                            Spacer(Modifier.height(4.dp))
+                            Text(
+                                stringResource(R.string.settings_block_trusted),
+                                fontSize = 12.sp,
+                                color = Color.Gray
+                            )
+                        }
+                        ManualBlock.Result.INVALID -> {
+                            Spacer(Modifier.height(4.dp))
+                            Text(
+                                stringResource(R.string.settings_block_invalid),
+                                fontSize = 12.sp,
+                                color = Color(0xFFFF3B30)
+                            )
+                        }
+                        null -> {}
                     }
                 }
             }

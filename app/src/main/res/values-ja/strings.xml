@@ -99,6 +99,7 @@
     <string name="settings_block_button">ブロック</string>
     <string name="settings_block_saved">ブロックしました</string>
     <string name="settings_block_invalid">無効または緊急通報番号です</string>
+    <string name="settings_block_trusted">この番号は信頼済みです(家族・登録事業者・発信履歴あり)— 常に着信するためブロックできません</string>
     <string name="settings_section_allowed">許可した番号</string>
     <string name="settings_allowed_description">履歴から許可した番号です。末尾4桁が一致する着信は常に鳴ります。</string>
     <string name="settings_allowed_empty">許可した番号はまだありません</string>

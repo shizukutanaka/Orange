@@ -24,12 +24,6 @@
 
 ## 1. 不足している機能(deficiencies)— 優先度順
 
-### 1-1. 信頼済み番号への手動ブロックが「成功」と誤表示される【小規模・明確・最優先】
-- **場所**: `app/src/main/java/com/orange/apple/ManualBlock.kt` の `block()`、UI は `SettingsActivity.kt` の `submitBlock`。
-- **問題**: `ManualBlock.normalizeAndValidate()` は緊急番号(`EmergencyWhitelist`)しか拒否しない。家族番号(`FamilyCallback.getNumbers`)・`BusinessDirectoryBundle.load(ctx).keys`・発信済みセット(`SilentBlockerService.KEY_OUTBOUND`, ハッシュ保存)を照合しないため、それらをブロックしても UI は「ブロックしました」と成功表示する。
-- **実害はない**: `decide()` の Layer 4/5(信頼)が Layer 6(スパムキャッシュ)より先に発火するため、信頼済み番号は実際にはブロックされない。問題は**誤解を招く成功表示**のみ。
-- **修正方針**: `block()` 内で信頼セットと照合し、該当時は別の戻り値(enum 化推奨: `BLOCKED` / `INVALID` / `ALREADY_TRUSTED`)を返して専用メッセージを表示。照合は `phoneVariants` 展開後の全バリアントで行うこと。
-
 ### 1-2. business_directory.csv 残り約73エントリの偽装リスク監査【要機関別判断】
 - **場所**: `app/src/main/assets/business_directory.csv`(Layer 5 = 無条件サイレント信頼。警告なしで着信、STIR/SHAKEN 失敗すら無視)。
 - **経緯**: 警察庁・国税庁がこのバンドルに誤って入っていた(= 偽装されても警告ゼロ)バグを発見・修正済み。警察庁 → `PoliceStationDirectory.kt`、国税庁 → `TaxAgencyDirectory.kt` に移し、「鳴らすが警告する」レーンへ変更した。
@@ -80,7 +74,7 @@
 
 ## 4. 解消済み(再発見の無駄を防ぐため列挙)
 
-本ブランチの直近16コミット(`333ddcb`〜`5570f02`)で以下は対応済み:
+本ブランチのコミット(`333ddcb`〜)で以下は対応済み:
 
 - 英語フォールバック `values/strings.xml` に日本語警告文が混入 → 英訳済み
 - `AllowSuffixStore.revoke()` がデッドコード → Settings「許可した番号」管理 UI で配線済み
@@ -92,15 +86,15 @@
 - プエルトリコのオーバーレイ局番 939 が `CaribbeanPremiumNANP` に欠落 → 追加
 - 保護データ確認日の非表示 → `ProtectionDataVersion` + Settings フッター表示
 - 発信コールバック警告が「23時間前」と「90秒前」を同扱い → `OutboundGuard.flaggedAt()` + `ACTIVE_SCAM_WINDOW_MS`(15分)で緊急エスカレーション
-- 手動ブロック機能自体の欠落 → `ManualBlock` + Settings UI + History 統合(上記3段修正済み)
+- 手動ブロック機能自体の欠落 → `ManualBlock` + Settings UI + History 統合(3段修正済み)
+- 信頼済み番号への手動ブロックが「成功」と誤表示 → `ManualBlock.classify()` を新設し `Result` 三値(`BLOCKED`/`INVALID`/`ALREADY_TRUSTED`)化。家族/ビジネス/発信済みの全バリアントと照合し、専用メッセージ(`settings_block_trusted`)を表示。`ManualBlockTest.kt` に `classify()` の単体テストを追加
 - ラオス(+856)の高リスク国コード欠落、`callingCodeOf` の CA/TW/HK/SG/MY/NZ 欠落、夕方(18-20 JST)リスク時間帯欠落 → いずれも追加済み
 
 ---
 
 ## 5. 対応推奨順
 
-1. **1-1**(誤解を招く成功表示)— 小規模・明確、テスト追加容易(`normalizeAndValidate` パターンで純関数部分を分離すること)
-2. **2-1**(通知の横断デデュープ)— 設計判断込み。ユーザー確認推奨
-3. **1-2**(CSV 監査)— 機関ごとの個別判断。ユーザー確認推奨
-4. **2-3**(Pause 影響範囲の明文化)— ドキュメント整備のみなら低リスク
-5. **1-5 / 2-2** — 製品哲学とのトレードオフ。**必ずユーザーに確認してから着手**
+1. **2-1**(通知の横断デデュープ)— 設計判断込み。ユーザー確認推奨
+2. **1-2**(CSV 監査)— 機関ごとの個別判断。ユーザー確認推奨
+3. **2-3**(Pause 影響範囲の明文化)— ドキュメント整備のみなら低リスク
+4. **1-5 / 2-2** — 製品哲学とのトレードオフ。**必ずユーザーに確認してから着手**
