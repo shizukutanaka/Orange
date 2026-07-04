@@ -142,6 +142,26 @@ enum class WarnReason {
 
 /**
  * The one function that decides every call. Read in order — first match wins.
+ *
+ * Pause's scope, precisely (FEATURE_AUDIT.md §2-3 — the three warning paths
+ * behave differently and none of that was written down until now):
+ *
+ *   - Police/tax impersonation warning (Layer 9/9b): SURVIVES pause. See the
+ *     Layer 2 comment below — this is deliberate, fixed after being found as
+ *     a real gap (a paused user got zero fraud warning, not just zero ring).
+ *   - High-risk-hour warning (Layer 15): SUPPRESSED by pause. Layer 2 returns
+ *     before Layer 15 ever runs, so an unknown mobile during アポ電 peak hours
+ *     rings with no warning while paused. Never explicitly decided — just a
+ *     side effect of Layer 2 short-circuiting everything below it. Unlike the
+ *     government-impersonation case, nobody has evaluated whether this one
+ *     should also survive pause.
+ *   - Outbound-callback warning (WarningNotifier.showOutboundWarning, driven
+ *     from SilentBlockerService.handleOutgoing): NOT PART OF decide() at all.
+ *     It fires on every outgoing call regardless of pausedUntilMillis — pause
+ *     only affects INCOMING call screening, so this warning is entirely
+ *     unaffected by pause in either direction.
+ *
+ * If you change Pause's behavior for any warning, update this comment.
  */
 fun decide(ctx: CallContext, state: CallState): Decision {
     // Layer 1: Emergency. Absolutely always rings.

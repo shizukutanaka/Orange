@@ -58,9 +58,11 @@
 - **問題**: ユーザーには同じ「ブロック取り消し」なのに、場所も保証も違う2つのボタン。ストレージ形式の実装都合が製品表面に漏れている。
 - **注意**: 統一するには History にハッシュを保存する変更が必要で、これは意図的なプライバシー設計(`BlockHistoryStore` KDoc「display-only」)とのトレードオフ。**設計判断が必要、機械的修正不可**。
 
-### 2-3. Pause の影響範囲の非一貫性
+### 2-3. Pause の影響範囲の非一貫性【現状を明文化済み・挙動変更は未判断】
 - 政府偽装警告(Layer 9/9b)は Pause 中も発火するよう修正済み(`decide()` の Layer 2 が `govAgencyImpersonationWarning(ctx)` を先に照会)。
-- 高リスク時間帯警告(Layer 15)は Pause 中に発火**しない**(Layer 2 で return するため)。発信警告(`handleOutgoing`)は Pause と無関係に発火する。この3者の非対称に設計上の根拠が書かれていない。整理するなら「Pause が抑制するもの/しないもの」の表を `decide()` の KDoc に明文化するところから。
+- 高リスク時間帯警告(Layer 15)は Pause 中に発火**しない**(Layer 2 で return するため)。発信警告(`handleOutgoing`、`decide()` の外)は Pause と無関係に発火する。
+- **対応済み**: `decide()` 関数直前の KDoc に3者の挙動差を明文化し、`CallDecisionTest.high_risk_hour_warning_is_suppressed_while_paused` で現状挙動を回帰テスト化した(意図的な設計ではなく「Layer 2 の早期 return の副作用」であることも明記)。
+- **未判断のまま残る**: 高リスク時間帯警告も政府偽装警告と同様に Pause 中に survive させるべきか — これは仕様変更であり要ユーザー判断。変更する場合は上記テストと KDoc を同時に更新すること。
 
 ---
 
