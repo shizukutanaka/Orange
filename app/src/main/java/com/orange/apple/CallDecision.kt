@@ -144,22 +144,26 @@ enum class WarnReason {
  * The one function that decides every call. Read in order — first match wins.
  *
  * Pause's scope, precisely (FEATURE_AUDIT.md §2-3 — the three warning paths
- * behave differently and none of that was written down until now):
+ * used to behave inconsistently; now unified for the two that live inside
+ * decide()):
  *
  *   - Police/tax impersonation warning (Layer 9/9b): SURVIVES pause. See the
- *     Layer 2 comment below — this is deliberate, fixed after being found as
- *     a real gap (a paused user got zero fraud warning, not just zero ring).
- *   - High-risk-hour warning (Layer 15): SUPPRESSED by pause. Layer 2 returns
- *     before Layer 15 ever runs, so an unknown mobile during アポ電 peak hours
- *     rings with no warning while paused. Never explicitly decided — just a
- *     side effect of Layer 2 short-circuiting everything below it. Unlike the
- *     government-impersonation case, nobody has evaluated whether this one
- *     should also survive pause.
+ *     Layer 2 comment below — deliberate, fixed after being found as a real
+ *     gap (a paused user got zero fraud warning, not just zero ring).
+ *   - High-risk-hour warning (Layer 15): SURVIVES pause, same rationale —
+ *     originally suppressed only as an accidental side effect of Layer 2
+ *     short-circuiting before Layer 15 ever ran (not a reviewed decision).
+ *     There was no principled reason Orange would protect against 警察庁/
+ *     国税庁 impersonation during a paused hour but not against generic
+ *     アポ電 risk-hour calls — both exist for the same reason (active-fraud
+ *     protection is orthogonal to the call-volume-fatigue relief Pause
+ *     provides), so the two are now treated identically.
  *   - Outbound-callback warning (WarningNotifier.showOutboundWarning, driven
  *     from SilentBlockerService.handleOutgoing): NOT PART OF decide() at all.
  *     It fires on every outgoing call regardless of pausedUntilMillis — pause
  *     only affects INCOMING call screening, so this warning is entirely
- *     unaffected by pause in either direction.
+ *     unaffected by pause in either direction. (Not unified with the above —
+ *     it's a structurally different code path, not a warning decide() emits.)
  *
  * If you change Pause's behavior for any warning, update this comment.
  */
@@ -172,15 +176,19 @@ fun decide(ctx: CallContext, state: CallState): Decision {
     // expecting a callback from a hospital (restricted ID) who paused Orange
     // would still have that call silenced. Pause means "every call rings."
     //
-    // It does NOT mean "every impersonation warning goes silent too": Pause
-    // exists for call-volume fatigue (too many calls, need an hour of quiet),
-    // a different concern from active-fraud protection. A user who pauses
-    // Orange to skip a busy afternoon of work calls should not also lose the
-    // warning that the next call is spoofing 警察庁/国税庁 — the call rings
-    // either way, so surfacing the warning costs nothing in call-silencing
-    // terms and closes a real gap in active-fraud protection.
+    // It does NOT mean "every warning goes silent too": Pause exists for
+    // call-volume fatigue (too many calls, need an hour of quiet), a different
+    // concern from active-fraud protection. A user who pauses Orange to skip a
+    // busy afternoon of work calls should not also lose the warning that the
+    // next call is spoofing 警察庁/国税庁, or that an unknown mobile is calling
+    // during アポ電 peak hours — the call rings either way, so surfacing the
+    // warning costs nothing in call-silencing terms and closes a real gap in
+    // active-fraud protection. See the KDoc above decide() for the full
+    // Pause-scope rationale.
     if (ctx.nowMillis < state.pausedUntilMillis) {
-        return govAgencyImpersonationWarning(ctx) ?: Decision(Verdict.RING)
+        return govAgencyImpersonationWarning(ctx)
+            ?: highRiskHourWarning(ctx)
+            ?: Decision(Verdict.RING)
     }
 
     // Layer 3: Withheld caller ID (非通知). Placed AFTER pause so the user
@@ -288,9 +296,7 @@ fun decide(ctx: CallContext, state: CallState): Decision {
     // on weekdays, per prefectural police advisory logs + NPA 2025 特殊詐欺白書 §3-2.
     // Unknown 090/080/070/060 numbers during these windows get a soft warning.
     // No new permissions; nowMillis is already injected.
-    if (isHighRiskHour(ctx.nowMillis) && isUnknownDomesticMobile(ctx.number)) {
-        return Decision(Verdict.RING, warning = WarnReason.HIGH_RISK_HOUR_DOMESTIC)
-    }
+    highRiskHourWarning(ctx)?.let { return it }
 
     // Layer 16: Allow. Silence-on-uncertainty is how users lose trust.
     return Decision(Verdict.RING)
@@ -320,6 +326,23 @@ private fun govAgencyImpersonationWarning(ctx: CallContext): Decision? {
         else
             WarnReason.TAX_AGENCY_IMPERSONATION
         return Decision(Verdict.RING, warning = warnSeverity, warnPayload = taxName)
+    }
+    return null
+}
+
+/**
+ * Checks whether the caller is an unknown domestic mobile number during
+ * アポ電 peak hours, and returns a RING decision with the soft warning if so,
+ * or null otherwise.
+ *
+ * Shared between the pause-time check (Layer 2 — pause no longer silences
+ * this warning either, matching govAgencyImpersonationWarning's precedent)
+ * and the main Layer 15 position, so the one condition lives in exactly
+ * one place.
+ */
+private fun highRiskHourWarning(ctx: CallContext): Decision? {
+    if (isHighRiskHour(ctx.nowMillis) && isUnknownDomesticMobile(ctx.number)) {
+        return Decision(Verdict.RING, warning = WarnReason.HIGH_RISK_HOUR_DOMESTIC)
     }
     return null
 }

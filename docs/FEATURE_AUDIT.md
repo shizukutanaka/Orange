@@ -58,12 +58,6 @@
 - **問題**: ユーザーには同じ「ブロック取り消し」なのに、場所も保証も違う2つのボタン。ストレージ形式の実装都合が製品表面に漏れている。
 - **注意**: 統一するには History にハッシュを保存する変更が必要で、これは意図的なプライバシー設計(`BlockHistoryStore` KDoc「display-only」)とのトレードオフ。**設計判断が必要、機械的修正不可**。
 
-### 2-3. Pause の影響範囲の非一貫性【現状を明文化済み・挙動変更は未判断】
-- 政府偽装警告(Layer 9/9b)は Pause 中も発火するよう修正済み(`decide()` の Layer 2 が `govAgencyImpersonationWarning(ctx)` を先に照会)。
-- 高リスク時間帯警告(Layer 15)は Pause 中に発火**しない**(Layer 2 で return するため)。発信警告(`handleOutgoing`、`decide()` の外)は Pause と無関係に発火する。
-- **対応済み**: `decide()` 関数直前の KDoc に3者の挙動差を明文化し、`CallDecisionTest.high_risk_hour_warning_is_suppressed_while_paused` で現状挙動を回帰テスト化した(意図的な設計ではなく「Layer 2 の早期 return の副作用」であることも明記)。
-- **未判断のまま残る**: 高リスク時間帯警告も政府偽装警告と同様に Pause 中に survive させるべきか — これは仕様変更であり要ユーザー判断。変更する場合は上記テストと KDoc を同時に更新すること。
-
 ---
 
 ## 3. 未文書化(バグではないが注意)
@@ -91,6 +85,8 @@
 - 手動ブロック機能自体の欠落 → `ManualBlock` + Settings UI + History 統合(3段修正済み)
 - 信頼済み番号への手動ブロックが「成功」と誤表示 → `ManualBlock.classify()` を新設し `Result` 三値(`BLOCKED`/`INVALID`/`ALREADY_TRUSTED`)化。家族/ビジネス/発信済みの全バリアントと照合し、専用メッセージ(`settings_block_trusted`)を表示。`ManualBlockTest.kt` に `classify()` の単体テストを追加
 - ラオス(+856)の高リスク国コード欠落、`callingCodeOf` の CA/TW/HK/SG/MY/NZ 欠落、夕方(18-20 JST)リスク時間帯欠落 → いずれも追加済み
+- Pause の影響範囲が3経路(政府偽装警告/高リスク時間帯警告/発信警告)で非一貫 → 政府偽装警告と高リスク時間帯警告は同一の理由(アクティブな詐欺対策 ≠ Pause の通話量疲労対策)で存在するため統一。`highRiskHourWarning(ctx)` を `govAgencyImpersonationWarning(ctx)` と同型の共有ヘルパーに抽出し、Pause 分岐からも Layer 15 からも同じ関数を呼ぶ構造に。発信警告は `decide()` の外の構造的に異なるコードパスのため対象外のまま。テスト: `CallDecisionTest.high_risk_hour_warning_survives_pause` / `high_risk_hour_warning_still_absent_while_paused_outside_peak_hours`
+- `FamilyCallback.MAX_SLOTS = 3` の根拠コメントなし → 真の選定理由は記録なく不明だが、変更の安全性(マイグレーション不要)と論点(UX トレードオフ)を KDoc に明記
 
 ---
 
@@ -98,5 +94,6 @@
 
 1. **2-1**(通知の横断デデュープ)— 設計判断込み。ユーザー確認推奨
 2. **1-2**(CSV 監査)— 機関ごとの個別判断。ユーザー確認推奨
-3. **2-3**(Pause 影響範囲の明文化)— ドキュメント整備のみなら低リスク
-4. **1-5 / 2-2** — 製品哲学とのトレードオフ。**必ずユーザーに確認してから着手**
+3. **1-5 / 2-2** — 製品哲学とのトレードオフ。**必ずユーザーに確認してから着手**
+
+低リスクな解消(ドキュメント整備・整合性確認のみ)は完了済み: 1-1(手動ブロック誤表示)、2-3(Pause 非一貫性)、`MAX_SLOTS` 未文書化。残る3項目は全て要ユーザー判断。

@@ -616,20 +616,33 @@ class CallDecisionTest {
         assertNull(d.warning)
     }
 
-    @Test fun high_risk_hour_warning_is_suppressed_while_paused() {
-        // Documents CURRENT behavior (see decide()'s Pause-scope KDoc, FEATURE_AUDIT.md
-        // §2-3): Layer 2 (pause) returns before Layer 15 ever runs, so an unknown mobile
-        // during アポ電 peak hours rings with NO warning while paused — unlike the
-        // police/tax impersonation warning, which was deliberately made to survive pause.
-        // This is a documented side effect, not a reviewed decision — if that changes,
-        // update this test alongside the KDoc.
+    @Test fun high_risk_hour_warning_survives_pause() {
+        // FEATURE_AUDIT.md §2-3: originally suppressed only as an accidental side
+        // effect of Layer 2 returning before Layer 15 ever ran (never a reviewed
+        // decision). Unified with the police/tax impersonation warning's precedent —
+        // both exist for active-fraud protection, which is orthogonal to the
+        // call-volume-fatigue relief Pause provides. The call rings either way;
+        // this only restores the warning that goes with it.
         val cal = java.util.Calendar.getInstance(java.util.TimeZone.getTimeZone("Asia/Tokyo"))
         cal.set(2025, java.util.Calendar.MAY, 6, 10, 30, 0) // Tuesday 10:30 JST — peak hour
         cal.set(java.util.Calendar.MILLISECOND, 0)
         val pausedState = emptyState.copy(pausedUntilMillis = Long.MAX_VALUE)
         val d = decide(call("09012345678").copy(nowMillis = cal.timeInMillis), pausedState)
         assertEquals(Verdict.RING, d.verdict)
-        assertNull("high-risk-hour warning is currently suppressed by pause", d.warning)
+        assertEquals(WarnReason.HIGH_RISK_HOUR_DOMESTIC, d.warning)
+    }
+
+    @Test fun high_risk_hour_warning_still_absent_while_paused_outside_peak_hours() {
+        // Pause surviving the warning doesn't mean it fires unconditionally during
+        // pause — the underlying isHighRiskHour/isUnknownDomesticMobile conditions
+        // still gate it, same as when not paused.
+        val cal = java.util.Calendar.getInstance(java.util.TimeZone.getTimeZone("Asia/Tokyo"))
+        cal.set(2025, java.util.Calendar.MAY, 6, 21, 0, 0) // Tuesday 21:00 JST — off-peak
+        cal.set(java.util.Calendar.MILLISECOND, 0)
+        val pausedState = emptyState.copy(pausedUntilMillis = Long.MAX_VALUE)
+        val d = decide(call("09012345678").copy(nowMillis = cal.timeInMillis), pausedState)
+        assertEquals(Verdict.RING, d.verdict)
+        assertNull(d.warning)
     }
 
     // --- STIR/SHAKEN escalation to POLICE_IMPERSONATION_HIGH -----------------
