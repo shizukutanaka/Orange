@@ -25,6 +25,18 @@ import androidx.core.content.edit
 object FamilyCallback {
 
     private const val KEY_PREFIX = "family_"
+
+    /**
+     * FEATURE_AUDIT.md: unlike every other bound in this codebase (WINDOW_MS,
+     * N_THRESHOLD, MAX_ENTRIES, etc.), this constant has no recorded rationale —
+     * it was never explained why 3 rather than 2 or 5. Storage is sparse,
+     * 1-indexed keys ("family_1".."family_N"), so raising it is mechanically
+     * safe (no migration needed) — the open question is purely UX: whether
+     * Settings' vertical list of slot cards stays usable at a higher count,
+     * and whether more choices dilutes the "one-tap" promise of the Quick
+     * Settings tile (FamilyCallbackTile dials the FIRST configured slot).
+     * Left at 3 until someone has an actual reason to change it.
+     */
     const val MAX_SLOTS = 3
 
     /** Returns the pre-set numbers (1-indexed, sparse). */
