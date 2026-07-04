@@ -24,7 +24,12 @@ import androidx.core.content.edit
  */
 object FamilyCallback {
 
-    private const val KEY_PREFIX = "family_"
+    // internal (not private): SilentBlockerService, ManualBlock, and SettingsActivity
+    // all need to read the same slot keys directly (without going through Context-free
+    // helpers like getNumbers()) and must never duplicate this literal — a hardcoded
+    // "family_" in a second file that silently drifted from this one would break
+    // trust-set matching with no compile error to catch it.
+    internal const val KEY_PREFIX = "family_"
 
     /**
      * FEATURE_AUDIT.md: unlike every other bound in this codebase (WINDOW_MS,

@@ -273,7 +273,7 @@ class SilentBlockerService : CallScreeningService() {
      */
     private fun familyNumbers(p: SharedPreferences): Set<String> =
         (1..FamilyCallback.MAX_SLOTS).mapNotNull { i ->
-            p.getString("family_$i", null)?.takeIf { it.isNotBlank() }
+            p.getString("${FamilyCallback.KEY_PREFIX}$i", null)?.takeIf { it.isNotBlank() }
                 ?.let { PhoneNumbers.normalize(it) }
                 ?.takeIf { it.isNotEmpty() }
         }.toSet()

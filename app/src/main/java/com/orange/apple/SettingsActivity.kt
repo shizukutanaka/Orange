@@ -91,7 +91,7 @@ fun SettingsScreen() {
 
             for (slot in slotNumbers) {
                 var fieldValue by remember {
-                    mutableStateOf(prefs.getString("family_$slot", "") ?: "")
+                    mutableStateOf(prefs.getString("${FamilyCallback.KEY_PREFIX}$slot", "") ?: "")
                 }
                 var saved by remember { mutableStateOf(false) }
                 var saveError by remember { mutableStateOf(false) }

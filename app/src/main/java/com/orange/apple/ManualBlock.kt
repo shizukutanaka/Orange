@@ -125,7 +125,7 @@ internal object ManualBlock {
 
         val outboundHashes = prefs.getStringSet(SilentBlockerService.KEY_OUTBOUND, emptySet()).orEmpty()
         val familyNumbers = (1..FamilyCallback.MAX_SLOTS).mapNotNull { i ->
-            prefs.getString("family_$i", null)?.takeIf { it.isNotBlank() }
+            prefs.getString("${FamilyCallback.KEY_PREFIX}$i", null)?.takeIf { it.isNotBlank() }
                 ?.let { PhoneNumbers.normalize(it) }?.takeIf { it.isNotEmpty() }
         }.toSet()
         val businessNumbers = BusinessDirectoryBundle.load(ctx).keys
