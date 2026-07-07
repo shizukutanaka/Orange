@@ -1,15 +1,17 @@
 <!--
-  Pre-O launcher fallback.
-
-  Android 8.0+ uses res/mipmap-anydpi-v26/ic_launcher.xml (adaptive icon).
-  Pre-O devices ignore that file and need a flat icon at this name. We
-  provide a layer-list that flattens the same background+foreground pair
-  so the visual identity is consistent across all Android versions.
-
-  This is one more piece of Rams #8 (thorough). Without this file, an
-  Android 7 user (still ~5% of JP devices in 2026) sees the system's
-  default placeholder icon — which silently undermines every other care
-  we've taken with branding.
+  CORRECTED (FEATURE_AUDIT.md release audit): this file's original comment
+  claimed it was the pre-O launcher fallback for AndroidManifest.xml's
+  android:icon="@mipmap/ic_launcher". That is incorrect — mipmap and
+  drawable are distinct resource types in Android's resource system
+  (R.mipmap.ic_launcher vs R.drawable.ic_launcher); a file placed under
+  res/drawable/ can never satisfy a @mipmap/ reference regardless of the
+  matching name. This file was consequently dead weight: never referenced
+  by the manifest or any code, so pre-API-26 devices (minSdk=24) had no
+  launcher icon at all until PNG mipmap resources were added at
+  res/mipmap-(m|h|xh|xxh|xxxh)dpi/ic_launcher.png.
+  Left in place (harmless, unreferenced) rather than deleted, since the
+  layer-list itself is a correct flattened rendering of the same
+  background+foreground design if ever needed for another purpose.
 -->
 <?xml version="1.0" encoding="utf-8"?>
 <layer-list xmlns:android="http://schemas.android.com/apk/res/android">
