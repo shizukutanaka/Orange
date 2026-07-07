@@ -28,10 +28,6 @@
 
   "permissions_requested": [
     {
-      "permission": "android.permission.READ_CALL_LOG",
-      "purpose": "Required by the CallScreeningService contract to inspect incoming call numbers for screening decisions."
-    },
-    {
       "permission": "android.permission.POST_NOTIFICATIONS",
       "purpose": "Shows silent per-block notifications during the first seven days post-install (so users can Restore false positives), weekly digests from day 8 through week 8, monthly digests thereafter, police-impersonation warnings, and outbound-call warnings when the user dials a recently-blocked number."
     },

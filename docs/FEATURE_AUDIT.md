@@ -43,6 +43,17 @@
 - `SaltVault`(Keystore 暗号化)は端末外・遠隔の攻撃者向け。高齢者ユーザーの現実的脅威である「ロック解除済み端末を手にした家族・介護者」(financial elder abuse の主要ベクター)への防御・言及がコードにもドキュメントにもない。
 - 対策はアプリ内 PIN 等になるが「設定画面を増やさない」という製品哲学と衝突する。**実装前にユーザー(プロダクトオーナー)の判断を仰ぐこと**。
 
+### 1-6. play_data_safety.json の記述陳腐化(READ_CALL_LOG 過剰申告は解消済み、残りは未着手)【低リスク・機械的更新可】
+- **場所**: `docs/play_data_safety.json`。
+- **解消済み**: `permissions_requested` の `READ_CALL_LOG` を削除し、実際のマニフェスト権限(`POST_NOTIFICATIONS`/`RECEIVE_BOOT_COMPLETED`)と一致させた。
+- **未着手の残課題**(今回のプランの意図的スコープ外、機械的に直せるが未対応):
+  - `components.services` の説明が「15-point decision engine」と記載 — 実際は `CallDecision.kt` の `decide()` は Layer 16(+ Layer 9b)まで存在。
+  - `components.offline_databases` に `TaxAgencyDirectory` が未掲載(警察庁/国税庁の警告レーン化は今セッションで実装済みなのに反映漏れ)。
+  - `components.notification_objects` に `orange_tax_warn` チャンネルと緊急発信警告(`outbound_warn_title_urgent`)が未掲載。
+  - `components` 全体に `ManualBlock`(手動ブロック機能)の記載がない。
+  - `BusinessDirectoryBundle` のエントリ数「29」が現状の CSV エントリ数(約75)と乖離している可能性(要再カウント)。
+- **対応方針**: Play Console 申告としての法的/審査リスクがあるのは権限一致(解消済み)のみ。残りは開発者向けドキュメントの正確性の問題であり、次回このファイルを触るときにまとめて更新するのが効率的。
+
 ---
 
 ## 2. 過剰な機能(excesses)— 統合・削減候補
@@ -87,6 +98,10 @@
 - ラオス(+856)の高リスク国コード欠落、`callingCodeOf` の CA/TW/HK/SG/MY/NZ 欠落、夕方(18-20 JST)リスク時間帯欠落 → いずれも追加済み
 - Pause の影響範囲が3経路(政府偽装警告/高リスク時間帯警告/発信警告)で非一貫 → 政府偽装警告と高リスク時間帯警告は同一の理由(アクティブな詐欺対策 ≠ Pause の通話量疲労対策)で存在するため統一。`highRiskHourWarning(ctx)` を `govAgencyImpersonationWarning(ctx)` と同型の共有ヘルパーに抽出し、Pause 分岐からも Layer 15 からも同じ関数を呼ぶ構造に。発信警告は `decide()` の外の構造的に異なるコードパスのため対象外のまま。テスト: `CallDecisionTest.high_risk_hour_warning_survives_pause` / `high_risk_hour_warning_still_absent_while_paused_outside_peak_hours`
 - `FamilyCallback.MAX_SLOTS = 3` の根拠コメントなし → 真の選定理由は記録なく不明だが、変更の安全性(マイグレーション不要)と論点(UX トレードオフ)を KDoc に明記
+- `"family_"` SharedPreferences キープレフィックスが `SilentBlockerService`/`ManualBlock`/`SettingsActivity` の3ファイルに生文字列で重複 → `FamilyCallback.KEY_PREFIX` を `internal` 化し3箇所とも参照に統一
+- **市販品質監査(リリース準備)で発見**: zh/ko ロケールが en/ja に対し21キー欠落(Settings のブロック/許可 UI・税務署偽装警告・緊急発信警告が英語フォールバック表示) → `values-zh`/`values-ko` の `strings.xml` に21キーを追加、4ロケールでキー集合が一致することを検証済み
+- **市販品質監査で発見**: `minSdk=24` なのにランチャーアイコンが `mipmap-anydpi-v26`(adaptive icon)のみで API 24-25 端末にアイコンが解決されない。さらに既存の `res/drawable/ic_launcher.xml`(pre-O fallback のつもりで置かれていた)は `mipmap` と `drawable` が別リソース型のため実際にはマニフェストの `@mipmap/ic_launcher` 参照を一切満たしておらず死んだファイルだった → `res/mipmap-(m|h|xh|xxh|xxxh)dpi/ic_launcher.png` を実データとして生成・配置(既存ベクターの背景色 #FF8C42・白円 22/108 比率を再現)。`drawable/ic_launcher.xml` のコメントも誤りを訂正
+- **市販品質監査で発見**: `docs/play_data_safety.json` の `permissions_requested` に実際は要求していない `READ_CALL_LOG` を過剰申告 → 削除し、実マニフェストの2権限(`POST_NOTIFICATIONS`/`RECEIVE_BOOT_COMPLETED`)と一致させた(残る記述陳腐化は §1-6 参照、意図的に対応保留)
 
 ---
 
@@ -94,6 +109,7 @@
 
 1. **2-1**(通知の横断デデュープ)— 設計判断込み。ユーザー確認推奨
 2. **1-2**(CSV 監査)— 機関ごとの個別判断。ユーザー確認推奨
-3. **1-5 / 2-2** — 製品哲学とのトレードオフ。**必ずユーザーに確認してから着手**
+3. **1-6 残課題**(play_data_safety.json の記述更新)— 低リスク、次回このファイルを触る時にまとめて対応
+4. **1-5 / 2-2** — 製品哲学とのトレードオフ。**必ずユーザーに確認してから着手**
 
-低リスクな解消(ドキュメント整備・整合性確認のみ)は完了済み: 1-1(手動ブロック誤表示)、2-3(Pause 非一貫性)、`MAX_SLOTS` 未文書化。残る3項目は全て要ユーザー判断。
+低リスクな解消(ドキュメント整備・整合性確認・市販品質監査の機械的修正)は完了済み。残る項目は全て要ユーザー判断、または次回まとめ対応で十分なもの。
