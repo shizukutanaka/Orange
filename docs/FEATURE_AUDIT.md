@@ -47,11 +47,6 @@
 
 ## 2. 過剰な機能(excesses)— 統合・削減候補
 
-### 2-1. 通知チャンネル8種の増殖、兄弟チャンネル間の重複排除なし
-- **場所**: `WarningNotifier.kt`(police / tax / highrisk / outbound)、`TrustNotifier.kt`(trust / ongoing)、`PostCallAdvisor.kt`(postcall)、`WeeklyDigest.kt`(digest)。
-- **問題**: 各通知は**自チャンネル内でのみ**レート制限(例: `highrisk_last_*` / `outbound_warn_ts_*` / `postcall_last_*` キー)しており、兄弟チャンネルとの重複排除がない。1つの不審着信で「高リスク時間帯警告 → 通話後アドバイザリ → 週次ダイジェスト」と同一イベント由来の通知が複数届き得る。
-- **注意**: 各チャンネルには個別の設計根拠が KDoc に書かれている(安易に統合しない)。修正するなら「同一番号について直近 N 分内に別チャンネルが発火していたら抑制する」ような横断デデュープ層の追加が候補。
-
 ### 2-2. 解除メカニズムの二重化(Allow vs Restore)
 - **Allow**(`HistoryActivity` → `AllowSuffixStore`): 末尾4桁サフィックス一致。履歴がマスク番号(`****1234`)しか持たないための妥協。
 - **Restore**(通知 → `RestoreReceiver`): 完全番号で `SpamCache.remove` + 発信済みセット追加 + `OutboundGuard.forget`。
@@ -92,13 +87,13 @@
 - **市販品質監査で発見**: `minSdk=24` なのにランチャーアイコンが `mipmap-anydpi-v26`(adaptive icon)のみで API 24-25 端末にアイコンが解決されない。さらに既存の `res/drawable/ic_launcher.xml`(pre-O fallback のつもりで置かれていた)は `mipmap` と `drawable` が別リソース型のため実際にはマニフェストの `@mipmap/ic_launcher` 参照を一切満たしておらず死んだファイルだった → `res/mipmap-(m|h|xh|xxh|xxxh)dpi/ic_launcher.png` を実データとして生成・配置(既存ベクターの背景色 #FF8C42・白円 22/108 比率を再現)。`drawable/ic_launcher.xml` のコメントも誤りを訂正
 - **市販品質監査で発見**: `docs/play_data_safety.json` の `permissions_requested` に実際は要求していない `READ_CALL_LOG` を過剰申告 → 削除し、実マニフェストの2権限(`POST_NOTIFICATIONS`/`RECEIVE_BOOT_COMPLETED`)と一致させた
 - `play_data_safety.json` のその他の記述陳腐化(「15-point decision engine」表記、`TaxAgencyDirectory`/`ManualBlock`/`AllowSuffixStore` 未掲載、`BusinessDirectoryBundle` 等のエントリ数の乖離)→ 全項目を実コードと突き合わせて更新: decision engine を「16-layer」表記に修正、`TaxAgencyDirectory`(1件)と `orange_tax_warn` チャンネル・緊急発信警告を追記、新設の `user_controls` セクションに `ManualBlock`/`AllowSuffixStore` を追加、エントリ数を実カウントに更新(BusinessDirectoryBundle 29→74、PoliceStationDirectory 47→54、ScamPrefixSeed 8→19、CaribbeanPremiumNANP 22→23)
+- **2-1 部分対応**: 通知チャンネル8種の重複排除がない問題のうち、最も具体的だった1件(「警察/税務署/高リスク時間帯の見出し警告」→ 直後に `PostCallAdvisor` が別文言の #9110 案内を同じ通話に対してもう一度出す)を解消。`WarningNotifier.recordWarningShown()`/`wasWarnedRecently()`(10分ウィンドウ)を追加し、`showPoliceWarning`/`showTaxAgencyWarning`/`showHighRiskHourWarning` が発火時刻を記録、`PostCallAdvisor.maybeShow` が全バリアントで直近発火を確認して自身の通知をスキップ。**意図的に汎用フレームワーク化はしていない**——`TrustNotifier`(トラスト通知)と `WeeklyDigest`(週次サマリ)は対象外のまま。前者は個別ブロックの都度必要な文脈が異なり、後者は即時性のある警告と競合する「同一瞬間の重複」ではなく後日のまとめなので、同じ意味での重複ではない。テスト: `WarningNotifierRateLimitTest` に `wasWarnedRecently`/`pruneStaleRateLimitKeys` の新規ケースを追加。
 
 ---
 
 ## 5. 対応推奨順
 
-1. **2-1**(通知の横断デデュープ)— 設計判断込み。ユーザー確認推奨
-2. **1-2**(CSV 監査)— 機関ごとの個別判断。ユーザー確認推奨
-3. **1-5 / 2-2** — 製品哲学とのトレードオフ。**必ずユーザーに確認してから着手**
+1. **1-2**(CSV 監査)— 機関ごとの個別判断。ユーザー確認推奨
+2. **1-5 / 2-2** — 製品哲学とのトレードオフ。**必ずユーザーに確認してから着手**
 
-低リスクな解消(ドキュメント整備・整合性確認・市販品質監査の機械的修正)は完了済み。残る3項目は全て要ユーザー判断。
+低リスクな解消(ドキュメント整備・整合性確認・市販品質監査の機械的修正・具体的に特定できた1件の通知重複)は完了済み。残る2項目は全て要ユーザー判断。

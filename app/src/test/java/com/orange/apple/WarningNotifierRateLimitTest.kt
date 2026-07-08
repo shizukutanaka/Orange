@@ -219,4 +219,74 @@ class WarningNotifierRateLimitTest {
         WarningNotifier.pruneStaleRateLimitKeys(p, now)
         assertTrue("future-ts key should survive backward clock", p.contains(key))
     }
+
+    // --- wasWarnedRecently / cross-channel dedup (FEATURE_AUDIT.md §2-1) ---
+    // Mirrors WarningNotifier's private recordWarningShown() key construction
+    // ("warn_shown_last_" + 16-hex hash), since that function requires a
+    // Context and can't be called directly from a JVM unit test.
+
+    private fun warnShownKey(p: FakePrefs, number: String): String =
+        "warn_shown_last_${SpamCache.hash(p, number).take(16)}"
+
+    @Test fun `wasWarnedRecently is false when no warning was ever recorded`() {
+        val p = FakePrefs()
+        assertFalse(WarningNotifier.wasWarnedRecently(p, "09012345678", 1_000_000L))
+    }
+
+    @Test fun `wasWarnedRecently is true within the dedup window`() {
+        val p = FakePrefs()
+        val number = "09012345678"
+        val now = 1_000_000L
+        p.edit().putLong(warnShownKey(p, number), now).apply()
+        val checkAt = now + WarningNotifier.WARN_SHOWN_DEDUP_WINDOW_MS - 1L
+        assertTrue(WarningNotifier.wasWarnedRecently(p, number, checkAt))
+    }
+
+    @Test fun `wasWarnedRecently is false after the dedup window expires`() {
+        val p = FakePrefs()
+        val number = "09012345678"
+        val now = 1_000_000L
+        p.edit().putLong(warnShownKey(p, number), now).apply()
+        val checkAt = now + WarningNotifier.WARN_SHOWN_DEDUP_WINDOW_MS + 1L
+        assertFalse(WarningNotifier.wasWarnedRecently(p, number, checkAt))
+    }
+
+    @Test fun `wasWarnedRecently respects backward clock jump guard`() {
+        val p = FakePrefs()
+        val number = "09012345678"
+        val now = 1_000_000_000L
+        val futureTs = now + 1_000L
+        p.edit().putLong(warnShownKey(p, number), futureTs).apply()
+        assertFalse("backward clock must not spuriously suppress a real advisory",
+            WarningNotifier.wasWarnedRecently(p, number, now))
+    }
+
+    @Test fun `wasWarnedRecently does not cross-contaminate different numbers`() {
+        val p = FakePrefs()
+        val warned = "09011112222"
+        val other = "09099998888"
+        val now = 1_000_000L
+        p.edit().putLong(warnShownKey(p, warned), now).apply()
+        assertFalse(WarningNotifier.wasWarnedRecently(p, other, now + 1000L))
+    }
+
+    @Test fun `pruneStaleRateLimitKeys removes expired warn_shown keys`() {
+        val p = FakePrefs()
+        val now = 1_000_000_000L
+        val expired = now - WarningNotifier.WARN_SHOWN_DEDUP_WINDOW_MS - 1
+        val key = "warn_shown_last_deadbeefcafebabe"
+        p.edit().putLong(key, expired).apply()
+        WarningNotifier.pruneStaleRateLimitKeys(p, now)
+        assertFalse("expired warn_shown key should be removed", p.contains(key))
+    }
+
+    @Test fun `pruneStaleRateLimitKeys keeps fresh warn_shown keys`() {
+        val p = FakePrefs()
+        val now = 1_000_000_000L
+        val fresh = now - 1000L
+        val key = "warn_shown_last_deadbeefcafebabe"
+        p.edit().putLong(key, fresh).apply()
+        WarningNotifier.pruneStaleRateLimitKeys(p, now)
+        assertTrue("fresh warn_shown key should survive", p.contains(key))
+    }
 }
