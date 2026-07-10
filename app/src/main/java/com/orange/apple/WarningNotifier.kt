@@ -34,6 +34,8 @@ internal object WarningNotifier {
     @Synchronized
     fun showPoliceWarning(ctx: Context, number: String, hqName: String, highSeverity: Boolean = false) {
         val mgr = notifManager(ctx) ?: return
+        val prefs = ctx.getSharedPreferences(SilentBlockerService.PREFS, Context.MODE_PRIVATE)
+        recordWarningShown(prefs, number, System.currentTimeMillis())
         ensureChannel(ctx, mgr, CHANNEL_POLICE,
             ctx.getString(R.string.notif_channel_police_warn),
             NotificationManager.IMPORTANCE_HIGH)
@@ -61,6 +63,8 @@ internal object WarningNotifier {
     @Synchronized
     fun showTaxAgencyWarning(ctx: Context, number: String, agencyName: String, highSeverity: Boolean = false) {
         val mgr = notifManager(ctx) ?: return
+        val prefs = ctx.getSharedPreferences(SilentBlockerService.PREFS, Context.MODE_PRIVATE)
+        recordWarningShown(prefs, number, System.currentTimeMillis())
         ensureChannel(ctx, mgr, CHANNEL_TAX,
             ctx.getString(R.string.notif_channel_tax_warn),
             NotificationManager.IMPORTANCE_HIGH)
@@ -108,6 +112,7 @@ internal object WarningNotifier {
         val last = prefs.getLong(key, 0L)
         if (last > 0L && (now < last || now - last < HIGHRISK_WARN_WINDOW_MS)) return
         prefs.edit { putLong(key, now) }  // putLong overwrites in place — no need to remove first
+        recordWarningShown(prefs, number, now)
 
         val mgr = notifManager(ctx) ?: return
         ensureChannel(ctx, mgr, CHANNEL_HIGHRISK,
@@ -181,11 +186,51 @@ internal object WarningNotifier {
     private const val HIGHRISK_WARN_WINDOW_MS = 24L * 60 * 60 * 1000  // 24 hour dedup window
 
     /**
-     * Prune stale highrisk and outbound rate-limit keys from SharedPreferences.
+     * Cross-channel dedup window (FEATURE_AUDIT.md §2-1): PostCallAdvisor checks
+     * this to skip its own notification if a police/tax/high-risk-hour heads-up
+     * warning already fired for the same call. 10 minutes generously covers
+     * ring + talk + the brief gap until CallStateObserver.onIdle() runs — long
+     * enough to catch the SAME call, short enough that a genuinely new call
+     * from the same number hours later still gets its own advisory.
+     *
+     * Deliberately narrow in scope: this coordinates only the one redundant
+     * pair identified in the audit (a heads-up warning immediately followed by
+     * PostCallAdvisor's separately-worded #9110 advisory for the same call),
+     * not a general N-channel suppression framework — each channel keeps its
+     * own independent rate limit for repeat calls on different days.
+     */
+    internal const val WARN_SHOWN_DEDUP_WINDOW_MS = 10L * 60 * 1000
+
+    /**
+     * Records that SOME heads-up warning (police/tax/high-risk-hour) was just
+     * shown for [number], so PostCallAdvisor can skip its own notification for
+     * the same call. Not called from showOutboundWarning — that fires on the
+     * OUTGOING-call path, a structurally different event PostCallAdvisor never
+     * overlaps with.
+     */
+    private fun recordWarningShown(prefs: android.content.SharedPreferences, number: String, now: Long) {
+        val key = "warn_shown_last_${SpamCache.hash(prefs, number).take(16)}"
+        prefs.edit { putLong(key, now) }
+    }
+
+    /**
+     * True if a police/tax/high-risk-hour warning was shown for [number] within
+     * WARN_SHOWN_DEDUP_WINDOW_MS of [now]. Used by PostCallAdvisor to suppress
+     * its own notification when the same call already got a heads-up warning.
+     */
+    internal fun wasWarnedRecently(prefs: android.content.SharedPreferences, number: String, now: Long): Boolean {
+        val key = "warn_shown_last_${SpamCache.hash(prefs, number).take(16)}"
+        val last = prefs.getLong(key, 0L)
+        return last > 0L && now >= last && now - last < WARN_SHOWN_DEDUP_WINDOW_MS
+    }
+
+    /**
+     * Prune stale highrisk, outbound, and cross-channel-dedup rate-limit keys
+     * from SharedPreferences.
      *
      * Each distinct scam caller that triggers a warning writes one persistent key.
-     * Without pruning these accumulate indefinitely. Both prefixes are swept in one
-     * pass to avoid two separate O(n) prefs.all scans.
+     * Without pruning these accumulate indefinitely. All three prefixes are swept
+     * in one pass to avoid separate O(n) prefs.all scans.
      */
     internal fun pruneStaleRateLimitKeys(prefs: android.content.SharedPreferences, now: Long) {
         val stale = prefs.all.entries.filter { (k, v) ->
@@ -194,6 +239,8 @@ internal object WarningNotifier {
                     v is Long && now >= (v as Long) && now - (v as Long) >= HIGHRISK_WARN_WINDOW_MS
                 k.startsWith("outbound_warn_ts_") ->
                     v is Long && now >= (v as Long) && now - (v as Long) >= OUTBOUND_WARN_WINDOW_MS
+                k.startsWith("warn_shown_last_") ->
+                    v is Long && now >= (v as Long) && now - (v as Long) >= WARN_SHOWN_DEDUP_WINDOW_MS
                 else -> false
             }
         }.map { it.key }

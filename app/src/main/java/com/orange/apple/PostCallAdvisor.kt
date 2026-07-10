@@ -76,6 +76,11 @@ object PostCallAdvisor {
         val businesses = BusinessDirectoryBundle.load(ctx).keys
         if (variants.any { SpamCache.hash(prefs, it) in outbound || it in family || it in businesses }) return
 
+        // FEATURE_AUDIT.md §2-1: skip this advisory if a police/tax/high-risk-hour
+        // heads-up warning already fired for this call — the user already got a
+        // "be careful" notification; a second, separately-worded one is redundant.
+        if (variants.any { WarningNotifier.wasWarnedRecently(prefs, it, now) }) return
+
         prefs.edit { putLong(rateKey, now) }
         show(ctx, number)
     }
