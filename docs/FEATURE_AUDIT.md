@@ -82,6 +82,7 @@
 - ラオス(+856)の高リスク国コード欠落、`callingCodeOf` の CA/TW/HK/SG/MY/NZ 欠落、夕方(18-20 JST)リスク時間帯欠落 → いずれも追加済み
 - Pause の影響範囲が3経路(政府偽装警告/高リスク時間帯警告/発信警告)で非一貫 → 政府偽装警告と高リスク時間帯警告は同一の理由(アクティブな詐欺対策 ≠ Pause の通話量疲労対策)で存在するため統一。`highRiskHourWarning(ctx)` を `govAgencyImpersonationWarning(ctx)` と同型の共有ヘルパーに抽出し、Pause 分岐からも Layer 15 からも同じ関数を呼ぶ構造に。発信警告は `decide()` の外の構造的に異なるコードパスのため対象外のまま。テスト: `CallDecisionTest.high_risk_hour_warning_survives_pause` / `high_risk_hour_warning_still_absent_while_paused_outside_peak_hours`
 - `FamilyCallback.MAX_SLOTS = 3` の根拠コメントなし → 真の選定理由は記録なく不明だが、変更の安全性(マイグレーション不要)と論点(UX トレードオフ)を KDoc に明記
+- `"family_"` SharedPreferences キープレフィックスが `SilentBlockerService`/`ManualBlock`/`SettingsActivity` の3ファイルに生文字列で重複 → `FamilyCallback.KEY_PREFIX` を `internal` 化し3箇所とも参照に統一
 - **市販品質監査(リリース準備)で発見**: zh/ko ロケールが en/ja に対し21キー欠落(Settings のブロック/許可 UI・税務署偽装警告・緊急発信警告が英語フォールバック表示) → `values-zh`/`values-ko` の `strings.xml` に21キーを追加、4ロケールでキー集合が一致することを検証済み
 - **市販品質監査で発見**: `minSdk=24` なのにランチャーアイコンが `mipmap-anydpi-v26`(adaptive icon)のみで API 24-25 端末にアイコンが解決されない。さらに既存の `res/drawable/ic_launcher.xml`(pre-O fallback のつもりで置かれていた)は `mipmap` と `drawable` が別リソース型のため実際にはマニフェストの `@mipmap/ic_launcher` 参照を一切満たしておらず死んだファイルだった → `res/mipmap-(m|h|xh|xxh|xxxh)dpi/ic_launcher.png` を実データとして生成・配置(既存ベクターの背景色 #FF8C42・白円 22/108 比率を再現)。`drawable/ic_launcher.xml` のコメントも誤りを訂正
 - **市販品質監査で発見**: `docs/play_data_safety.json` の `permissions_requested` に実際は要求していない `READ_CALL_LOG` を過剰申告 → 削除し、実マニフェストの2権限(`POST_NOTIFICATIONS`/`RECEIVE_BOOT_COMPLETED`)と一致させた

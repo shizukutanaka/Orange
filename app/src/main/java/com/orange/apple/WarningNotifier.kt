@@ -21,6 +21,14 @@ import androidx.core.content.edit
  *   - High-priority heads-up
  *   - Optional "家族に連絡" action (if FamilyCallback is configured)
  *   - Auto-cancel
+ *
+ * Cross-channel coordination (FEATURE_AUDIT.md §2-1): showPoliceWarning,
+ * showTaxAgencyWarning, and showHighRiskHourWarning each record that a
+ * heads-up warning fired for the call's number (see wasWarnedRecently /
+ * recordWarningShown below). PostCallAdvisor checks this to skip its own
+ * separately-worded #9110 advisory when the same call already got one of
+ * these warnings — narrowly scoped to that one redundant pair, not a
+ * general suppression framework across all 8 notification channels.
  */
 internal object WarningNotifier {
 

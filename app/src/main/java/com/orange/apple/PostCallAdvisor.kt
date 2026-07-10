@@ -29,6 +29,11 @@ import androidx.core.content.edit
  *   - One notification per number per 24 hours (rate-limited)
  *   - Only fires if the number was NOT in outbound-known or business-bundle
  *     (those are trusted callers; advice is not needed)
+ *   - Skipped if a police/tax/high-risk-hour warning already fired for this
+ *     SAME call (WarningNotifier.wasWarnedRecently, FEATURE_AUDIT.md §2-1) —
+ *     the user has already been told to be careful about this exact call;
+ *     a second, separately-worded #9110 advisory moments later is redundant
+ *     rather than reinforcing
  *
  * Called from CallStateObserver.onIdle() when:
  *   - The call was answered (OFFHOOK was observed)
@@ -76,9 +81,10 @@ object PostCallAdvisor {
         val businesses = BusinessDirectoryBundle.load(ctx).keys
         if (variants.any { SpamCache.hash(prefs, it) in outbound || it in family || it in businesses }) return
 
-        // FEATURE_AUDIT.md §2-1: skip this advisory if a police/tax/high-risk-hour
-        // heads-up warning already fired for this call — the user already got a
-        // "be careful" notification; a second, separately-worded one is redundant.
+        // Skip if this exact call already triggered a heads-up warning (police/tax/
+        // high-risk-hour) — see class doc and FEATURE_AUDIT.md §2-1. Check every
+        // variant since the warning may have been recorded against a different
+        // domestic/E.164 form than what's passed in here.
         if (variants.any { WarningNotifier.wasWarnedRecently(prefs, it, now) }) return
 
         prefs.edit { putLong(rateKey, now) }
