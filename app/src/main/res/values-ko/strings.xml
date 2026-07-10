@@ -22,8 +22,14 @@
     <string name="notif_channel_outbound_warn">발신 경고</string>
     <string name="outbound_warn_title">경고: 최근 차단된 번호</string>
     <string name="outbound_warn_body">이 번호는 방금 차단 대상. 끊는 것을 권장</string>
+    <string name="outbound_warn_title_urgent">🚨 전화하지 마세요 — 방금 표시된 번호</string>
+    <string name="outbound_warn_body_urgent">이 번호가 몇 분 전 연락했고 표시되었습니다. 송금하거나 인증코드를 알려주지 마세요. 먼저 가족에게 연락하세요</string>
     <string name="notif_channel_digest">주간 요약</string>
     <string name="police_warn_title_high">🚨 %1$s — 사칭 가능성 매우 높음</string>
+    <string name="notif_channel_tax_warn">세무기관 사칭 경고</string>
+    <string name="tax_warn_title">%1$s 번호</string>
+    <string name="tax_warn_title_high">🚨 %1$s — 사칭 가능성 매우 높음</string>
+    <string name="tax_warn_body">세무기관은 전화로 납부를 요구하지 않습니다. 끊고 공식 웹사이트의 번호로 다시 전화하세요</string>
     <string name="notif_channel_highrisk">고위험 시간대 경고</string>
     <string name="highrisk_warn_title">⚠️ 의심스러운 착신</string>
     <string name="highrisk_warn_body">사기 전화 집중 시간대. 콜백 금지</string>
@@ -42,6 +48,7 @@
     <string name="history_spoof_no_allow">유효하지 않은 JP 번호 — 허용 불가</string>
     <string name="history_foreign_tip">먼저 전화하면 영구적으로 신뢰됩니다</string>
     <string name="history_dnd_tip">허용하면 영구 예외가 됩니다 — 방해 금지 모드 중에도 울립니다</string>
+    <string name="history_manual_block_tip">설정에서 직접 차단한 번호입니다 — 아직 전화가 오지 않았습니다</string>
     <string name="history_allowed_notice">%s 허용됨</string>
     <string name="history_undo">실행 취소</string>
     <string name="reason_spam_cache">차단된 번호</string>
@@ -54,6 +61,7 @@
     <string name="reason_premium_rate">국제 유료 번호</string>
     <string name="reason_dnd">방해 금지 모드</string>
     <string name="reason_repeat_caller">반복 착신</string>
+    <string name="reason_manual_block">수동 차단</string>
     <string name="settings_title">설정</string>
     <string name="settings_section_family">가족 연락처</string>
     <string name="settings_family_description">의심스러운 전화가 오면 경고 알림에 가족에게 바로 전화할 수 있는 버튼이 표시됩니다.</string>
@@ -64,5 +72,18 @@
     <string name="settings_invalid_number">유효하지 않은 번호</string>
     <string name="settings_section_history">통화 기록</string>
     <string name="settings_view_history">차단 기록 보기</string>
+    <string name="settings_section_block">번호 차단</string>
+    <string name="settings_block_description">다른 경로로 사기 번호를 알게 되셨나요? 여기서 차단하세요 — 다음 전화부터 무음 처리됩니다</string>
+    <string name="settings_block_placeholder">01012345678</string>
+    <string name="settings_block_button">차단</string>
+    <string name="settings_block_saved">차단됨</string>
+    <string name="settings_block_invalid">유효하지 않거나 긴급 번호입니다</string>
+    <string name="settings_block_trusted">이 번호는 이미 신뢰됨(가족, 등록된 업체 또는 통화한 번호) — 항상 울리며 차단할 수 없습니다</string>
+    <string name="settings_section_allowed">허용된 번호</string>
+    <string name="settings_allowed_description">차단 기록에서 허용한 번호입니다. 마지막 4자리가 일치하면 항상 울립니다</string>
+    <string name="settings_allowed_empty">아직 허용된 번호가 없습니다</string>
+    <string name="settings_allowed_suffix">끝자리: %1$s</string>
+    <string name="settings_allowed_revoke">제거</string>
     <string name="settings_footer">Orange의 모든 데이터는 이 기기에만 저장됩니다. 번호는 마지막 4자리만 표시. 계정 없음, 동기화 없음, 광고 없음.</string>
+    <string name="settings_data_version">보호 데이터 확인일: %1$s. Orange는 인터넷에 연결되지 않으므로 이 목록은 앱을 업데이트할 때만 갱신됩니다.</string>
 </resources>

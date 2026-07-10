@@ -22,8 +22,14 @@
     <string name="notif_channel_outbound_warn">拨出警告</string>
     <string name="outbound_warn_title">警告：最近被拦截的号码</string>
     <string name="outbound_warn_body">此号码刚被拦截。建议挂断</string>
+    <string name="outbound_warn_title_urgent">🚨 请勿拨打 — 刚刚被标记的号码</string>
+    <string name="outbound_warn_body_urgent">此号码几分钟前联系过您并已被标记。请勿转账或提供验证码。请先联系家人</string>
     <string name="notif_channel_digest">每周摘要</string>
     <string name="police_warn_title_high">🚨 %1$s — 极有可能是假冒</string>
+    <string name="notif_channel_tax_warn">税务机关号码伪装警告</string>
+    <string name="tax_warn_title">来自 %1$s 的号码</string>
+    <string name="tax_warn_title_high">🚨 %1$s — 极有可能是假冒</string>
+    <string name="tax_warn_body">税务机关不会通过电话催缴税款。挂断后拨打其官方网站号码确认</string>
     <string name="notif_channel_highrisk">高风险时段警告</string>
     <string name="highrisk_warn_title">⚠️ 可疑来电</string>
     <string name="highrisk_warn_body">诈骗高峰时段的陌生手机号。请勿回拨</string>
@@ -42,6 +48,7 @@
     <string name="history_spoof_no_allow">无效的 JP 号码 — 无法允许</string>
     <string name="history_foreign_tip">主动拨出后该号码将永久信任</string>
     <string name="history_dnd_tip">允许后将成为永久例外 — 免打扰模式下仍会响铃</string>
+    <string name="history_manual_block_tip">此号码是您从设置中手动拦截的 — 尚未来电</string>
     <string name="history_allowed_notice">已允许 %s</string>
     <string name="history_undo">撤销</string>
     <string name="reason_spam_cache">已拦截号码</string>
@@ -54,6 +61,7 @@
     <string name="reason_premium_rate">国际付费号码</string>
     <string name="reason_dnd">免打扰模式</string>
     <string name="reason_repeat_caller">频繁来电</string>
+    <string name="reason_manual_block">手动拦截</string>
     <string name="settings_title">设置</string>
     <string name="settings_section_family">家人联系方式</string>
     <string name="settings_family_description">收到可疑来电时，警告通知将显示一键呼叫家人的按钮。</string>
@@ -64,5 +72,18 @@
     <string name="settings_invalid_number">无效号码</string>
     <string name="settings_section_history">通话记录</string>
     <string name="settings_view_history">查看拦截记录</string>
+    <string name="settings_section_block">拦截号码</string>
+    <string name="settings_block_description">通过其他方式得知诈骗号码？在此拦截 — 下次来电将被静音</string>
+    <string name="settings_block_placeholder">+8613812345678</string>
+    <string name="settings_block_button">拦截</string>
+    <string name="settings_block_saved">已拦截</string>
+    <string name="settings_block_invalid">无效或紧急号码</string>
+    <string name="settings_block_trusted">此号码已被信任（家人、已登记商家或您拨打过的号码）— 将始终响铃，无法拦截</string>
+    <string name="settings_section_allowed">已允许的号码</string>
+    <string name="settings_allowed_description">您从拦截记录中允许的号码。末 4 位相同的来电将始终响铃</string>
+    <string name="settings_allowed_empty">尚无已允许的号码</string>
+    <string name="settings_allowed_suffix">末 4 位：%1$s</string>
+    <string name="settings_allowed_revoke">移除</string>
     <string name="settings_footer">Orange 所有数据仅存储在本设备上。号码只显示末 4 位。无账号、无同步、无广告。</string>
+    <string name="settings_data_version">保护数据核实于：%1$s。Orange 从不连接互联网，此列表仅在您安装新版本应用时更新。</string>
 </resources>
