@@ -28,10 +28,6 @@
 
   "permissions_requested": [
     {
-      "permission": "android.permission.READ_CALL_LOG",
-      "purpose": "Required by the CallScreeningService contract to inspect incoming call numbers for screening decisions."
-    },
-    {
       "permission": "android.permission.POST_NOTIFICATIONS",
       "purpose": "Shows silent per-block notifications during the first seven days post-install (so users can Restore false positives), weekly digests from day 8 through week 8, monthly digests thereafter, police-impersonation warnings, and outbound-call warnings when the user dials a recently-blocked number."
     },
@@ -44,8 +40,8 @@
   "components": {
     "activities": ["OnboardingActivity (single-screen role-grant flow)"],
     "services": [
-      "SilentBlockerService (CallScreeningService — 15-point decision engine)",
-      "PauseTile (Quick Settings tile — pause all blocking for 1 hour)",
+      "SilentBlockerService (CallScreeningService — 16-layer decision engine, decide() in CallDecision.kt)",
+      "PauseTile (Quick Settings tile — pause all blocking for 1 hour; police/tax impersonation and high-risk-hour warnings still surface even while paused)",
       "FamilyCallbackTile (Quick Settings tile — one-tap dial to pre-set family number)"
     ],
     "receivers": [
@@ -60,21 +56,26 @@
     ],
     "notification_objects": [
       "TrustNotifier — per-block notifications during 7-day trust window (channel: orange_trust)",
-      "WarningNotifier — police-impersonation warnings (channel: orange_police_warn), outbound-callback warnings (channel: orange_outbound_warn), high-risk-hour domestic mobile warnings (channel: orange_highrisk; rate-limited once per 24h per number)",
+      "WarningNotifier — police-impersonation warnings (channel: orange_police_warn), tax-agency-impersonation warnings (channel: orange_tax_warn), outbound-callback warnings including an urgent 🚨 variant when the flagged call was within the last 15 minutes (channel: orange_outbound_warn), high-risk-hour domestic mobile warnings (channel: orange_highrisk; rate-limited once per 24h per number)",
       "PostCallAdvisor — post-call #9110/188/0120-210-364 hotline advisory after answered unknown calls >30s (channel: orange_postcall; rate-limited once per 24h per number)",
       "NotificationRateLimiter — caps 5 notifications per 5-minute window across TrustNotifier",
       "WeeklyDigest — weekly block-count summary (channel: orange_digest); transitions to monthly after week 8"
     ],
     "offline_databases": [
-      "BusinessDirectoryBundle (29 verified government/business numbers)",
-      "PoliceStationDirectory (47 prefectural police HQ representative numbers)",
-      "ScamPrefixSeed (8 elevated-risk international country codes)",
-      "CaribbeanPremiumNANP (22 NANP premium-rate area codes)",
+      "BusinessDirectoryBundle (74 verified government/business numbers)",
+      "PoliceStationDirectory (54 entries — 47 prefectural police HQ + National Police Agency + 6 verified Tokyo-area stations)",
+      "TaxAgencyDirectory (National Tax Agency representative number — warn-but-ring, same treatment as PoliceStationDirectory)",
+      "ScamPrefixSeed (19 elevated-risk international country codes)",
+      "CaribbeanPremiumNANP (23 NANP premium-rate area codes)",
       "EmergencyWhitelist (emergency numbers that always ring through)"
     ],
     "family_safety": [
       "FamilyCallback (up to 3 pre-set family numbers, stored locally, no READ_CONTACTS)",
       "OutboundGuard (warns when user dials a recently-blocked number)"
+    ],
+    "user_controls": [
+      "ManualBlock (Settings 'Block a number' — writes directly into the same local SpamCache every automatic decision uses; never syncs anywhere)",
+      "AllowSuffixStore (Settings 'Allowed numbers' — 4-digit-suffix un-block with a Remove action, local only)"
     ]
   },
 
@@ -107,5 +108,5 @@
   },
 
   "deletion_url": "N/A — uninstall is complete deletion; no server data exists to delete.",
-  "privacy_policy_url": "https://<github-pages-hostname>/privacy — deployed from docs/privacy_policy.html in the repository"
+  "privacy_policy_url": "NOT YET SET — Play Console requires a real, reachable URL here before submission. Source content is docs/privacy_policy.html; publish it (e.g. GitHub Pages) and put the actual resulting URL here. The previous value was a template placeholder domain that was never a real, specified address."
 }
