@@ -4,18 +4,30 @@ package com.orange.apple
  * Seed list of international dialing prefixes disproportionately linked to
  * special-fraud (特殊詐欺) calls reaching Japanese users.
  *
- * Source rationale (2026-04):
- *  - 警察庁 SOS47 特殊詐欺対策: 国際発信を偽装した詐欺の増加
- *  - トビラシステムズ/NTT公開資料の傾向: +675 (パプアニューギニア経由偽装), +1 (北米経由),
+ * Source rationale (updated 2026-07):
+ *  - 警察庁 SOS47 特殊詐欺対策: 国際発信を偽装した詐欺の増加。令和8年(2026)から
+ *    「ニセ警察詐欺」を独立手口に再分類 — 被害額の約7割(985億円超)を占める。
+ *  - NPA/総務省「みんとめ」: 特殊詐欺に利用された電話番号の約75.5%が国際電話番号
+ *    (+1/+44 が突出)。都内ニセ警察詐欺は前年比38.8%減で、防犯アプリ利用倍増が要因と
+ *    警視庁が分析 (時事 2026-07-06) — 本アプローチ(未知の国際着信を静音)の外部エビデンス。
+ *  - トビラシステムズ/NTT公開資料の傾向: +675 (パプアニューギニア経由偽装),
  *    +7 (ロシア/カザフ経由), +44 (英経由), +39 (伊経由), +86 (中) がJP着信で
- *    異常に高い比率で詐欺関連
- *  - 認知件数 令和7年 27,758件, 被害額 1,414.2億円 (日本国内)
+ *    異常に高い比率で詐欺関連。
+ *  - 認知件数 令和7年 27,758件, 被害額 1,414.2億円 (日本国内, 過去最悪)。
  *
  * Philosophy: this is a SEED, not a blocklist. A +1 call from a real US number
  * the user dialed outbound is always allowed (outbound-known beats seed).
- * A +1 call from an unknown origin to a JP phone goes to the existing
- * foreign-unsolicited rule. The seed's only job is: don't make the user wait
- * for their own "first block" to feel protected on day 0.
+ *
+ * NOTE on +1 (deliberately NOT in elevatedRiskCountryCodes): although +1 carries
+ * a high RAW volume of scam calls to JP, it is also the single highest-volume
+ * LEGITIMATE international corridor to JP (family abroad, US business). An
+ * unsolicited +1 call to a JP phone is still silenced — by the generic
+ * foreign-unsolicited rule (Layer 13), not the elevated rule (Layer 12). The
+ * only practical difference is the history label (FOREIGN_GENERIC vs
+ * FOREIGN_ELEVATED); promoting +1 to elevated would overstate risk on the
+ * corridor most likely to carry a legitimate call, with no change to whether
+ * it rings. The seed's job is only to tighten the foreign-unsolicited default
+ * so the user feels protected on day 0 without waiting for their first block.
  *
  * We do NOT ship an individual-number blocklist because:
  *  1. Such lists go stale immediately (scammers rotate numbers hourly)

@@ -42,6 +42,14 @@ class WhitelistAndSeedTest {
     @Test fun elevated_russia() = assertTrue("7" in ScamPrefixSeed.elevatedRiskCountryCodes)
     @Test fun not_elevated_au() = assertFalse("61" in ScamPrefixSeed.elevatedRiskCountryCodes)
 
+    // +1 (US/Canada) is DELIBERATELY excluded from the elevated set even though
+    // it carries high raw scam volume: it is also the highest-volume LEGITIMATE
+    // international corridor to JP, so an unsolicited +1 call is still silenced
+    // (by the generic foreign-unsolicited rule) but not mislabeled as elevated.
+    // See ScamPrefixSeed KDoc. This test guards against a future edit silently
+    // promoting +1 and overstating risk on the most legit-heavy corridor.
+    @Test fun not_elevated_us_plus1() = assertFalse("1" in ScamPrefixSeed.elevatedRiskCountryCodes)
+
     // IRSF/Wangiri high-cost termination corridors (NDSS 2021, CFCA)
     @Test fun elevated_latvia() = assertTrue("371" in ScamPrefixSeed.elevatedRiskCountryCodes)
     @Test fun elevated_lithuania() = assertTrue("370" in ScamPrefixSeed.elevatedRiskCountryCodes)
