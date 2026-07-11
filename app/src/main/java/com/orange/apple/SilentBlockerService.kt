@@ -123,9 +123,18 @@ class SilentBlockerService : CallScreeningService() {
         // who call multiple times are never silenced by velocity heuristics.
         if (number.isNotEmpty()) RepeatCallerTracker.record(p, number, now)
 
+        // Pause status, read once and reused below for both the repeat-caller
+        // gate and CallState. "Pause means every call rings" (see decide()'s
+        // Layer 2 KDoc) is an explicit, unconditional contract — it must not
+        // be silently bypassed by a check that runs before decide() itself.
+        // Keep recording (above) so velocity tracking has no gap once the
+        // pause window ends, but do not ACT on the threshold while paused.
+        val pausedUntilMillis = if (PauseTile.isPaused(p)) p.getLong(PauseTile.KEY_PAUSED_UNTIL, 0L) else 0L
+        val isPausedNow = now < pausedUntilMillis
+
         // Check repeat-caller velocity BEFORE building full state (state is read-only).
         val isRepeat = RepeatCallerTracker.isRepeatOffender(p, number, now)
-        if (isRepeat && number.isNotEmpty()) {
+        if (isRepeat && number.isNotEmpty() && !isPausedNow) {
             return Decision(Verdict.SILENCE, BlockReason.REPEAT_CALLER)
         }
 
@@ -146,7 +155,7 @@ class SilentBlockerService : CallScreeningService() {
             // regardless of which format the carrier delivers this time.
             isSpamCached      = variants.any { SpamCache.contains(p, it) },
             knownBusinesses   = businesses,
-            pausedUntilMillis = if (PauseTile.isPaused(p)) p.getLong(PauseTile.KEY_PAUSED_UNTIL, 0L) else 0L,
+            pausedUntilMillis = pausedUntilMillis,
             wangiriRingAt     = wangiriRingAt,
         )
 
