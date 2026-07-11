@@ -61,6 +61,33 @@ literature on notification timing (Li et al., *Alert Now or Never*, ACM TOCHI
 — which is why `PostCallAdvisor` is a low-priority, dismissible notification,
 not a modal alarm.
 
+## 2026 field data: the approach is now externally validated
+
+Two developments since the original design (2026-07) strengthen, rather than
+revise, Orange's thesis:
+
+- **Reclassification of ニセ警察詐欺 as a top-level 手口.** From 令和8年 (2026)
+  the NPA broke out "ニセ警察詐欺" (fake-police fraud) as its own category; it
+  accounts for roughly 70% of 特殊詐欺 loss (985億円超). This is exactly the
+  attack Orange's police-HQ impersonation warning targets — a warn-but-ring
+  lane on the numbers scammers spoof, precisely because they are the numbers a
+  victim is most primed to trust. (警察庁 SOS47, 2026.)
+- **~75.5% of fraud-associated numbers are international.** The NPA/総務省
+  「みんとめ」 campaign reports that about three-quarters of numbers used in
+  特殊詐欺 are international (+1/+44 prominent). Orange's default of silencing
+  unsolicited international calls to a JP phone is therefore not a blunt
+  instrument but aligned with where the volume actually is.
+- **Adoption correlates with a measured drop.** 警視庁 attributed a 38.8%
+  year-on-year fall in Tokyo ニセ警察詐欺 cases (1–5月) partly to a doubling of
+  anti-fraud app installs (時事通信, 2026-07-06). This is external, third-party
+  evidence for the *category* Orange belongs to — not a claim about Orange
+  specifically, which ships no telemetry and cannot measure its own effect.
+
+The honest reading: the field data validates the **shape** of the defense
+(silence cheap international/structural attacks, warn on impersonation targets,
+point to a human) without changing any layer. It is logged here so a future
+reviewer does not mistake "no code change" for "not re-examined."
+
 ## Layer-by-layer mapping
 
 *Note: The table below documents the **literature-grounded mechanisms** in Orange's
@@ -73,7 +100,7 @@ not primarily motivated by published research but by safety and usability princi
 | Orange mechanism | Literature basis | What it does / its documented limit |
 |------------------|------------------|-------------------------------------|
 | Structural spoof detection (`DomesticSpoofDetector`) | Mustafa et al., "You can call but you can't hide", DSN 2014 | Catches numbers that violate the numbering plan. Limit: structurally valid spoofs pass. |
-| STIR/SHAKEN verification gate | FCC STIR/SHAKEN mandate; *Spoofing Against Spoofing*, ACM TOPS 2023 | Uses carrier attestation when present. Limit: JP carriers largely return NOT_VERIFIED; treated as neutral. |
+| STIR/SHAKEN verification gate | FCC STIR/SHAKEN mandate; *Spoofing Against Spoofing*, ACM TOPS 2023 | Uses carrier attestation when present. Limit: JP has **not deployed** STIR/SHAKEN as of 2026-07 (総務省 still at discussion stage), so JP SIMs effectively never return FAILED — this gate is dormant, reacting only to an explicit FAILED (never to NOT_VERIFIED/unknown). Kept as zero-cost forward-insurance that activates automatically for attesting networks (roaming / future JP rollout). |
 | Wangiri callback-window tracker | GSMA Wangiri fraud reports; industry IRSF analyses | Detects the one-ring-callback revenue-share pattern. |
 | Elevated-risk country corridors (`ScamPrefixSeed`) | Sahin et al., *Understanding and Detecting IRSF*, NDSS 2021; CFCA loss reports | Small/low-traffic destinations (Latvia, Lithuania, Sao Tome, Pacific islands) are recurrent IPRN termination points. A JP consumer rarely calls them legitimately, so unsolicited inbound is a strong revenue-share signal. |
 | Repeat-caller velocity (`RepeatCallerTracker`) | Robocall/auto-dialer literature; Truecaller 2024 volume estimates (~3.3B scam calls/month) | Flags auto-dialer flood behavior (frequency signal) without any audio or network. |
@@ -132,6 +159,11 @@ points the user to the right humans for everything else."
 - T. Li et al. *Alert Now or Never: Understanding and Predicting Notification
   Preferences of Smartphone Users.* ACM TOCHI, 2023.
 - 警察庁. *令和7年 特殊詐欺認知・検挙状況等について.* National Police Agency, 2025.
+  (確定値: 認知27,758件・被害額1,414.2億円, 過去最悪。65歳以上が被害者の52.9%。)
+- 警察庁 SOS47. *特殊詐欺対策 / みんなでとめよう!!国際電話詐欺 (#みんとめ).* 2026.
+  (令和8年からニセ警察詐欺を独立手口に再分類; 詐欺利用番号の約75.5%が国際電話番号。)
+- 時事通信. *都内のニセ警察詐欺４割減 背景に防犯アプリの利用増.* 2026-07-06.
+  (都内1–5月のニセ警察詐欺 前年比38.8%減、防犯アプリDL数倍増との相関を警視庁が分析。)
 
 *Note: accuracy figures cited from third-party papers are the authors' reported
 results under their own evaluation conditions; they are context for design
