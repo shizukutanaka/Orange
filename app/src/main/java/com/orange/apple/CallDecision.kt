@@ -243,6 +243,17 @@ fun decide(ctx: CallContext, state: CallState): Decision {
     // Layer 10: STIR/SHAKEN carrier verification failed.
     // Reached only for non-emergency, non-paused, non-withheld, non-outbound,
     // non-business, non-spam, non-wangiri, non-spoof, non-police, non-tax numbers.
+    //
+    // DORMANT ON JP CARRIERS (as of 2026-07): Japan has not deployed STIR/SHAKEN
+    // caller-ID attestation — 総務省 is still at the discussion stage, not
+    // rollout. On a JP SIM, callerNumberVerificationStatus therefore effectively
+    // never returns VERIFICATION_STATUS_FAILED, so this layer (and the
+    // highSeverity escalation of police/tax warnings that also keys off
+    // verificationFailed) stays inert in practice. It is intentionally kept as
+    // forward-insurance: it activates automatically for calls carried over a
+    // network that DOES attest (some inbound roaming / future JP deployment)
+    // without any code change. Reacting only to an explicit FAILED (never to
+    // "unknown"/"not-verified") is what keeps it safe to leave always-on.
     if (ctx.verificationFailed) {
         return Decision(Verdict.SILENCE, BlockReason.CARRIER_VERIFICATION_FAILED)
     }
