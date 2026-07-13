@@ -36,8 +36,10 @@ and two small screens exist for when you need them:
   Shows the last 50 blocked calls (numbers masked to the final 4 digits)
   with one-tap **Allow** to recover a false positive. Entries auto-delete
   after 30 days.
-- **Settings** — family number registration only. Reached from the
-  家族に連絡 tile when no number is set. There is nothing else to configure.
+- **Settings** — family number registration (3 slots), a manual "Block a
+  number" action for scam numbers you learn about some other way, and an
+  "Allowed numbers" list to manage false-positive recoveries. Reached from
+  the 家族に連絡 tile when no number is set, or from the block-history screen.
 
 ## How it decides what to silence
 
@@ -51,16 +53,17 @@ Sixteen-point decision engine, in order:
 6. **Spam cache** — numbers you've previously blocked stay silent.
 7. **Wangiri callback** — same number short-rang you (under 15s) in last 6 hours → silenced.
 8. **Domestic spoofing** — JP numbers violating the MIC numbering plan silenced.
-9. **Police HQ impersonation** — 47 prefectural HQ numbers: call **rings** + warning. STIR/SHAKEN FAILED escalates to 🚨 high-severity alert. (Checked before Layer 10 so a real officer's call is never silenced — see ADR 011.)
-10. **Carrier verification failed** — STIR/SHAKEN says caller ID not authentic (API 30+) → silenced.
+9. **Police HQ impersonation** — 54 numbers (47 prefectural HQ + National Police Agency + 6 verified Tokyo-area stations): call **rings** + warning. STIR/SHAKEN FAILED escalates to 🚨 high-severity alert. (Checked before Layer 10 so a real officer's call is never silenced — see ADR 011.)
+9b. **Tax agency impersonation** — same warn-but-ring treatment as Layer 9, for the National Tax Agency's number (targeted by 還付金詐欺/税金未納詐欺). Checked immediately after Layer 9, same rationale.
+10. **Carrier verification failed** — STIR/SHAKEN says caller ID not authentic (API 30+) → silenced. Dormant on Japanese carriers as of 2026-07 (STIR/SHAKEN not yet deployed domestically); kept as zero-cost forward-insurance for roaming/future rollout.
 11. **International premium rate** — +800/+979/+882/+883 and Caribbean NANP (+1-242, +1-876, etc.) silenced.
-12. **Foreign elevated-risk** — +675/+7/+86/+44/+212/+234/+63/+39 silenced for JP users.
+12. **Foreign elevated-risk** — 20 country codes silenced for JP users: +675/+7/+86/+44/+39/+212/+234/+63 (original seed) plus IRSF/Wangiri corridors +371/+370/+239/+232/+252/+53/+682/+676/+678/+855/+856/+95. +1 (US/Canada) is deliberately excluded despite high raw scam volume — it's also the highest-volume *legitimate* international corridor to JP, so it's silenced by Layer 13 instead, just not flagged as elevated-risk.
 13. **Foreign generic** — any international call to your country not in outbound history silenced.
 14. **DND honor mode** — device Do Not Disturb active → unknown domestic calls silenced.
-15. **Time-of-day risk** — unknown domestic mobile (090/080/070/060) during アポ電 peak hours (Mon–Fri 09–12/13–16 JST) → RING + soft warning.
+15. **Time-of-day risk** — unknown domestic mobile (090/080/070/060) during アポ電 peak hours (Mon–Fri 09–12/13–16/18–20 JST) → RING + soft warning.
 16. **Allow** — everything else rings.
 
-> **Adapter layer:** outgoing calls are also intercepted to record dialled numbers (feeds Layer 4) and to warn if you're calling back a recently-blocked number. This runs in `SilentBlockerService` before the 16-point engine fires on incoming calls.
+> **Adapter layer:** outgoing calls are also intercepted to record dialled numbers (feeds Layer 4) and to warn if you're calling back a recently-blocked number. This runs in `SilentBlockerService` before the 16-layer engine fires on incoming calls.
 
 See `HONESTY_ADDENDUM.md` for what Orange **doesn't** catch.
 
