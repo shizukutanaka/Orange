@@ -54,6 +54,14 @@
 - **問題**: ユーザーには同じ「ブロック取り消し」なのに、場所も保証も違う2つのボタン。ストレージ形式の実装都合が製品表面に漏れている。
 - **注意**: 統一するには History にハッシュを保存する変更が必要で、これは意図的なプライバシー設計(`BlockHistoryStore` KDoc「display-only」)とのトレードオフ。**設計判断が必要、機械的修正不可**。
 
+### 2-4. 警察/税務署 warn-but-ring 番号へのかけ直しに発信警告が出る【要文言/挙動判断】
+- **経路**: `handleDecision()`(`SilentBlockerService.kt`)は警察/税務署の偽装警告(warn-but-ring)発火時にもその番号を `OutboundGuard.record()` する。警告後にユーザーが**本物の警察署の代表番号にかけ直す**(anti-scam 指導で推奨される安全行動そのもの)と、`showOutboundWarning` が発火する。
+- **問題は2面**:
+  1. **文言の事実誤り**: 通知 body は「この番号は直前にブロックした番号です」(`outbound_warn_body`)だが、warn-but-ring 番号は**ブロックしておらず着信させた**番号。15分以内なら緊急版(`outbound_warn_body_urgent`「送金や暗証番号の共有をしないで」)が本物の警察署への発信に対して出る。
+  2. **推奨行動への摩擦**: スプーフィングされた着信の後、表示番号に自分からかけ直せば本物の警察に着信する(発信はスプーフィングできない)。この安全な確認行動を怖い通知で妨げる形になっている。
+- **反論(現状維持の根拠)**: 高齢ユーザーにとって「かけ直しの前にひと呼吸」はそれ自体が保護であり、警告は発信をブロックしない(agency は保たれる)。#9110 は `EmergencyWhitelist` 対象外だが `handleOutgoing` の emergency チェックで記録されないため #9110 への相談経路は摩擦ゼロのまま。
+- **選択肢**: (a) 現状維持、(b) warn-but-ring 由来のエントリに別フラグを付け専用文言(「先ほど警告した番号です。本物の窓口なら問題ありません」)を出す、(c) warn-but-ring 番号は `OutboundGuard.record()` しない。**製品判断が必要、機械的修正不可**。
+
 ---
 
 ## 3. 未文書化(バグではないが注意)
@@ -91,13 +99,16 @@
 - **ユーザー発見**: `play_data_safety.json` の `privacy_policy_url` に実在しないプレースホルダードメイン(`https://<github-pages-hostname>/privacy`)が入っていた → 実際のURLが確定するまでの明確な「未設定」マーカーに置き換え。Play Console 提出前に `docs/privacy_policy.html` を実際にホスティングし、本物のURLをここに記入する必要がある旨を明記
 - **重大**: `RepeatCallerTracker` によるサイレント化(`SilentBlockerService.screenIncoming()`)が `decide()` の**外側**、Pause状態を確認する前に実行されており、「Pause means every call rings」という `decide()` Layer 2 の明示的契約に反していた(Pause中でも同一番号の4回目以降の着信が無音ブロックされ得た)。今セッション既に修正した政府偽装警告・高リスク時間帯警告の Pause 非一貫性(§2-3, 解消済み)と同種のバグ。速度トラッキングの継続性のため `RepeatCallerTracker.record()` は引き続き実行するが、`isRepeatOffender()` の判定結果に基づく `SILENCE` は Pause 中は発動しないようゲートを追加(`isPausedNow` を1回計算し `CallState.pausedUntilMillis` 構築とも共有)。`screenIncoming()` は Android `Context` 依存のため JVM 単体テスト対象外(CLAUDE.md の既存制約どおり)で、直接テストは追加できず目視検証のみ
 - **2-1 部分対応**: 通知チャンネル8種の重複排除がない問題のうち、最も具体的だった1件(「警察/税務署/高リスク時間帯の見出し警告」→ 直後に `PostCallAdvisor` が別文言の #9110 案内を同じ通話に対してもう一度出す)を解消。`WarningNotifier.recordWarningShown()`/`wasWarnedRecently()`(10分ウィンドウ)を追加し、`showPoliceWarning`/`showTaxAgencyWarning`/`showHighRiskHourWarning` が発火時刻を記録、`PostCallAdvisor.maybeShow` が全バリアントで直近発火を確認して自身の通知をスキップ。**意図的に汎用フレームワーク化はしていない**——`TrustNotifier`(トラスト通知)と `WeeklyDigest`(週次サマリ)は対象外のまま。前者は個別ブロックの都度必要な文脈が異なり、後者は即時性のある警告と競合する「同一瞬間の重複」ではなく後日のまとめなので、同じ意味での重複ではない。テスト: `WarningNotifierRateLimitTest` に `wasWarnedRecently`/`pruneStaleRateLimitKeys` の新規ケースを追加
+- 月次ダイジェスト(9週目以降)が約4-5週間分累積したブロック数を「今週 N 件」と誤表示 → `digest_text_monthly`(「今月 N 件」)を4ロケールに追加し、`WeeklyDigest.showDigest()` に `isMonthly` フラグを配線。HONESTY_ADDENDUM の誇張禁止原則との矛盾解消
+- `SpamCache` 冒頭 KDoc が「LRU eviction」と主張していたが実装は純粋な FIFO(`add()` は既存ハッシュで早期 return し順序を更新しない。`add()` 自身のコメントは正しく FIFO と記述)→ 冒頭を FIFO に訂正し、LRU でないことの実害が無視できる理由(MAX_ENTRIES=10,000)も明記
+- **全ソースファイル精査完了**(2026-07 監査第2巡): `OutboundGuard` / `WangiriTracker` / `PauseTile` / `TrustNotifier` / `RestoreReceiver` / `NotificationRateLimiter` / `DomesticSpoofDetector` / `SpamCache` / `AllowSuffixStore` / `PhoneNumbers` / `EmergencyWhitelist` を精読し、上記2件以外は契約と実装の一致を確認。特筆: `RestoreReceiver` が `RepeatCallerTracker.clear` / `WangiriTracker.forget` を呼ばないのは一見漏れに見えるが、Restore 後は outbound-known への追加により `screenIncoming` の trusted-set 早期 RING が両判定より先に走るため実害なし(仕様として許容)
 
 ---
 
 ## 5. 対応推奨順
 
 1. **1-2**(CSV 監査)— 機関ごとの個別判断。ユーザー確認推奨
-2. **1-5 / 2-2** — 製品哲学とのトレードオフ。**必ずユーザーに確認してから着手**
+2. **1-5 / 2-2 / 2-4** — 製品哲学・文言とのトレードオフ。**必ずユーザーに確認してから着手**
 3. `play_data_safety.json` の `privacy_policy_url` — Play Console 提出前に `docs/privacy_policy.html` の実ホスティング先URLを確定して記入すること(現状「未設定」マーカー)
 
-低リスクな解消(ドキュメント整備・整合性確認・市販品質監査の機械的修正・具体的に特定できた1件の通知重複)は完了済み。残る2項目は全て要ユーザー判断。
+低リスクな解消(ドキュメント整備・整合性確認・市販品質監査の機械的修正・具体的に特定できた1件の通知重複)は完了済み。残る項目は全て要ユーザー判断。

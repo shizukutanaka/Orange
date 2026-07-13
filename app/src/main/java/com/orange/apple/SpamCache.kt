@@ -5,7 +5,11 @@ import androidx.core.content.edit
 import java.security.MessageDigest
 
 /**
- * Bounded, hashed spam cache with LRU eviction.
+ * Bounded, hashed spam cache with FIFO eviction.
+ * (FIFO, not LRU: a re-blocked number's position in the eviction order is NOT
+ * refreshed — add() returns early when the hash is already present. At
+ * MAX_ENTRIES = 10,000 the distinction is inconsequential for real call
+ * volumes, but the label should match what the code does.)
  *
  * PRIVACY DESIGN (arXiv:2304.02810, on-device blocklisting):
  * Numbers the user has blocked are sensitive — a blocklist reveals who the
