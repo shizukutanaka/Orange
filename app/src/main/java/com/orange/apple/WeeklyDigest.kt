@@ -49,7 +49,8 @@ class WeeklyDigest : BroadcastReceiver() {
         // then monthly thereafter. Never stop entirely — elderly users'
         // fraud awareness decays in 6-8 week cycles (LY Corp 2023 report).
         val ageWeeks = ageMs / WEEK_MS
-        if (ageWeeks > 8) {
+        val isMonthly = ageWeeks > 8
+        if (isMonthly) {
             // Monthly mode: only fire on the first Sunday of each month.
             // Uses device timezone (not UTC) so JP users get 09:00 JST.
             val cal = java.util.Calendar.getInstance(java.util.TimeZone.getDefault())
@@ -60,7 +61,11 @@ class WeeklyDigest : BroadcastReceiver() {
         }
 
         // Count blocks since the last digest fired (KEY_WEEK_COUNT is reset
-        // by resetWeekCounter() at the end of each digest cycle).
+        // by resetWeekCounter() at the end of each digest cycle). In monthly
+        // mode the alarm still fires weekly but most firings return early
+        // above without resetting, so this genuinely accumulates ~4-5 weeks'
+        // worth of blocks by the time the digest shows — hence the isMonthly
+        // flag threaded into showDigest() to pick the correctly-labeled string.
         val weekCount = prefs.getInt(KEY_WEEK_COUNT, 0)
         if (weekCount == 0) {
             // No blocks this week — silence is the product working. No notif.
@@ -68,11 +73,11 @@ class WeeklyDigest : BroadcastReceiver() {
             return
         }
 
-        showDigest(ctx, weekCount)
+        showDigest(ctx, weekCount, isMonthly)
         resetWeekCounter(prefs)
     }
 
-    private fun showDigest(ctx: Context, count: Int) {
+    private fun showDigest(ctx: Context, count: Int, isMonthly: Boolean) {
         val mgr = ctx.getSystemService(Context.NOTIFICATION_SERVICE) as? NotificationManager
             ?: return
 
@@ -87,7 +92,10 @@ class WeeklyDigest : BroadcastReceiver() {
             )
         }
 
-        val text = ctx.getString(R.string.digest_text, count)
+        val text = if (isMonthly)
+            ctx.getString(R.string.digest_text_monthly, count)
+        else
+            ctx.getString(R.string.digest_text, count)
 
         val historyPi = android.app.PendingIntent.getActivity(
             ctx, 0,

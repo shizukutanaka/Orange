@@ -14,6 +14,7 @@
     <string name="tile_label_paused">Orange 일시 중지</string>
     <string name="widget_a11y_role_lost">Orange가 비활성. 탭하여 재활성화.</string>
     <string name="digest_text">이번 주 %1$d 건 차단.</string>
+    <string name="digest_text_monthly">이번 달 %1$d 건 차단.</string>
     <string name="notif_channel_police_warn">경찰 사칭 경고</string>
     <string name="police_warn_title">%1$s 번호</string>
     <string name="police_warn_body">사칭 가능성. 끊고 #9110으로 재확인</string>
