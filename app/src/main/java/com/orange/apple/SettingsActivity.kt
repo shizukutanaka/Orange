@@ -30,13 +30,20 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
 /**
- * Settings: family number registration.
+ * Settings: family contacts, block history link, manual block, allowed numbers.
  *
- * Intentionally minimal. The only user-configurable setting is the 3-slot
- * family number list. No theme picker, no block-strictness slider, no
- * "whitelist exceptions" — those would imply the engine is wrong and needs
- * manual correction. The engine is the product; the settings are just
- * contact info for emergencies.
+ * Intentionally minimal in kind, not count: no theme picker, no
+ * block-strictness slider, no generic "whitelist exceptions" that would
+ * imply the engine is wrong and needs manual correction. Every section here
+ * is instead a narrow, purpose-built escape hatch tied to a real failure
+ * mode of the engine itself:
+ *  - Family contacts (3 slots): one-tap shortcut surfaced on warning notifications
+ *  - Block a number (ManualBlock): the user learned of a scam number some
+ *    other way and wants it silenced before it ever calls
+ *  - Allowed numbers (AllowSuffixStore): undo a false positive whose exact
+ *    number isn't on disk (History only stores masked suffixes)
+ * The engine is still the product; these are the three narrow places where
+ * a human, not the engine, has better information than Orange does.
  *
  * Reached from:
  *  - Widget long-press (future: widget tap shows count, long-press opens settings)

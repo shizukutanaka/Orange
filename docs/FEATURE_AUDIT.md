@@ -102,6 +102,10 @@
 - 月次ダイジェスト(9週目以降)が約4-5週間分累積したブロック数を「今週 N 件」と誤表示 → `digest_text_monthly`(「今月 N 件」)を4ロケールに追加し、`WeeklyDigest.showDigest()` に `isMonthly` フラグを配線。HONESTY_ADDENDUM の誇張禁止原則との矛盾解消
 - `SpamCache` 冒頭 KDoc が「LRU eviction」と主張していたが実装は純粋な FIFO(`add()` は既存ハッシュで早期 return し順序を更新しない。`add()` 自身のコメントは正しく FIFO と記述)→ 冒頭を FIFO に訂正し、LRU でないことの実害が無視できる理由(MAX_ENTRIES=10,000)も明記
 - **全ソースファイル精査完了**(2026-07 監査第2巡): `OutboundGuard` / `WangiriTracker` / `PauseTile` / `TrustNotifier` / `RestoreReceiver` / `NotificationRateLimiter` / `DomesticSpoofDetector` / `SpamCache` / `AllowSuffixStore` / `PhoneNumbers` / `EmergencyWhitelist` を精読し、上記2件以外は契約と実装の一致を確認。特筆: `RestoreReceiver` が `RepeatCallerTracker.clear` / `WangiriTracker.forget` を呼ばないのは一見漏れに見えるが、Restore 後は outbound-known への追加により `screenIncoming` の trusted-set 早期 RING が両判定より先に走るため実害なし(仕様として許容)
+- **UI層(Compose Activity/Widget)の精査完了**、冒頭KDocの陳腐化3件を訂正(いずれも動作は変えず、コメントを実装に合わせた):
+  - `HistoryActivity.kt`: 冒頭コメントが「Allow は SPAM_CACHE/REPEAT_CALLER/WANGIRI_CALLBACK/FOREIGN_GENERIC/FOREIGN_ELEVATED の5種のみ許可」という許可リスト方式を主張していたが、実際の `HistoryCard.canAllow` は `WITHHELD_NUMBER`/`DOMESTIC_SPOOF` の2種のみ除外する拒否リスト方式(`CARRIER_VERIFICATION_FAILED`/`PREMIUM_RATE_INTERNATIONAL`/`MANUAL_BLOCK` 等も Allow 可能)。ローカルコメントは正確だったため、それに合わせて冒頭を訂正
+  - `SettingsActivity.kt`: 冒頭コメントが「唯一の設定可能項目は家族番号3件」と主張していたが、実際は手動ブロック(`ManualBlock`)と許可済み番号管理(`AllowSuffixStore`)も同画面に存在(いずれも別コミットで追加済み、冒頭コメント未更新のまま放置されていた)。3セクションそれぞれの存在意義を明記する形に訂正
+  - `OrangeWidget.kt`: 冒頭コメントが「タップは何もしない」と明記していたが、実装は `setOnClickPendingIntent` で明確にタップ時の遷移(ロール保持時は履歴画面、ロール喪失時は再オンボーディング)を持つ。「メニューは開かない、常に1つの遷移のみ」という実際の制約に沿って訂正
 
 ---
 

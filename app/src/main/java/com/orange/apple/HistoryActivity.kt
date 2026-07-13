@@ -46,10 +46,15 @@ import java.util.Locale
  * (RestoreReceiver): Restore has the full number and can remove the exact
  * SpamCache hash; Allow cannot because only the masked suffix is on disk.
  *
- * The UI limits Allow to reasons where suffix-matching is meaningful:
- * SPAM_CACHE, REPEAT_CALLER, WANGIRI_CALLBACK, FOREIGN_GENERIC,
- * FOREIGN_ELEVATED. Structural spoofs (DOMESTIC_SPOOF) are excluded —
- * an impossible number cannot become possible, so Allow would be misleading.
+ * The UI hides Allow only for reasons where suffix-matching would be
+ * meaningless or misleading — WITHHELD_NUMBER (no number to match: the
+ * suffix would be empty) and DOMESTIC_SPOOF (a structurally impossible
+ * number cannot become possible, so allowing it would be misleading).
+ * Every other reason, including ones a user may legitimately want to
+ * unblock (CARRIER_VERIFICATION_FAILED for a carrier with STIR/SHAKEN
+ * issues, PREMIUM_RATE_INTERNATIONAL for a family member calling from the
+ * Caribbean, MANUAL_BLOCK to undo a mistaken Settings block), shows Allow.
+ * See HistoryCard's canAllow for the exact denylist.
  */
 class HistoryActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {

@@ -13,9 +13,12 @@ import android.widget.RemoteViews
  * Apple philosophy: the widget is a trophy, not a dashboard.
  *
  * One number. Big. Centered. "247 silenced."
- * That is the whole UI. Tapping does nothing. Long-press (via app info)
- * is the only way to uninstall, and that's a feature: the app respects
- * the user enough to stay out of their way.
+ * That is the whole UI: no toggle, no stats breakdown, no settings shortcut
+ * baked into the widget itself. A tap does exactly one thing — opens the
+ * block history (or, if the screening role was lost, re-onboarding) — never
+ * a menu of options. Long-press (via app info) is still the only way to
+ * uninstall, and that's a feature: the app respects the user enough to stay
+ * out of their way.
  *
  * Prior version had:
  *  - 4x1 widget with toggle, stats, recent call, settings shortcut
