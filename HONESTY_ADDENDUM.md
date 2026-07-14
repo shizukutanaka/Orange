@@ -40,16 +40,20 @@ Calls blocked before the ring:
    this layer is primarily useful for calls routed via US/Canada carriers.
 7. **International premium-rate and network numbers** — +800 (intl
    freephone, abused for reverse-charge scams), +979 (intl premium rate),
-   +882/+883 (intl networks), and 22 Caribbean/Atlantic NANP premium area
+   +882/+883 (intl networks), and 23 Caribbean/Atlantic NANP premium area
    codes (+1-242, +1-876, +1-809, etc.) are all silenced.
 
 Calls that ring but trigger a warning:
 
 8. **Police HQ impersonation detection** — if the caller ID matches one of
-   the 47 prefectural police HQ representative numbers, the call RINGS
-   (we never block police) but the user sees a high-priority notification:
+   the 54 police numbers (47 prefectural HQ + National Police Agency + 6
+   verified Tokyo-area stations), the call RINGS (we never block police)
+   but the user sees a high-priority notification:
    "○○警察の番号です。偽装の可能性。一度切って #9110 にかけ直してください"
    with a "家族に連絡" button if a family number is pre-set.
+8b. **Tax agency impersonation detection** — same warn-but-ring treatment
+    as item 8, for the National Tax Agency's number, targeted by 還付金詐欺
+    (fake tax-refund) and 税金未納詐欺 (fake unpaid-tax) scams.
 
 Outgoing call protection:
 

@@ -11,7 +11,9 @@ import androidx.core.content.edit
  *
  * Handles two concerns that share the same signal source:
  *
- *   (A) **Wangiri detection** — RINGING → IDLE in <6 seconds = short-ring
+ *   (A) **Wangiri detection** — RINGING → IDLE in under
+ *       WangiriTracker.SHORT_RING_THRESHOLD_MS (15s, covering both classic
+ *       1-ring Wangiri and "Wangiri 2.0" brief-connect variants) = short-ring
  *       callback bait. Feeds WangiriTracker so the decision engine can
  *       silence the next call from the same number.
  *
@@ -28,7 +30,7 @@ import androidx.core.content.edit
  *
  *   IDLE → RINGING         : set wasRinging=true, capture number + timestamp
  *   RINGING → OFFHOOK      : user answered inbound; clear wangiri candidate
- *   RINGING → IDLE          : if elapsed < 6s → record wangiri candidate
+ *   RINGING → IDLE          : if elapsed < SHORT_RING_THRESHOLD_MS (15s) → record wangiri candidate
  *   IDLE → OFFHOOK          : outbound call → add number to outbound-known
  *   OFFHOOK → IDLE          : call ended; clear wasRinging
  *

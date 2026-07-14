@@ -99,7 +99,7 @@ All of the above can be verified by a reviewer grepping the unpacked APK.
 
 ## New component analysis (added 2026-05)
 
-### PoliceStationDirectory (47-entry bundled police HQ directory)
+### PoliceStationDirectory (54-entry bundled police directory: 47 prefectural HQ + NPA + 6 Tokyo-area stations)
 | Axis | Threat | Mitigation |
 |------|--------|-----------|
 | S | Attacker submits PR with wrong police number → user trusts spoofed call | Every entry must cite a prefectural police official page. CI could not enforce this (human review required). |
@@ -113,11 +113,11 @@ All of the above can be verified by a reviewer grepping the unpacked APK.
 | I | Family number stored in plaintext in SharedPreferences | Excluded from backup (data_extraction_rules.xml). Uninstall deletes. Rooted device is out of scope. |
 | D | Scammer asks victim to change family number to scammer's number during call | Out of scope for technical defense; mitigated by Onboarding education. |
 
-### WarningNotifier (police impersonation + outbound warning notifications)
+### WarningNotifier (police/tax-agency impersonation + outbound warning notifications)
 | Axis | Threat | Mitigation |
 |------|--------|-----------|
-| D | Notification spam from repeated police-HQ-spoofed calls | Police warnings are NOT gated by NotificationRateLimiter (which only guards SILENCE notifications via TrustNotifier). Natural bound: only 47 known HQ numbers can trigger police warnings. Repeated calls from the same HQ number reuse the same notification ID (number.hashCode() + constant), so mgr.notify() updates in-place rather than creating new notifications. Net maximum: 47 concurrent police-warning notifications. |
-| S | Scammer spoofs a number NOT in the directory → no warning shown | Accepted risk. Directory covers 47 prefectural HQs; individual police stations (~1,200) are a future expansion. |
+| D | Notification spam from repeated police-HQ or tax-agency-spoofed calls | Neither warning is gated by NotificationRateLimiter (which only guards SILENCE notifications via TrustNotifier). Natural bound: only 54 known police numbers (47 prefectural HQ + NPA + 6 Tokyo-area stations) + 1 tax-agency number can trigger these warnings. Repeated calls from the same number reuse the same notification ID (number.hashCode() + constant), so mgr.notify() updates in-place rather than creating new notifications. Net maximum: 55 concurrent gov-impersonation-warning notifications. |
+| S | Scammer spoofs a number NOT in either directory → no warning shown | Accepted risk. `PoliceStationDirectory` covers 47 prefectural HQs + NPA + 6 verified Tokyo-area stations; individual (non-HQ) police stations (~1,200 total nationwide) remain a future expansion. |
 
 ### OutboundGuard (24h flagged-number tracker)
 | Axis | Threat | Mitigation |
@@ -125,7 +125,7 @@ All of the above can be verified by a reviewer grepping the unpacked APK.
 | D | Tracker grows unbounded | Bounded at MAX_ENTRIES=64, 24h TTL pruning. |
 | I | Tracker reveals which numbers were recently blocked | Same SharedPreferences sandbox as spam cache; excluded from backup. |
 
-### CaribbeanPremiumNANP (22 NANP area code blocklist)
+### CaribbeanPremiumNANP (23 NANP area code blocklist)
 | Axis | Threat | Mitigation |
 |------|--------|-----------|
 | S | Legitimate caller from Bahamas/Jamaica blocked | Outbound-known layer takes precedence; user who dialed +1-242 before will always ring. False positive risk is acknowledged in HONESTY_ADDENDUM. |

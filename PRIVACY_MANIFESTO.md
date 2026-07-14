@@ -70,23 +70,31 @@ blocker doesn't actually need. Orange is defined by what it refuses to ask for.
    notification fires from a local timer, is rate-limited to once per 24
    hours per number, and can be ignored without consequence.
 
-10. **Why Orange requests READ_CALL_LOG — and why it's less than it sounds.**
-    Android's system broadcasts include the phone number of an incoming call
-    in the `PHONE_STATE` intent. On Android 9-11, accessing that number
-    from a broadcast receiver requires `READ_CALL_LOG`. Orange uses it for
-    exactly one purpose: detecting the Wangiri "short-ring callback" scam,
-    where a fraudulent call rings briefly and hangs up hoping the victim
-    calls back to a premium-rate number. The receiver notes the ring start
-    and end time, and if the gap is under 6 seconds, records the number
-    locally so the engine can silence the next call from the same number.
+10. **Orange does not request READ_CALL_LOG.**
+    An earlier design considered requesting it — accessing the incoming
+    number from a `PHONE_STATE` broadcast can require it on some OS
+    versions — but it turned out to be unnecessary. Orange's two data paths
+    for a phone number both avoid it entirely:
 
-    What Orange does NOT do with READ_CALL_LOG: it does not read your call
-    history, does not enumerate past calls, does not access call duration
-    records, and does not transmit anything derived from the log. The only
-    data path is: incoming number → in-memory Wangiri candidate → forget
-    after 6 hours. On Android 12+ the system delivers the number directly
-    to the `CallScreeningService` API without this permission; READ_CALL_LOG
-    degrades gracefully to a no-op on those devices.
+    - **The screener itself** gets the number from `Call.Details`, supplied
+      directly by the `CallScreeningService` API once you grant the
+      `ROLE_CALL_SCREENING` role. No log-reading permission of any kind is
+      involved.
+    - **Wangiri "short-ring callback" detection** (a fraudulent call rings
+      briefly and hangs up hoping you call back a premium-rate number) uses
+      a separate `PHONE_STATE` broadcast receiver (`CallStateObserver`) that
+      reads the number straight from the broadcast's `EXTRA_INCOMING_NUMBER`
+      extra. On Android 12+ this is delivered without any extra permission;
+      on earlier versions the extra may simply be absent, and Wangiri
+      detection degrades gracefully (no candidate recorded) rather than
+      requesting a broader permission to cover the gap.
+
+    Either way, the only data path for a Wangiri candidate is: incoming
+    number → in-memory candidate, keyed by a salted hash → discarded after
+    6 hours if no callback arrives. Orange's actual permission list is
+    exactly two entries — `POST_NOTIFICATIONS` and `RECEIVE_BOOT_COMPLETED`
+    — and `docs/play_data_safety.json` is kept in lockstep with the
+    manifest as the enforced source of truth.
 
 ## What Orange does do, once
 
