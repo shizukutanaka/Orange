@@ -154,11 +154,11 @@ or its passphrases.
 orange/
 ├── app/
 │   ├── src/main/
-│   │   ├── java/com/orange/apple/  ← Kotlin sources (≈3600 LOC, 30 files)
+│   │   ├── java/com/orange/apple/  ← Kotlin sources (≈4900 LOC, 33 files)
 │   │   ├── res/                    ← Layouts, strings (en/ja/zh/ko), icons
 │   │   ├── assets/business_directory.csv
 │   │   └── AndroidManifest.xml
-│   ├── src/test/                   ← Pure Kotlin unit tests (≈3200 LOC, 409 tests)
+│   ├── src/test/                   ← Pure Kotlin unit tests (≈4400 LOC, 530 tests)
 │   ├── build.gradle.kts
 │   ├── proguard-rules.pro
 │   └── signing.gradle.kts
@@ -174,12 +174,13 @@ orange/
 ### Decision engine (pure Kotlin, zero Android dependencies)
 | File | Role |
 |------|------|
-| `CallDecision.kt` | 16-point `decide()` engine + `BlockReason` / `WarnReason` / `CallContext` |
+| `CallDecision.kt` | 16-layer `decide()` engine + `BlockReason` / `WarnReason` / `CallContext` |
 | `EmergencyWhitelist.kt` | Hard-coded emergency numbers that always ring |
 | `DomesticSpoofDetector.kt` | MIC numbering plan structure validator |
-| `ScamPrefixSeed.kt` | 8 elevated-risk country codes + `countryCodeOf()` |
-| `CaribbeanPremiumNANP.kt` | 22 NANP premium-rate area codes |
-| `PoliceStationDirectory.kt` | 47 prefectural police HQ numbers (exact match) |
+| `ScamPrefixSeed.kt` | 20 elevated-risk country codes + `countryCodeOf()` (+1 deliberately excluded — see its KDoc) |
+| `CaribbeanPremiumNANP.kt` | 23 NANP premium-rate area codes |
+| `PoliceStationDirectory.kt` | 54 police numbers (47 prefectural HQ + NPA + 6 Tokyo-area stations), warn-but-ring |
+| `TaxAgencyDirectory.kt` | National Tax Agency number, same warn-but-ring treatment (Layer 9b) |
 | `PhoneNumbers.kt` | `normalize()` — single source of truth for number cleaning |
 
 ### Android adapter layer
@@ -197,12 +198,12 @@ orange/
 ### Infrastructure (state, notifications, heuristics)
 | File | Role |
 |------|------|
-| `SpamCache.kt` | LRU spam cache (10,000 entries) |
+| `SpamCache.kt` | FIFO spam cache (10,000 entries) |
 | `WangiriTracker.kt` | Short-ring (≤15s) → callback-window detection |
-| `RepeatCallerTracker.kt` | Same number calling N+ times in 60 min → block |
+| `RepeatCallerTracker.kt` | Same number calling N+ times in 60 min → block (respects Pause) |
 | `OutboundGuard.kt` | 24h LRU: warns on callback to recently-blocked number |
 | `NotificationRateLimiter.kt` | 5 notifications / 5-minute window |
-| `BusinessDirectoryBundle.kt` | Offline CSV loader (80+ verified business numbers, v1.1) |
+| `BusinessDirectoryBundle.kt` | Offline CSV loader (74 verified business numbers, v1.1) |
 | `FamilyCallback.kt` | Up to 3 pre-set family numbers + validation |
 | `TrustNotifier.kt` | Per-block trust-window notifications (days 1–7) |
 | `WarningNotifier.kt` | Police impersonation + outbound + high-risk-hour warnings |
@@ -215,6 +216,9 @@ orange/
 2. `DESIGN_NOTES.md` — what was deliberately removed
 3. `THREAT_MODEL.md` — what the product defends against
 4. `CONTRIBUTING.md` — how PRs are evaluated
+5. `docs/FEATURE_AUDIT.md` — open deficiencies/excesses awaiting a product
+   decision, and a log of what's already been fixed (read this before
+   re-investigating something someone already found)
 
 ## Pre-PR checklist
 
