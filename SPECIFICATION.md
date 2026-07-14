@@ -22,11 +22,11 @@ Orange is defined by deliberate restraint. The product refuses:
 
 ### Deployment Model
 
-- **Platform:** Android 9+ (API 28+)
-- **Role:** CallScreeningService (requires explicit user permission via RoleManager)
+- **Platform:** Android 7.0+ (API 24+), target API 35
+- **Role:** CallScreeningService (requires explicit user permission via RoleManager; adaptive-icon fallback PNGs ship for API 24-25 devices below the adaptive-icon floor)
 - **Storage:** app-private SharedPreferences (no READ/WRITE_EXTERNAL_STORAGE)
 - **APK size ceiling:** ≤1 MiB (with CI gate `check_apk_size.sh`)
-- **Permissions requested:** CallScreeningService role + READ_CALL_LOG (Android 9–11 only, gracefully no-op on 12+)
+- **Permissions requested:** `POST_NOTIFICATIONS` and `RECEIVE_BOOT_COMPLETED` only — no `READ_CALL_LOG` (never needed: `Call.Details` from the granted `ROLE_CALL_SCREENING` role supplies everything the screener reads)
 
 ### Decision Engine (16-Layer Decision Tree)
 
@@ -40,35 +40,36 @@ When a call arrives, Orange evaluates in strict order; first match wins:
 | 4 | Outbound-known | Caller number dialed by user before | **ALLOW** (ring) |
 | 5 | Business bundle | Number in `BusinessDirectoryBundle` (business_directory.csv) | **ALLOW** (ring) |
 | 6 | Spam cache | Number in device spam cache (salted SHA-256 hash) | **SILENCE** |
-| 7 | Wangiri callback | Same number short-rang (<6s) in last 6 hours | **SILENCE** |
+| 7 | Wangiri callback | Same number short-rang (<15s) in last 6 hours | **SILENCE** |
 | 8 | Domestic spoofing | JP number violates MIC numbering plan | **SILENCE** |
-| 9 | Police HQ impersonation | Number matches 47 prefectural police HQ; STIR/SHAKEN failed escalates to 🚨 high alert | **ALLOW** (ring) + warning |
-| 10 | STIR/SHAKEN failed | Carrier verification says caller ID not authentic | **SILENCE** |
-| 11 | International premium | +800/+979/+882/+883 or Caribbean NANP | **SILENCE** |
-| 12 | Foreign elevated-risk | +675/+7/+86/+44/+212/+234/+63/+39 (for JP users) | **SILENCE** |
+| 9 | Police HQ impersonation | Number matches one of 54 police numbers (47 prefectural HQ + NPA + 6 Tokyo-area stations); STIR/SHAKEN failed escalates to 🚨 high alert | **ALLOW** (ring) + warning |
+| 9b | Tax agency impersonation | Number matches the National Tax Agency; same warn-but-ring treatment and STIR/SHAKEN escalation as Layer 9 | **ALLOW** (ring) + warning |
+| 10 | STIR/SHAKEN failed | Carrier verification says caller ID not authentic. Dormant on JP carriers as of 2026-07 (STIR/SHAKEN not yet deployed domestically) — kept as zero-cost forward-insurance | **SILENCE** |
+| 11 | International premium | +800/+979/+882/+883 or Caribbean NANP (23 area codes) | **SILENCE** |
+| 12 | Foreign elevated-risk | 20 country codes for JP users: +675/+7/+86/+44/+39/+212/+234/+63 plus IRSF/Wangiri corridors +371/+370/+239/+232/+252/+53/+682/+676/+678/+855/+856/+95. +1 deliberately excluded (highest-volume *legitimate* corridor; still silenced by Layer 13) | **SILENCE** |
 | 13 | Foreign generic | Any international not in outbound history | **SILENCE** |
 | 14 | DND honor | Device Do Not Disturb active + unknown domestic | **SILENCE** |
-| 15 | High-risk hours | Unknown domestic mobile (090/080/070/060) Mon–Fri 09–11 or 13–15 JST | **ALLOW** (ring) + soft warning |
+| 15 | High-risk hours | Unknown domestic mobile (090/080/070/060) Mon–Fri 09–12, 13–16, or 18–20 JST | **ALLOW** (ring) + soft warning |
 | 16 | Default | All else | **ALLOW** (ring) |
 
 ### Core Components
 
 #### Decision Engine (`CallDecision.kt`)
-- Pure Kotlin function `screenIncoming()` — no Android dependencies
-- Returns `CallDecision` with `shouldBlock: Boolean`, `reason: BlockReason?`, `warning: WarnReason?`
-- Exhaustive `when` enforces compiler-verified coverage of all `BlockReason` cases
+- Pure Kotlin function `decide(ctx: CallContext, state: CallState): Decision` — no Android dependencies, no `System.currentTimeMillis()` reads (clock is injected via `CallContext.nowMillis`)
+- Returns `Decision` with `verdict: Verdict` (`RING`/`SILENCE`), `reason: BlockReason?`, `warning: WarnReason?`, `warnPayload: String?`
+- Exhaustive `when` (`isCacheableSilence()`) enforces compiler-verified coverage of all `BlockReason` cases
 - Variant expansion via `phoneVariants(number, callingCode)` — handles domestic↔E.164 equivalence for JP (0…) ↔ (+81…) forms, including carrier-mangled "+810…" variants
 
 #### Call Screening Service (`SilentBlockerService.kt`)
-- Implements Android's `CallScreeningService` API (API 29+)
+- Implements Android's `CallScreeningService` API (`ROLE_CALL_SCREENING`, API 29+; on API 24-28 the role is unavailable and Orange falls through without screening)
 - Intercepts all incoming calls before ring reaches user
-- Calls `screenIncoming()` from decision engine
-- Handles `CallScreeningResponse`: silence, disconnect, show notification, plus optional advisory
-- Expands phone variants when forgetting Wangiri short-rings (fixed in this session)
+- Adapts `Call.Details` into `CallContext`/`CallState` and calls the pure `decide()` function
+- Handles the resulting `Decision`: silence, disconnect, notification dispatch, plus repeat-caller/Wangiri/OutboundGuard side-effect recording — all gated by `PauseTile.isPaused()` before any `SILENCE` is acted on
+- Expands phone variants when forgetting Wangiri short-rings
 
 #### Outbound Adapter (`SilentBlockerService` + `CallStateObserver`)
 - Records dialed numbers in "outbound" cache for Layer 4 (Outbound-known)
-- Detects short-rings (<6s) for Wangiri detection
+- Detects short-rings (<15s) for Wangiri detection
 - Warns user if calling back a recently-blocked number
 
 #### Spam Cache (`SpamCache.kt`, `SaltVault.kt`)
@@ -77,31 +78,36 @@ When a call arrives, Orange evaluates in strict order; first match wins:
 - Graceful degradation if Keystore is unavailable (falls back to plaintext salt, still hashed)
 
 #### Business Directory (`BusinessDirectoryBundle.kt`, `business_directory.csv`)
-- 47 prefectural police HQ + 200+ legitimate businesses
-- E.164 format (+81…) with CSV key-uniqueness validated by CI
+- 74 verified legitimate business/government numbers, deliberately NOT including police or tax-agency numbers (those live in `PoliceStationDirectory.kt`/`TaxAgencyDirectory.kt` on the warn-but-ring Layer 9/9b instead — a police/tax number here would be silently trusted, exactly what a spoofer relies on)
+- E.164 format (+81…) with CSV key-uniqueness validated by CI (`BusinessDirectoryBundleTest.shipped_csv_never_bundles_a_warn_directory_number` also asserts no Layer-9/9b number ever appears here)
 - Lookups expanded via `phoneVariants()` to handle both domestic (0…) and E.164 forms
-- Loaded once at app startup, parsed on-demand per call (≈1ms per lookup)
+- Loaded once at app startup via `EngineWarmup` (a zero-authority `ContentProvider` that runs before any `Service.bind()`), parsed on-demand per call thereafter
 
 #### Repeat Caller Tracker (`RepeatCallerTracker.kt`)
-- Tracks consecutive calls from same number within a 4-hour window
+- Tracks consecutive calls from same number within a 60-minute window
 - Blocks on 4th call (N_THRESHOLD=3: `calls.size > 3` → block)
 - Space-separated format: "number:timestamp|number:timestamp|…"
 - Clear operation filters malformed entries without ':' delimiter
+- Silencing is gated on Pause status ("Pause means every call rings" — see `decide()`'s Layer 2 KDoc); recording still happens while paused so velocity tracking has no gap once the pause window ends
 
 #### Wangiri Tracker (`WangiriTracker.kt`)
-- Records numbers with short-ring (<6s) in last 6-hour window
+- Records numbers with short-ring (<15s, covering both classic 1-ring Wangiri and "Wangiri 2.0" brief-connect variants) in last 6-hour window
 - Blocks callbacks from same number within window
-- Variant expansion on forget operation (fixed in this session)
+- Variant expansion on forget operation
 
 #### Domestic Spoof Detector (`DomesticSpoofDetector.kt`)
 - Checks for structurally impossible JP numbers
 - Rules: 020 reserved (M2M/pager), wrong digit lengths for mobile/freephone/IP, 8+ repeating digits, 00x intl-access, d[1]=='0' double-zero form
-- E.164 conversion via `to_domestic()` handles "+810…" leading-zero variant (fixed in this session)
+- E.164 conversion via `to_domestic()` handles "+810…" leading-zero variant
 
 #### Police Station Directory (`PoliceStationDirectory.kt`)
-- Hard-coded 47 prefectural police HQ numbers (Kyushu to Hokkaido)
+- Hard-coded 54 police numbers: 47 prefectural HQ (Kyushu to Hokkaido) + National Police Agency + 6 verified Tokyo-area stations
 - Accepts both domestic (0…) and E.164 (+81…) forms including "+810…" mangled variant
 - Used for Layer 9 police-impersonation detection + high-severity alert on STIR/SHAKEN failure
+
+#### Tax Agency Directory (`TaxAgencyDirectory.kt`)
+- Same warn-but-ring pattern as `PoliceStationDirectory`, for the National Tax Agency's number (targeted by 還付金詐欺/税金未納詐欺)
+- Layer 9b, checked immediately after Layer 9 via the shared `govAgencyImpersonationWarning()` helper
 
 #### Phone Numbers Utility (`PhoneNumbers.kt`)
 - `normalize(raw)` — strips to [0-9+], folds full-width (U+FF0B, U+FF10–FF19) to ASCII
@@ -114,7 +120,7 @@ When a call arrives, Orange evaluates in strict order; first match wins:
 
 #### Family Callback (`FamilyCallback.kt`)
 - Stores up to 3 trusted family numbers in SharedPreferences
-- Numbers auto-normalized via `PhoneNumbers.normalize()` (fixed in this session)
+- Numbers auto-normalized via `PhoneNumbers.normalize()`
 - Always ring, no blocking or warning
 
 #### Block History Store (`BlockHistoryStore.kt`)
@@ -124,24 +130,24 @@ When a call arrives, Orange evaluates in strict order; first match wins:
 - User can tap "Allow" to recover false positive — clears spam cache entry + removes history entry
 
 #### User Interface
-- **Main screen:** Tap white circle to grant CallScreening role (one-time setup)
+- **Main screen (`OnboardingActivity`):** Tap white circle to grant CallScreening role (one-time setup); skipped entirely if the role is already held
 - **Family number registration:** 3 slots, manual entry on first setup (no READ_CONTACTS)
-- **Widget:** Shows count of silenced calls today + caption (silenced, warned, or call blocked)
-- **Quick Settings tiles:** "Pause" (1-hour silence exemption), "家族に連絡" (tap to call first family number)
-- **Block history:** Last 50 blocked calls, one-tap "Allow" recovery, 30-day auto-delete
-- **Settings:** Family number management only; no other configuration
+- **Widget (`OrangeWidget`):** Shows cumulative silenced-call count; tap opens block history (or re-onboarding if the role was lost) — never a menu
+- **Quick Settings tiles:** "Pause" (1-hour silence exemption, capped by `MAX_PAUSE_MS` against backward clock jumps), "家族に連絡" (tap to call first family number)
+- **Block history (`HistoryActivity`):** Last 50 blocked calls (masked to last 4 digits), one-tap "Allow" recovery for every `BlockReason` except `WITHHELD_NUMBER`/`DOMESTIC_SPOOF` (where an Allow would be meaningless or misleading), 30-day auto-delete
+- **Settings (`SettingsActivity`):** Family number registration, a manual "Block a number" action (`ManualBlock`) for scam numbers learned about some other way, and an "Allowed numbers" list (`AllowSuffixStore`) to manage false-positive recoveries — three narrow, purpose-built escape hatches, not general configuration
 
 #### Internationalization
-- Strings in: Japanese (ja), English (en), Simplified Chinese (zh-rCN), Korean (ko)
-- Play Store listing metadata in fastlane/metadata/ (jp, en)
-- Threat model assumes JP user (Layers 12–15); foreign users should only use Layers 1–11
+- Strings in: Japanese (ja), English (en), Simplified Chinese (zh), Korean (ko) — all four locale files hold an identical key set, verified on every locale-touching change
+- Play Store listing metadata in fastlane/metadata/
+- Threat model assumes JP user (Layers 9-9b, 12, 15); foreign users should only rely on Layers 1-11, 13-14, 16
 
 ### Testing
 
-- **Unit tests:** 354 Kotlin tests in `app/src/test/`
-  - Pure decision-engine tests (CallDecisionTest: 353 tests)
-  - Component tests (PoliceStationDirectory, CaribbeanPremium, RepeatCallerTracker, WangiriTracker, PhoneVariants)
-  - No Android emulator or device required
+- **Unit tests:** ~530 Kotlin tests across 33 files in `app/src/test/`
+  - Pure decision-engine tests (`CallDecisionTest`, `DecisionPriorityTest`, `EngineInvariantTest`)
+  - Component tests (`PoliceStationDirectoryTest`, `TaxAgencyDirectoryTest`, `CaribbeanPremiumNANPTest`, `RepeatCallerTracker`/`WangiriTracker` coverage in `ComponentTests`, `PhoneVariantsTest`, `PauseTileTest`, etc.)
+  - No Android emulator or device required — files exercising `Context`-dependent Android adapter classes (`SilentBlockerService`, the Activities, the Widget) are deliberately outside this suite; Robolectric is intentionally not used
 - **Static checks:** 10/10 CI gates
   - `check_privacy.sh` — forbid network keywords
   - `check_comprehensive.sh` — forbid wildcard permissions, require ADRs, validate CSV keys, count @Test annotations (ensuring tests didn't regress)
@@ -201,42 +207,39 @@ These are not bugs; they are accepted limitations of an on-device, contact-free 
 
 ## File Structure
 
+33 files under `app/src/main/java/com/orange/apple/` (~4900 LOC). Representative subset — see `DEVELOPING.md`'s "Key source files" tables for the complete, categorized list:
+
 ```
-app/src/main/java/com/orange/apple/
-├── CallDecision.kt         ← Pure decision engine (16 layers, 21 files)
-├── SilentBlockerService.kt ← CallScreeningService entry point
-├── CallStateObserver.kt    ← Outbound adapter + Wangiri short-ring detector
+├── CallDecision.kt          ← Pure decision engine (16 layers, decide())
+├── SilentBlockerService.kt  ← CallScreeningService entry point (adapter)
+├── CallStateObserver.kt     ← Outbound adapter + Wangiri short-ring detector
 ├── DomesticSpoofDetector.kt
-├── PoliceStationDirectory.kt ← 47 prefectural HQ
-├── BusinessDirectoryBundle.kt ← CSV parser + 200+ businesses
-├── CaribbeanPremiumNANP.kt
-├── PhoneNumbers.kt         ← normalize() + mask() (single source of truth)
-├── PhoneVariants.kt        ← phoneVariants() (single source of truth)
-├── SpamCache.kt            ← Hashed blocklist (salted SHA-256)
-├── SaltVault.kt            ← AndroidKeystore encryption for salt
-├── BlockHistoryStore.kt    ← Last 50 blocked, 30-day auto-delete
-├── WangiriTracker.kt       ← Short-ring callback detection (6h window)
-├── RepeatCallerTracker.kt  ← Consecutive-call tracking (4h window, N_THRESHOLD=3)
-├── FamilyCallback.kt       ← 3 trusted family numbers
-├── OutboundGuard.kt        ← Dialed-number cache (Layer 4)
-├── CaribbeanPremiumNANP.kt ← +1–242/+1–876/etc. premium detection
-├── PreCallAdvisor.kt       ← Pre-call warning on Layer 15 (high-risk hours)
-├── PostCallAdvisor.kt      ← 30s post-call notification + hotlines
-├── EmergencyWhitelist.kt   ← 110, 119, 118, etc. (Layer 1)
-└── SettingsActivity.kt     ← Family number UI + PhoneNumbers.normalize()
+├── PoliceStationDirectory.kt ← 54 police numbers (Layer 9)
+├── TaxAgencyDirectory.kt     ← National Tax Agency number (Layer 9b)
+├── BusinessDirectoryBundle.kt ← CSV parser + 74 businesses (Layer 5)
+├── CaribbeanPremiumNANP.kt   ← 23 premium NANP area codes (Layer 11)
+├── ScamPrefixSeed.kt         ← 20 elevated-risk country codes (Layer 12)
+├── PhoneNumbers.kt           ← normalize() + mask() (single source of truth)
+├── (phoneVariants() lives in CallDecision.kt — single source of truth)
+├── SpamCache.kt              ← Hashed blocklist, FIFO, 10,000 entries
+├── SaltVault.kt              ← AndroidKeystore encryption for the salt
+├── BlockHistoryStore.kt      ← Last 50 blocked, 30-day auto-delete
+├── WangiriTracker.kt         ← Short-ring callback detection (15s/6h window)
+├── RepeatCallerTracker.kt    ← Consecutive-call tracking (60min, N_THRESHOLD=3)
+├── FamilyCallback.kt         ← 3 trusted family numbers
+├── OutboundGuard.kt          ← 24h LRU: warns on callback to a flagged number
+├── ManualBlock.kt            ← Settings "Block a number" action
+├── AllowSuffixStore.kt       ← Settings "Allowed numbers" list
+├── PostCallAdvisor.kt        ← 30s post-call notification + hotlines
+├── WarningNotifier.kt        ← Police/tax/high-risk-hour/outbound warnings
+├── EmergencyWhitelist.kt     ← 110, 119, 118, etc. (Layer 1)
+├── HistoryActivity.kt        ← Block history UI
+└── SettingsActivity.kt       ← Family/manual-block/allowed-numbers UI
 
 app/src/main/res/
-├── layout/
-│   ├── activity_main.xml       ← Grant role screen
-│   ├── activity_settings.xml   ← Family number entry (3 slots)
-│   ├── activity_history.xml    ← Block history (50 max, 30-day auto-delete)
-│   └── widget_orange.xml       ← Home widget (silenced count + caption)
-├── strings/
-│   ├── strings.xml         ← English
-│   ├── strings-ja.xml      ← Japanese (primary)
-│   ├── strings-zh-rCN.xml  ← Simplified Chinese
-│   └── strings-ko.xml      ← Korean
-└── values/colors.xml
+├── layout/widget_orange.xml  ← Home widget (silenced count + caption)
+├── values*/strings.xml       ← en/ja/zh/ko, key-set-identical
+└── mipmap-*/ic_launcher.png  ← Legacy launcher icon fallback (API 24-25)
 
 docs/adr/
 ├── 001-pause-before-withheld.md     ← Layer 2 must precede Layer 3
@@ -253,16 +256,13 @@ docs/adr/
 └── 012-domestic-e164-variant-expansion.md ← phoneVariants() canonical pattern
 ```
 
-## Recent Fixes (This Session)
+## Recent Fixes
 
-1. **Wangiri short-ring forget bug** — `handleDecision()` now expands `phoneVariants()` before calling `WangiriTracker.forget()` to handle carrier format inconsistencies
-2. **SettingsActivity full-width Unicode** — Family number save now uses `PhoneNumbers.normalize()` instead of manual digit filter
-3. **ComponentTests N_THRESHOLD off-by-one** — Two tests assumed block on 3rd call; corrected to 4th call (N_THRESHOLD=3 means `calls.size > 3`)
-4. **PhoneNumbers.kt misplaced docblock** — Moved `foldFullWidth()` docstring to correct position
-5. **widget_orange.xml hardcoded color** — Changed `#FF8C42` to `@color/orange_primary` reference
-6. **PRIVACY_MANIFESTO.md READ_CALL_LOG gap** — Added §10 honest explanation of permission usage
-7. **phoneVariants() E.164 leading-zero bug** — Fixed "+810…" carrier-mangled form to produce "0…" not "00…"
-8. **oracle_decision.py missing cases** — Added "+810…" and "+8100…" CASES to cover variant edge cases
+See `CHANGELOG.md` for the maintained, chronological record of every fix —
+this section previously duplicated a snapshot of one past session's fixes
+and, labeled "This Session," became misleading as soon as later sessions
+added more. `docs/FEATURE_AUDIT.md` additionally tracks what's fixed vs.
+still awaiting a product decision, for a session picking up this branch cold.
 
 ## Strengths
 
@@ -278,7 +278,7 @@ docs/adr/
 
 ✅ **Subtraction** — Every decision principle in Rams asks "what can we remove?" (see DESIGN_NOTES.md)
 
-✅ **Testing** — 354 unit tests, 10/10 CI gates, Python oracle reference implementation
+✅ **Testing** — ~530 unit tests, 10/10 CI gates, Python oracle reference implementation
 
 ✅ **Variant handling** — phoneVariants() handles carrier inconsistencies (domestic 0… ↔ E.164 +81… ↔ mangled +810…)
 
@@ -308,7 +308,7 @@ docs/adr/
 
 2. **Smarter Wangiri window** — Current 6-hour fixed. Could make adaptive: if call silenced by Wangiri, extend to next 12 hours on attempt 2. Reduces false negatives without hurting false positives.
 
-3. **Frequency-based heuristic for unknown calls** — If a number has called and been blocked 3+ times in a week, auto-block on next ring without waiting for 4th call. Requires per-week window (vs. current 4-hour). Test for false positives in block history.
+3. **Frequency-based heuristic for unknown calls** — If a number has called and been blocked 3+ times in a week, auto-block on next ring without waiting for 4th call. Requires per-week window (vs. current 60-minute `RepeatCallerTracker` window). Test for false positives in block history.
 
 4. **Better Wangiri detection for multi-line numbers** — Some scammers use "0120-*-*-111" and "0120-*-*-112" variants from same PBX. Current single-number tracking misses the pattern. Could cache prefix+PBX signature instead.
 
@@ -318,9 +318,9 @@ docs/adr/
 
 6. **Repeat-caller threshold tuning** — Currently N_THRESHOLD=3 (block on 4th call). Could make configurable (2–5) in a hidden settings screen. Must test for false positive cases first.
 
-7. **Masking improvements for block history** — Currently shows "****1234". Could show "****1234 (blocked 3x this week)" to help user make Allow/Block decision. Requires aggregation in BlockHistoryStore.
+7. ~~**Masking improvements for block history**~~ — **Done.** `HistoryActivity` shows "****1234 · 3×" (repeat-count badge) computed from `BlockHistoryStore` entries grouped by masked number.
 
-8. **Call duration in block history** — Why was call silenced? Add mini-reason badge (🚨 police spoof, ⏰ Wangiri, ♻️ repeat) so user can quickly understand false positives.
+8. ~~**Reason badge in block history**~~ — **Done.** Every entry shows its `BlockReason` as localized text (`reason_spam_cache`, `reason_wangiri`, etc.), with an extra explanatory sub-label for `DOMESTIC_SPOOF`, `FOREIGN_ELEVATED`/`FOREIGN_GENERIC`, `DND_HONOR`, and `MANUAL_BLOCK`.
 
 ### Lower Impact (Design Risk)
 
