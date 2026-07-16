@@ -20,11 +20,15 @@ incoming calls, and blocks the unwanted ones before the ring reaches you.
 adb install app/build/outputs/apk/debug/app-debug.apk
 ```
 
-**Signed release build** (requires keystore env vars from `signing.gradle.kts`):
+**Signed release build** (requires keystore env vars — see the signing
+block in `app/build.gradle.kts`; the build degrades gracefully to an
+unsigned APK if they're absent):
 ```bash
 ./gradlew assembleRelease
 adb install app/build/outputs/apk/release/app-release.apk
 ```
+
+See [`RELEASING.md`](RELEASING.md) for cutting a tagged GitHub Release.
 
 Open Orange → tap the white circle → grant the Call Screening role.
 On first setup, Orange offers a one-time family-number registration screen
