@@ -4,7 +4,7 @@ All notable changes to Orange will be documented in this file.
 Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased] — v1.6 (patch)
+## [1.6.0] - 2026-07-16
 
 ### Fixed
 - **`RepeatCallerTracker` silencing bypassed Pause** — `decide()`'s Layer 2 KDoc states an unconditional contract: "Pause means every call rings" (already covering withheld numbers and, per an earlier fix, government-impersonation/high-risk-hour warnings). `RepeatCallerTracker`'s velocity-based `SILENCE`, however, fired in `SilentBlockerService.screenIncoming()` *before* `decide()` was ever called and before pause status was read for this purpose — so a paused user redialed by a repeat caller (e.g. a family member trying urgently to reach them) could still have the 4th+ call silenced during a window they explicitly asked to have every call ring. Fixed by computing pause status once, before the repeat-caller check, and gating the `SILENCE` on it. `RepeatCallerTracker.record()` still runs unconditionally so velocity tracking has no gap once the pause window ends.
