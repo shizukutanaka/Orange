@@ -12,6 +12,20 @@ incoming calls, and blocks the unwanted ones before the ring reaches you.
   Whose-is-this lookups use a bundled directory, not your address book.
 - **No ads, no subscription.** Now or ever.
 
+## Download
+
+**Current release: v1.6.0** (2026-07-16) — see [`CHANGELOG.md`](CHANGELOG.md)
+for what's in it.
+
+- **Source snapshot (zip):** [Orange-1.6.0.zip](https://github.com/shizukutanaka/Orange/archive/refs/heads/v1.6.0.zip)
+  — a frozen archive of the exact release commit (`fd0275b`), served by
+  GitHub from the immutable `v1.6.0` release ref. Build it with the two
+  commands under "Try it" below.
+- Release notes: the `[1.6.0] - 2026-07-16` section of [`CHANGELOG.md`](CHANGELOG.md).
+- A pre-built APK is not attached yet — building requires the Android SDK
+  toolchain (see `RELEASING.md` for the 2-minute maintainer runbook that
+  also cuts the annotated git tag and GitHub Release entry).
+
 ## Try it
 
 **From source (debug build):**
