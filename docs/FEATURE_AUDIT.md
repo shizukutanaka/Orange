@@ -44,6 +44,20 @@
 - `SaltVault`(Keystore 暗号化)は端末外・遠隔の攻撃者向け。高齢者ユーザーの現実的脅威である「ロック解除済み端末を手にした家族・介護者」(financial elder abuse の主要ベクター)への防御・言及がコードにもドキュメントにもない。
 - 対策はアプリ内 PIN 等になるが「設定画面を増やさない」という製品哲学と衝突する。**実装前にユーザー(プロダクトオーナー)の判断を仰ぐこと**。
 
+### 1-6. テストスイートがCIで一度も実行されていなかった【プロセス課題 + 実バグ2件発覚】
+- **発覚(2026-07)**: `.github/workflows/` は `.gitignore` で除外されており、静的ゲート `check_comprehensive.sh` は `@Test` アノテーションを**数えるだけ**でテストを**実行しない**。つまり JVM ユニットテストは自動実行された実績が皆無だった。SESSION_SUMMARY.md 自身も過去に「static CI never caught them (only counts @Test annotations)」と言及していた。
+- **今セッションで初めて実行**: Gradle ディストリビューション同梱の `kotlin-compiler-embeddable` + `junit-4.13.2` を使い、Android SDK 無しで Android 非依存サブセット(9 main sources + 10 test files, 199 tests)を実際にコンパイル&実行する `tools/run-pure-tests.sh` を追加。ネットワーク・SDK不要で「純粋な意思決定ロジック(numbering-plan / layer 順序 / ディレクトリ)」を検証できる。**FakePrefs(`android.content.SharedPreferences`)に触れるテストは android.jar が必要なため対象外** — それらは通常の `./gradlew testReleaseUnitTest` が必要。
+- **初回実行で 3 件の失敗を検出**。1件は今セッションの意図的変更による陳腐化テストで修正済み(下記「解消済み」参照)。残り 2 件は **DomesticSpoofDetector の設計判断**が必要(次項)。
+
+### 1-7. DomesticSpoofDetector が先頭ゼロ無し/短縮番号を棄権する【要設計判断】
+- **場所**: `DomesticSpoofDetector.toDomestic()`(`app/src/main/java/com/orange/apple/DomesticSpoofDetector.kt`)。
+- **事象**: `toDomestic()` は入力が `"0"` 始まりでも `"+81"` 始まりでもない場合 `null` を返し、`isImpossibleJpNumber()` は `?: return false` で即座に**棄権**(= 偽装ではない)する。この結果、後続の `d.length < 10 → true`(短すぎる)や「先頭ゼロ欠落」判定は**到達不能**になっている。
+- **実測(`tools/run-pure-tests.sh`)**: `isImpossibleJpNumber("110") = false`、`isImpossibleJpNumber("9012345678") = false`。しかし `DomesticSpoofDetectorTest` の2テスト(`short_code_110_is_flagged_as_impossible_by_detector`, `missing_leading_zero_is_spoof`)は `true` を期待しており、**実行すると失敗する**(コードとテストの矛盾)。
+- **論点**:
+  - `"110"`: ライブエンジンでは Layer 1(EmergencyWhitelist)が処理し、この検出器には決して到達しない(テストのコメント自身が認めている)。棄権(false)は実害なしだが、テストのコメント「The detector correctly flags it」は**事実と異なる**。
+  - `"9012345678"`(先頭ゼロ欠落の携帯番号): ライブエンジンでは Layer 16 まで落ちて **RING** する。これを偽装として弾くべきかは numbering-plan の厳格性に関する**製品判断**。`toDomestic()` を先頭ゼロ無し番号も通すよう変更するとエンジン全体の挙動が変わり、慎重なテストが必要。
+- **対応方針**: どちらも「検出器が非ドメスティック形式の入力を弾くべきか」という設計判断。**コードを一方的に変更したり、テストの assertion を黙って反転させたりしない**(後者は潜在的な gap を隠蔽する)。失敗テストが矛盾の可視シグナルとして機能する。**要ユーザー判断**。
+
 ---
 
 ## 2. 過剰な機能(excesses)— 統合・削減候補
@@ -106,13 +120,17 @@
   - `HistoryActivity.kt`: 冒頭コメントが「Allow は SPAM_CACHE/REPEAT_CALLER/WANGIRI_CALLBACK/FOREIGN_GENERIC/FOREIGN_ELEVATED の5種のみ許可」という許可リスト方式を主張していたが、実際の `HistoryCard.canAllow` は `WITHHELD_NUMBER`/`DOMESTIC_SPOOF` の2種のみ除外する拒否リスト方式(`CARRIER_VERIFICATION_FAILED`/`PREMIUM_RATE_INTERNATIONAL`/`MANUAL_BLOCK` 等も Allow 可能)。ローカルコメントは正確だったため、それに合わせて冒頭を訂正
   - `SettingsActivity.kt`: 冒頭コメントが「唯一の設定可能項目は家族番号3件」と主張していたが、実際は手動ブロック(`ManualBlock`)と許可済み番号管理(`AllowSuffixStore`)も同画面に存在(いずれも別コミットで追加済み、冒頭コメント未更新のまま放置されていた)。3セクションそれぞれの存在意義を明記する形に訂正
   - `OrangeWidget.kt`: 冒頭コメントが「タップは何もしない」と明記していたが、実装は `setOnClickPendingIntent` で明確にタップ時の遷移(ロール保持時は履歴画面、ロール喪失時は再オンボーディング)を持つ。「メニューは開かない、常に1つの遷移のみ」という実際の制約に沿って訂正
+- **テストスイートを初めて実行**(§1-6)し、陳腐化テスト1件を修正: `PoliceStationDirectoryTest.decide_rings_with_no_warning_while_paused_for_non_gov_number` は `nowMillis = 1_000_000L`(= 木曜 09:16 JST = アポ電高リスク窓)+ 番号 `09099998888`(未知の携帯)を使い「Pause 中は無警告で鳴る」を検証していたが、今セッションの意図的変更「高リスク時間帯警告は Pause 中も残す」により、この番号・時刻だと正しく `HIGH_RISK_HOUR_DOMESTIC` 警告が出るようになり**テストが失敗**していた。テストの意図(Pause 中の通常番号は無警告)を保つため `nowMillis` を `79_200_000L`(= 木曜 22:00 JST = 非高リスク)に変更し、なぜ時刻が重要かをコメントで明記。`tools/run-pure-tests.sh` で修正後 199 tests / 2 failures(残り2件は §1-7 の設計判断項目)を確認
+- **`tools/run-pure-tests.sh` 追加**: Gradle 同梱の kotlinc + JUnit で Android 非依存テストを SDK 無しで実行する再利用可能スクリプト(§1-6 参照)
 
 ---
 
 ## 5. 対応推奨順
 
-1. **1-2**(CSV 監査)— 機関ごとの個別判断。ユーザー確認推奨
-2. **1-5 / 2-2 / 2-4** — 製品哲学・文言とのトレードオフ。**必ずユーザーに確認してから着手**
-3. `play_data_safety.json` の `privacy_policy_url` — Play Console 提出前に `docs/privacy_policy.html` の実ホスティング先URLを確定して記入すること(現状「未設定」マーカー)
+1. **1-7**(DomesticSpoofDetector の棄権挙動 + 失敗する2テスト)— 実行して初めて分かる矛盾。numbering-plan 厳格性の設計判断。ユーザー確認推奨
+2. **1-2**(CSV 監査)— 機関ごとの個別判断。ユーザー確認推奨
+3. **1-5 / 2-2 / 2-4** — 製品哲学・文言とのトレードオフ。**必ずユーザーに確認してから着手**
+4. `play_data_safety.json` の `privacy_policy_url` — Play Console 提出前に `docs/privacy_policy.html` の実ホスティング先URLを確定して記入すること(現状「未設定」マーカー)
+5. **CI で実テスト実行**(§1-6)— `.github/workflows/` 復活時に `tools/run-pure-tests.sh`(+ SDK 有りなら `./gradlew testReleaseUnitTest`)を組み込み、「@Test を数えるだけ」の状態を解消すること
 
-低リスクな解消(ドキュメント整備・整合性確認・市販品質監査の機械的修正・具体的に特定できた1件の通知重複)は完了済み。残る項目は全て要ユーザー判断。
+低リスクな解消(ドキュメント整備・整合性確認・市販品質監査の機械的修正・具体的に特定できた1件の通知重複・陳腐化テスト1件・テスト実行基盤)は完了済み。残る項目は全て要ユーザー判断。

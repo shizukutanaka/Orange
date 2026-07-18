@@ -188,11 +188,18 @@ class PoliceStationDirectoryTest {
 
     @Test fun decide_rings_with_no_warning_while_paused_for_non_gov_number() {
         // A regular unknown number during pause still just rings, no warning —
-        // pause's blanket RING behaviour is otherwise unchanged.
+        // pause's blanket RING behaviour is otherwise unchanged for a number
+        // that isn't a gov-impersonation target and isn't in a high-risk hour.
+        // NOTE: nowMillis must be OUTSIDE the アポ電 high-risk windows here. Since
+        // the high-risk-hour warning was made to survive Pause (see
+        // CallDecisionTest.high_risk_hour_warning_survives_pause), an unknown
+        // mobile at a high-risk hour would correctly warn even while paused —
+        // so this "no warning" case is isolated with an off-peak time.
+        // 79_200_000L = 1970-01-01 22:00 JST (Thu, off-peak), verified non-high-risk.
         val ctx = CallContext(
             number = "09099998888",
             calleeCountryIso = "JP",
-            nowMillis = 1_000_000L
+            nowMillis = 79_200_000L
         )
         val state = CallState(
             outboundKnown = emptySet(),
