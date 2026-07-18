@@ -45,3 +45,14 @@ Two unit tests added to `CallDecisionTest.kt`:
 - No other layers are affected; `phoneVariants()` already handles E.164 ↔ domestic
   normalisation for the outbound-known and family-number checks.
 - The fix is additive (no existing test cases regress).
+
+## Addendum (2026-07)
+This ADR's operative decision — recognising E.164 JP mobile prefixes in
+`isUnknownDomesticMobile()` — remains in force unchanged. The **hour windows**
+described in the Context above (`09:00–11:59 / 13:00–15:59`, noon and 16:00
+excluded) were a separate, later-superseded parameter: `isHighRiskHour()` now
+covers `hour in 9..12 || hour in 13..16 || hour in 18..20` (the noon and 16:00
+hours were folded in, and an evening 18:00–20:59 アポ電 window was added — see
+CHANGELOG and the `RESEARCH_BASIS.md` 2026 field-data section). The window
+figures in this ADR's Context are preserved as the historical record of the
+decision at the time it was made, not as a description of current behaviour.

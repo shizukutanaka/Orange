@@ -48,3 +48,15 @@ This ensures:
 - The general principle established: any layer that overrides a SILENCE with a
   RING (police, emergency, outbound-known) must come **before** the SILENCE-
   producing layer it is meant to override.
+
+## Addendum (2026-07)
+A second warn-but-ring government-impersonation directory was later added under
+exactly this ADR's general principle: `TaxAgencyDirectory` (the National Tax
+Agency's number, targeted by 還付金詐欺/税金未納詐欺), checked as **Layer 9b**,
+immediately after the police check and still **before** the STIR/SHAKEN silence
+at Layer 10. Both directories now share a single `govAgencyImpersonationWarning()`
+helper in `CallDecision.kt`, so the "ring, and escalate severity when
+`verificationFailed` is also true, but never silence" behaviour this ADR
+established for police numbers applies identically to tax-agency numbers. No
+change to the original decision; this records that the pattern was extended to
+a second directory rather than re-derived.
