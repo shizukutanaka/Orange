@@ -46,7 +46,13 @@ class WangiriTrackerTest {
 
     @Test fun `forget removes entry`() {
         WangiriTracker.record(prefs, number, t0)
-        WangiriTracker.forget(prefs, number)
+        // forget() routes through snapshot(nowMs), which prunes entries outside the
+        // 6h window BEFORE removing — so an explicit nowMs inside the window is
+        // required (matching the production call timing, and the sibling
+        // `forget prunes expired entries` test). Without it, forget()'s default
+        // System.currentTimeMillis() (real 2026) prunes this fixed-2023 entry from
+        // view and can't remove it.
+        WangiriTracker.forget(prefs, number, t0 + 1)
         val snap = snapAt(t0 + 1_000)
         assertNull(snap[hashOf(number)])
     }
@@ -71,8 +77,9 @@ class WangiriTrackerTest {
         val domestic = "09012345678"
         val e164 = "+819012345678"
         WangiriTracker.record(prefs, domestic, t0)
-        WangiriTracker.forget(prefs, domestic)   // variant expansion done by caller
-        WangiriTracker.forget(prefs, e164)       // second variant — no-op here, but safe
+        // Explicit nowMs inside the window — see `forget removes entry` above for why.
+        WangiriTracker.forget(prefs, domestic, t0 + 1)   // variant expansion done by caller
+        WangiriTracker.forget(prefs, e164, t0 + 1)       // second variant — no-op here, but safe
         val snap = snapAt(t0 + 1_000)
         assertNull("domestic short-ring entry must be gone after variant forget", snap[hashOf(domestic)])
     }

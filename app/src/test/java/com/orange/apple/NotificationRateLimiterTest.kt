@@ -62,18 +62,23 @@ class NotificationRateLimiterTest {
     @Test fun backward_clock_jump_resets_window() {
         // If the system clock jumps backward, the window must reset to avoid
         // a permanent state where the rate limiter is disabled.
+        // NOTE: use REALISTIC epoch-ms timestamps. KEY_WINDOW_START defaults to 0L,
+        // and windowStart is only anchored to nowMs on the first call where
+        // `nowMs - 0 >= WINDOW_MS`. With tiny timestamps (e.g. 1000) that never
+        // holds, so windowStart stays 0 and the `nowMs < windowStart` backward-jump
+        // guard can never fire — an artifact of unrealistic values, not the code.
+        val base = 1_700_000_000_000L
         val p = FakePrefs()
-        // Fill window at time=1000.
+        // Fill window at base..base+4 (windowStart anchors to base on the first call).
         repeat(5) { i ->
-            NotificationRateLimiter.shouldNotify(p, "+$i", 1000L + i)
+            NotificationRateLimiter.shouldNotify(p, "+$i", base + i)
         }
-        // Next distinct number in same window is silenced (at time=1100).
-        assertFalse(NotificationRateLimiter.shouldNotify(p, "+99", 1100L))
-        // System clock jumps backward to time=500.
-        // The window should reset, allowing notifications again.
-        assertTrue(NotificationRateLimiter.shouldNotify(p, "+99", 500L))
-        // Subsequent notifications in the new window should fire until limit is reached.
-        assertTrue(NotificationRateLimiter.shouldNotify(p, "+98", 501L))
+        // Next distinct number in same window is silenced.
+        assertFalse(NotificationRateLimiter.shouldNotify(p, "+99", base + 100))
+        // System clock jumps backward before windowStart → window resets, allowing again.
+        assertTrue(NotificationRateLimiter.shouldNotify(p, "+99", base - 500))
+        // Subsequent notifications in the new window fire until the limit is reached.
+        assertTrue(NotificationRateLimiter.shouldNotify(p, "+98", base - 499))
     }
 }
 

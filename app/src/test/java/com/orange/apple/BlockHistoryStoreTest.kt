@@ -57,11 +57,16 @@ class BlockHistoryStoreTest {
     }
 
     @Test
-    fun `short number masked correctly`() {
+    fun `short number shown in full, not masked`() {
+        // PhoneNumbers.mask() DELIBERATELY shows short codes (length <= 4) in full:
+        // "Short codes (110, 119, 188) are public and non-PII. Show them fully."
+        // So a <=4-digit number is not masked to "****". (This input is moot in the
+        // live engine — 110 is an emergency number, rings at Layer 1, and is never
+        // block-recorded — but the masking contract is what's asserted here.)
         val now = 1_700_000_000_000L
         BlockHistoryStore.record(prefs, "110", BlockReason.SPAM_CACHE, now)
         val entries = BlockHistoryStore.load(prefs, now)
-        assertEquals("****", entries[0].maskedNumber)
+        assertEquals("110", entries[0].maskedNumber)
     }
 
     @Test
