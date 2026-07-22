@@ -219,6 +219,9 @@ orange/
 5. `docs/FEATURE_AUDIT.md` — open deficiencies/excesses awaiting a product
    decision, and a log of what's already been fixed (read this before
    re-investigating something someone already found)
+6. `docs/MODEL_PLAYBOOK.md` — strengths to preserve, known weaknesses,
+   improvement backlog with entry conditions, danger-file list, and which
+   model tier fits which task (read this before making changes)
 
 ## Pre-PR checklist
 
