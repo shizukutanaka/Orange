@@ -171,7 +171,27 @@ echo "==> compiling ${#TEST_SRCS[@]} test sources"
 KC "${TEST_SRCS[@]}" -d "$OUT/test" -no-reflect \
    -classpath "$OUT/main:$STDLIB:$JUNIT:$HAMCREST:$OUT/shimjava-out" -Xfriend-paths="$OUT/main"
 
-echo "==> running tests (expected: 276 run / 2 failures = the FEATURE_AUDIT §1-7 signal)"
+echo "==> running tests (expected steady state: 276 run / 2 failures = the FEATURE_AUDIT §1-7 signal)"
 CLASSES=$(cd "$OUT/test" && find . -name '*Test.class' | sed 's|^\./||;s|\.class$||;s|/|.|g' | tr '\n' ' ')
-java -cp "$OUT/main:$OUT/test:$STDLIB:$JUNIT:$HAMCREST:$OUT/shimjava-out" org.junit.runner.JUnitCore $CLASSES 2>&1 \
-  | grep -v 'JAVA_TOOL_OPTIONS'
+set +e
+RESULT=$(java -cp "$OUT/main:$OUT/test:$STDLIB:$JUNIT:$HAMCREST:$OUT/shimjava-out" org.junit.runner.JUnitCore $CLASSES 2>&1 | grep -v 'JAVA_TOOL_OPTIONS')
+set -e
+echo "$RESULT"
+
+# Exit-code contract (so this can gate a push): succeed iff EVERY failing test
+# is one of the two known, intentionally-unresolved DomesticSpoofDetector
+# design-question tests (FEATURE_AUDIT §1-7). Any other failure is a regression.
+# Robust to new tests being added (checks the failure identities, not a count).
+ALLOWED='short_code_110_is_flagged_as_impossible_by_detector missing_leading_zero_is_spoof'
+FAILED=$(printf '%s\n' "$RESULT" | grep -oE '^[0-9]+\) [a-zA-Z_0-9]+\(' | sed 's/^[0-9]*) //; s/($//' || true)
+UNEXPECTED=""
+for f in $FAILED; do
+  case " $ALLOWED " in *" $f "*) : ;; *) UNEXPECTED="$UNEXPECTED $f" ;; esac
+done
+if [ -n "$UNEXPECTED" ]; then
+  echo ""
+  echo "REGRESSION: unexpected test failure(s):$UNEXPECTED" >&2
+  echo "(Only the 2 DomesticSpoofDetector §1-7 tests may fail. See docs/FEATURE_AUDIT.md.)" >&2
+  exit 1
+fi
+echo "==> OK (only the known FEATURE_AUDIT §1-7 signal failures, if any)"

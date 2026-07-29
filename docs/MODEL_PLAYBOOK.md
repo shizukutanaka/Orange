@@ -33,7 +33,7 @@ FEATURE_AUDIT は「何が未解決か」を担当する。
 
 | # | 弱点 | 状態 |
 |---|------|------|
-| W1 | テストが CI で一度も実行されていなかった(静的ゲートは @Test を数えるだけ)| `tools/run-pure-tests.sh` で276テスト(純粋層+SharedPreferences依存ストア層)を実行可能に。WarningNotifier/UI 等 Context 大量依存は依然未実行 |
+| W1 | テストが CI で一度も実行されていなかった(静的ゲートは @Test を数えるだけ)| `tools/run-pure-tests.sh` で276テスト(純粋層+SharedPreferences依存ストア層)を実行可能に。**`.githooks/pre-push` が wrapper jar 無しの環境ではこのランナーを実行しpushをゲート**(既知の§1-7失敗2件以外があれば block)。WarningNotifier/UI 等 Context 大量依存は依然未実行 |
 | W2 | `DomesticSpoofDetector.toDomestic()` が先頭0/+81 以外を棄権 → 短縮番号・先頭ゼロ欠落の判定が到達不能。**テスト2件が実行すると失敗する**(意図的に残してある可視シグナル)| FEATURE_AUDIT §1-7。設計判断待ち |
 | W3 | business_directory.csv の宅配・メガバンク等がサイレント信頼のまま(偽装頻度高いが正当着信も多い)| FEATURE_AUDIT §1-2。機関別判断待ち |
 | W4 | 警察/税務署番号へのかけ直し(推奨される安全行動)に「ブロックした番号」という事実誤りの発信警告が出る | FEATURE_AUDIT §2-4。文言/挙動判断待ち |

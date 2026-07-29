@@ -12,12 +12,24 @@ if command -v python3 >/dev/null 2>&1; then
     python3 tools/oracle_decision.py
 fi
 
-if [ -x ./gradlew ]; then
-    echo "[pre-push] JVM unit tests (authoritative)…"
+if [ -x ./gradlew ] && [ -f gradle/wrapper/gradle-wrapper.jar ]; then
+    echo "[pre-push] JVM unit tests (authoritative, full suite)…"
     ./gradlew testReleaseUnitTest --no-daemon
 else
-    echo "[pre-push] WARNING: ./gradlew not found — JVM tests NOT run."
-    echo "           CI will run them, but you are pushing unverified behavior."
+    # No Gradle wrapper (common in fresh clones / sandboxes without the SDK).
+    # Fall back to the SDK-free runner, which executes the decision engine +
+    # store-layer tests (276) using the Kotlin compiler + JUnit bundled inside
+    # a Gradle distribution. It exits non-zero on any failure OTHER than the two
+    # known DomesticSpoofDetector §1-7 design-question tests, so it gates the push.
+    # This is a subset (WarningNotifier / Context / UI tests still need the full
+    # ./gradlew run) but is far better than pushing entirely unverified.
+    echo "[pre-push] ./gradlew (with wrapper jar) not found — running SDK-free subset via tools/run-pure-tests.sh…"
+    if bash tools/run-pure-tests.sh; then
+        echo "[pre-push] SDK-free subset passed (full suite still runs in a Gradle+SDK environment)."
+    else
+        echo "[pre-push] BLOCKED: SDK-free tests reported a regression (see output above)." >&2
+        exit 1
+    fi
 fi
 
 echo "[pre-push] OK"
