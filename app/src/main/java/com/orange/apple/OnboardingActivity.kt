@@ -59,6 +59,23 @@ class OnboardingActivity : ComponentActivity() {
         else fadingOut.value = false  // user declined; stay on screen for retry
     }
 
+    /**
+     * POST_NOTIFICATIONS is a runtime permission from API 33 (Tiramisu) on, and
+     * it is DENIED by default. targetSdk is 35, so without this prompt a fresh
+     * install on Android 13+ silently posts nothing — which for Orange is not a
+     * cosmetic loss: the police/tax impersonation lanes deliberately let the call
+     * RING and rely entirely on the warning notification to tell the user the
+     * caller ID may be spoofed (WarningNotifier's "warn but never block"). No
+     * notification means a spoofed police call just rings, unannotated — the
+     * exact scenario the product exists to prevent.
+     *
+     * Declining is not fatal (silencing still works), so the result is ignored
+     * and onboarding continues either way.
+     */
+    private val notifPermLauncher = registerForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) { _ -> completeSetup() }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
@@ -103,6 +120,21 @@ class OnboardingActivity : ComponentActivity() {
     }
 
     private fun finishToSilent() {
+        // Ask for POST_NOTIFICATIONS once the screening role is settled, before
+        // tearing the screen down — an Activity must be alive to show the dialog.
+        // Asking here (rather than at first block) means the user is prompted while
+        // they are already in a "granting Orange permissions" frame of mind.
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
+            checkSelfPermission(android.Manifest.permission.POST_NOTIFICATIONS) !=
+                android.content.pm.PackageManager.PERMISSION_GRANTED
+        ) {
+            notifPermLauncher.launch(android.Manifest.permission.POST_NOTIFICATIONS)
+            return  // completeSetup() runs from the launcher callback
+        }
+        completeSetup()
+    }
+
+    private fun completeSetup() {
         // Use Handler(mainLooper) rather than decorView.postDelayed so the delayed
         // Runnable is anchored to the main thread's Looper — safe even when called
         // from onCreate() before setContent() attaches the decorView to a window.

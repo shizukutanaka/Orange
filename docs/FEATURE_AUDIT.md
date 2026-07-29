@@ -63,6 +63,27 @@
   - `"9012345678"`(先頭ゼロ欠落の携帯番号): ライブエンジンでは Layer 16 まで落ちて **RING** する。これを偽装として弾くべきかは numbering-plan の厳格性に関する**製品判断**。`toDomestic()` を先頭ゼロ無し番号も通すよう変更するとエンジン全体の挙動が変わり、慎重なテストが必要。
 - **対応方針**: どちらも「検出器が非ドメスティック形式の入力を弾くべきか」という設計判断。**コードを一方的に変更したり、テストの assertion を黙って反転させたりしない**(後者は潜在的な gap を隠蔽する)。失敗テストが矛盾の可視シグナルとして機能する。**要ユーザー判断**。
 
+### 1-8. SpamCache に TTL が無く恒久ロックアウトしうる【要設計判断】
+- `isCacheableSilence`(`CallDecision.kt:439-456`)は `CARRIER_VERIFICATION_FAILED` / `FOREIGN_GENERIC` / `DOMESTIC_SPOOF` で true を返す。よって **STIR/SHAKEN が壊れたキャリア経由の正当な発信者**や**正当な国際発信者**が、初回着信で全 `phoneVariants()` ぶんキャッシュされ、以後 Layer 6 の fast-path で恒久的に静音される。eviction は 10,000 件到達時の FIFO のみで **TTL なし**。
+- 復旧経路はユーザーが気づいて History から Restore する導線だけ。`TrustNotifier` が `NotificationRateLimiter` で間引かれた/スワイプされた/通知が拒否されている場合、**気づく手段が実質ない**。
+- **論点**: TTL や再評価の付与は「一度ブロックした番号は覚え続ける」という学習の永続性(製品の中核的価値)とのトレードオフ。**要ユーザー判断**。
+
+### 1-9. salt 回転で信頼集合が黙って失効する【要設計判断】
+- Keystore キーが無効化されると(機種変更・キー invalidation)`SaltVault.decrypt` が null を返し(`:128-130`)、平文フォールバックは前回の暗号化成功時に削除済み(`:111`)なので**新しい salt が生成**される。
+- 結果、`SpamCache.hash` に依存する**発信済み集合(outbound-known)**と `RepeatCallerTracker` のハッシュが全て不一致になり、長年信頼してきた正当な国際連絡先が再び FOREIGN_* 層に落ちる → さらに §1-8 により恒久キャッシュされる。**検知も通知もログもない**(家族番号は平文保存のため無事)。
+- **論点**: 検知(salt 変更の記録)と再構築(信頼集合の移行)の設計が必要。**要ユーザー判断**。
+
+### 1-10. コールドスタート時に Keystore と prefs パースがホットパス【要設計判断】
+- `EngineWarmup` は CSV と静的ディレクトリのみ warm し、`SaltVault.salt`/`SpamCache.hash` を warm しない。プロセス起動後の初回着信で **Keystore ラウンドトリップ(10–50ms、StrongBox ではさらに悪化)** を screening callback 内で払う。`SpamCache` 自身の KDoc(`:46-48`)が「これを毎回払うのは不要」と書いているのに、初回だけは実際に払っている。
+- 加えて SharedPreferences の初回ロードは同期 XML パースで、`SpamCache.MAX_ENTRIES = 10,000` の64桁ハッシュ + `KEY_ORDER` の重複コピー + outbound 1,000件 = **1MB超**を screening スレッドで解析しうる。`SilentBlockerService.kt:24-25` の KDoc「disk I/O は prefs 1回読みのみ」はこの規模を過小評価している。
+- **論点**: warmup への追加は容易だが、アプリ起動時に Keystore 初期化を持ち込む是非(起動コスト・キー無効化例外の扱い)は判断が要る。**要ユーザー判断**。
+
+### 1-11. ロール失効がユーザーに実質伝わらない【要設計判断・哲学衝突】
+- `RoleMonitor` は意図的に無通知(KDoc `:37-39` 明記)。シグナルはウィジェットの `·` 一文字のみ(`OrangeWidget.kt:59`)で、**ウィジェット未設置なら永久に気づけない**(`RoleMonitor.kt:63` が `ids.isNotEmpty()` で gate)。
+- 検知タイミングも BOOT_COMPLETED / MY_PACKAGE_REPLACED / ウィジェット30分更新のみ。**再起動もウィジェットも無いセッション中の失効は検知されない**。
+- さらに唯一の定期接点である `WeeklyDigest` が `if (!RoleMonitor.isRoleHeld(ctx)) return`(`:36`)で**自らを抑止**するため、最も知らせるべき状態でこそ沈黙する。
+- **論点**: 「設定画面を増やさない/通知を増やさない」哲学と真正面から衝突。**要ユーザー判断**。
+
 ---
 
 ## 2. 過剰な機能(excesses)— 統合・削減候補
@@ -131,15 +152,23 @@
   - `NotificationRateLimiterTest.backward_clock_jump_resets_window`: タイムスタンプ 500/1000 が極小すぎて `KEY_WINDOW_START`(既定0L)が anchor されず(本番の実 epoch なら初回で anchor)、逆行クロック検出 `nowMs < windowStart` が発火しなかった。realistic base(`1_700_000_000_000L`)に変更 → 合格。
   - `WangiriTrackerTest.forget removes entry` / `forget with E164 ...`: `forget()` は `snapshot(nowMs)` 経由で6h窓外を先に除去するため、既定の `System.currentTimeMillis()`(実2026)では固定2023エントリを消せなかった。姉妹の合格テスト同様に**明示 nowMs**(`t0 + 1`)を渡すよう変更 → 合格。
 - **設計矛盾テスト1件を実挙動へ修正**: `BlockHistoryStoreTest.short number masked correctly` は `mask("110")` に `"****"` を期待していたが、`PhoneNumbers.mask()` は短縮番号(≤4桁)を**意図的にそのまま表示**する(「110/119 は公開情報・非PII」と KDoc に明記)。テスト名を `short number shown in full, not masked` に変更し `"110"` を期待するよう修正(110 は緊急番号で Layer 1 で鳴り実際には履歴記録されない moot 入力だが、マスク契約を検証する意味は残す)。**gap 隠蔽ではなく、文書化された意図的挙動へのアラインメント**
+- 🔴 **【最重要・製品機能不全】`POST_NOTIFICATIONS` が実行時に一度も要求されていなかった** → `OnboardingActivity` に要求フローを追加。`targetSdk = 35`(API 33+)ではこの権限は**実行時許可必須・デフォルト拒否**なのに、全ソースに `requestPermissions`/`checkSelfPermission`/`ActivityResultContracts.RequestPermission` が皆無だった(唯一の `ActivityResultContracts` はロール取得用の `StartActivityForResult`)。結果 **Android 13+ の新規インストールでは全通知が一切表示されない**。警察/税務署偽装は「鳴らすが警告する」設計(`WarningNotifier` の warn-but-never-block)なので、警告が出ない = **偽装された警察の電話がただ鳴るだけ**——被害額7割を占める手口に対する中核防御が沈黙していた。修正: ロール取得が片付いた直後(`finishToSilent()` 冒頭、Activity 生存中)に API 33+ かつ未許可なら要求し、許可/拒否どちらでも `completeSetup()` で従来のオンボーディング完了処理へ進む(拒否してもブロック機能自体は動くため中断しない)。
+- 🔴 **【安全性】応答順序の逆転と例外の無防備** → `SilentBlockerService.onScreenCall` を修正。従来は `handleDecision()`(全副作用)を完走してから `respond()` を呼んでおり、かつ `onScreenCall`/`screenIncoming`/`handleDecision` に try/catch が皆無だった(唯一の catch は `TrustNotifier` 周りのみ)。副作用側には throw 源が複数ある(`WarningNotifier.show*Warning` は TrustNotifier と違い無防備、`refreshTiles()` の `TileService.requestListeningState` はタイル無効時に例外、`sendBroadcast`、prefs 破損時の `getStringSet` の `ClassCastException`)。例外が Binder コールバックを抜けるとプロセスクラッシュ → `respondToCall` が呼ばれず、**Telecom のスクリーニング期限切れまで着信が遅延**し、原因が持続的なら以後の着信でも毎回再発。さらに SILENCE 経路では `OutboundGuard.record`/`SpamCache.add`/`BlockHistoryStore.record` が既にコミット済みなのに応答だけ返らない**部分コミット**になっていた。修正: 判定確定直後に `respond()` を先に呼び、`handleDecision()` を try/catch で包む。`screenIncoming()` 自体も try で包み、失敗時は `Decision(Verdict.RING)` で**フェイルオープン**(静音より鳴らす方が安全、EmergencyWhitelist の論拠と同じ)。OUTGOING 経路も同様に respond 先行 + `handleOutgoing` を catch。**`CallDecision.decide()` は一切変更していない**(判定ロジックは不変、順序と防御のみ)
 
 ---
 
 ## 5. 対応推奨順
 
-1. **1-7**(DomesticSpoofDetector の棄権挙動 + 失敗する2テスト)— 実行して初めて分かる矛盾。numbering-plan 厳格性の設計判断。ユーザー確認推奨
-2. **1-2**(CSV 監査)— 機関ごとの個別判断。ユーザー確認推奨
-3. **1-5 / 2-2 / 2-4** — 製品哲学・文言とのトレードオフ。**必ずユーザーに確認してから着手**
-4. `play_data_safety.json` の `privacy_policy_url` — Play Console 提出前に `docs/privacy_policy.html` の実ホスティング先URLを確定して記入すること(現状「未設定」マーカー)
-5. **CI で実テスト実行**(§1-6)— `.github/workflows/` 復活時に `tools/run-pure-tests.sh`(+ SDK 有りなら `./gradlew testReleaseUnitTest`)を組み込み、「@Test を数えるだけ」の状態を解消すること
+1. **1-8**(SpamCache に TTL 無し = 正当な発信者の恒久ロックアウト)— First Principles 監査で発見。実害が最も直接的(正当な国際発信者・STIR/SHAKEN 不良キャリア経由の相手が二度と鳴らなくなる)。学習の永続性とのトレードオフ判断が要る
+2. **1-9**(salt 回転で信頼集合が黙って失効)— 1-8 と連鎖して被害が拡大する。検知・再構築の設計が要る
+3. **1-7**(DomesticSpoofDetector の棄権挙動 + 失敗する2テスト)— 実行して初めて分かる矛盾。numbering-plan 厳格性の設計判断。ユーザー確認推奨
+4. **1-11**(ロール失効が実質伝わらない)— 保護が消えたこと自体に気づけない。「通知を増やさない」哲学と衝突
+5. **1-10**(コールドスタート時の Keystore/prefs がホットパス)— 5秒デッドラインに対するリスク。warmup 追加は容易だが起動コストの判断が要る
+6. **1-2**(CSV 監査)— 機関ごとの個別判断。ユーザー確認推奨
+7. **1-5 / 2-2 / 2-4** — 製品哲学・文言とのトレードオフ。**必ずユーザーに確認してから着手**
+8. `play_data_safety.json` の `privacy_policy_url` — Play Console 提出前に `docs/privacy_policy.html` の実ホスティング先URLを確定して記入すること(現状「未設定」マーカー)
+9. **CI で実テスト実行**(§1-6)— `.github/workflows/` 復活時に `tools/run-pure-tests.sh`(+ SDK 有りなら `./gradlew testReleaseUnitTest`)を組み込み、「@Test を数えるだけ」の状態を解消すること
 
-低リスクな解消(ドキュメント整備・整合性確認・市販品質監査の機械的修正・具体的に特定できた1件の通知重複・陳腐化テスト1件・テスト実行基盤)は完了済み。残る項目は全て要ユーザー判断。
+低リスクな解消(ドキュメント整備・整合性確認・市販品質監査の機械的修正・具体的に特定できた1件の通知重複・陳腐化テスト1件・テスト実行基盤・**POST_NOTIFICATIONS 未要求と応答順序という2つの重大バグ**)は完了済み。残る項目は全て要ユーザー判断。
+
+> **First Principles 監査(2026-07)の総括**: 「高齢者が詐欺で金を失うのを防ぐ」という第一原理から要件を導出し実装と突き合わせた結果、**機能の不足ではなく、実装済み機能が届かない経路**に最大の欠陥があった。すなわち (a) 通知権限を要求しないので警告が誰にも届かない、(b) 副作用の例外で応答が返らず着信が遅延する、(c) 一度の誤判定が TTL 無しで恒久化する、(d) 保護が消えたことに気づけない。(a)(b) は機械的に修正済み。(c)(d) は §1-8/§1-11 として判断待ち。**新機能の追加ではなく既存機能の到達性の確保が、この製品の次の改善軸**。

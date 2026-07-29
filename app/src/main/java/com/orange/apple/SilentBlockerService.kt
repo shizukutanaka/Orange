@@ -44,16 +44,51 @@ class SilentBlockerService : CallScreeningService() {
         val number = if (withheld) "" else normalize(raw)
 
         // --- OUTGOING: record + guard ---
+        // Respond first: outgoing calls always ring, so the verdict needs no
+        // computation, and handleOutgoing() is pure side effects (OutboundGuard
+        // write + warning notification). If it throws, the response is already in.
         if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.Q &&
             details.callDirection == Call.Details.DIRECTION_OUTGOING) {
-            handleOutgoing(p, number, now)
-            return respond(details, ring = true)
+            respond(details, ring = true)
+            try {
+                handleOutgoing(p, number, now)
+            } catch (_: Exception) {
+                // Best-effort: the outgoing call proceeds regardless.
+            }
+            return
         }
 
         // --- INCOMING: decide + act ---
-        val decision = screenIncoming(p, number, now, withheld, details)
-        handleDecision(p, decision, number, now)
+        // ORDERING IS SAFETY-CRITICAL. Telecom gives onScreenCall a hard deadline
+        // (~5s) and, if respondToCall() never arrives, the framework auto-allows
+        // the call only after that deadline expires — a multi-second delay on a
+        // real call, repeated on every subsequent call if the cause is persistent.
+        //
+        // handleDecision() is ALL side effects (notification channels, Quick
+        // Settings tiles, widget broadcast, SharedPreferences writes) and any of
+        // them can throw: a NotificationManager failure, a disabled tile component
+        // (TileService.requestListeningState), or a ClassCastException from
+        // corrupted prefs. Previously those ran BEFORE respond(), so a throw meant
+        // the verdict was computed correctly, the block was already persisted, and
+        // yet no response was ever delivered.
+        //
+        // The verdict is final the moment screenIncoming() returns, so respond
+        // immediately, then run side effects under a catch. Fail-open on an
+        // unexpected screening failure: ring rather than silence, since a silenced
+        // legitimate call is the worse error (see EmergencyWhitelist's rationale).
+        val decision = try {
+            screenIncoming(p, number, now, withheld, details)
+        } catch (_: Exception) {
+            Decision(Verdict.RING)
+        }
         respond(details, ring = decision.verdict == Verdict.RING)
+        try {
+            handleDecision(p, decision, number, now)
+        } catch (_: Exception) {
+            // Side effects are best-effort. The call has already been correctly
+            // allowed or silenced; losing a notification must not escalate into
+            // a crashed screening callback.
+        }
     }
 
     private fun handleOutgoing(p: SharedPreferences, number: String, now: Long) {
