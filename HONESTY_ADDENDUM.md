@@ -139,6 +139,37 @@ Calls that will still ring through:
     notification — you will not see it unless you pull down your notification
     shade.
 
+14. **Financial abuse by a family member or caregiver — statistically the most
+    common way older adults lose money.** Orange's entire design assumes the
+    threat arrives *over the phone, from a stranger*. The research says that is
+    not where most of the money goes. A USC Keck School of Medicine analysis of
+    ~2,000 National Center on Elder Abuse calls found financial abuse was the
+    most-reported category (~55%) and that **family members were the most
+    frequently identified perpetrators (~48%)** — the study's own framing is
+    that relatives may perpetrate more financial elder abuse than strangers,
+    despite the volume of phone, mail and internet scams. NCEA figures put 53%
+    of financial abuse on family (adult children, spouses), and the average loss
+    is roughly 3x higher when the perpetrator is known to the victim (~$50k vs
+    ~$17k). Japan's MHLW elder-abuse survey likewise reports sons as the most
+    frequent perpetrator category.
+
+    Orange does nothing about this, and it is worse than neutral: the abuser is
+    typically someone who *should* ring through, and `FamilyCallback` and the
+    outbound-known layer exist precisely to make trusted people always ring. A
+    relative with access to the unlocked phone can also simply change or disable
+    anything Orange does. We are not going to pretend otherwise, and we are not
+    going to bolt on an in-app PIN to look like we addressed it — against
+    someone holding the unlocked device that is close to security theatre, and
+    it would break the legitimate case this product explicitly supports (a
+    family member setting Orange up for a parent, see
+    `docs/SETUP_GUIDE_FAMILY.md`).
+
+    **Orange is a defence against strangers on the telephone network. It is not
+    a defence against the people already inside your trust boundary.** If that
+    is the situation, the useful resources are 地域包括支援センター (community
+    comprehensive support centres) and 高齢者虐待防止法 channels, not a call
+    screener.
+
 ## What we will never add to catch more
 
 We could reach ~99% if we did any of the following. We won't:

@@ -47,6 +47,31 @@
 - `SaltVault`(Keystore 暗号化)は端末外・遠隔の攻撃者向け。高齢者ユーザーの現実的脅威である「ロック解除済み端末を手にした家族・介護者」(financial elder abuse の主要ベクター)への防御・言及がコードにもドキュメントにもない。
 - 対策はアプリ内 PIN 等になるが「設定画面を増やさない」という製品哲学と衝突する。**実装前にユーザー(プロダクトオーナー)の判断を仰ぐこと**。
 
+#### 2026-07 追加調査 — この脅威は「見知らぬ人の詐欺」より一般的である
+
+- **USC Keck School of Medicine の研究**(NCEA 相談ライン約2,000件の分析): 虐待の申告のうち
+  **経済的虐待が最多で約55%**、加害者が特定できたケースでは **家族が最頻で約48%**。
+  研究の結論は「電話・郵便・ネット詐欺が多数存在するにもかかわらず、**親族による経済的虐待の方が
+  見知らぬ人による詐欺より多い可能性がある**」。
+- NCEA の別集計では、経済的虐待の **53%** が家族(成人した子・配偶者)によるもの。
+  **加害者が顔見知りの場合の平均被害額は約5万ドルで、見知らぬ人(約1.7万ドル)の約3倍**。
+- 日本でも厚労省の高齢者虐待調査で**息子が加害者として最多**の傾向が継続して報告されている。
+- **この製品にとっての含意**: Orange の全16層は「知らない番号=脅威」という前提で設計されている。
+  しかし統計上より頻度が高く被害額も大きい加害者は、**`FamilyCallback` に登録され、Layer 4
+  (outbound-known)で常に鳴る側にいる人物**でありうる。つまり Orange は、最も一般的な
+  financial elder abuse のベクターに対して**構造的に無力なだけでなく、加害者を明示的に信頼リストへ
+  昇格させる導線を持っている**。
+- **ただし「だから PIN を付けるべき」とは直結しない**。
+  - 端末を物理的に持つ家族に対しアプリ内 PIN は防御として弱い(端末ロック自体を共有していることが多い)。
+  - 高齢ユーザーに PIN を課すと、**正当な介護者による設定支援**(この製品が想定する `SETUP_GUIDE_FAMILY`
+    のユースケース)を同時に壊す。
+  - 誤って「守られている」と感じさせる**セキュリティシアター**になるリスクが高い。
+- **したがって推奨は機能追加ではなく、脅威モデルの明示**: `THREAT_MODEL.md` に
+  「信頼済みインサイダーは対象外」と**明記**し、`HONESTY_ADDENDUM.md` の「捕まえないもの」に
+  この最頻ベクターを追加する。**Orange は電話network上の見知らぬ攻撃者に対する製品であって、
+  同居家族による経済的虐待の対策ではない** — これを書かないことは、
+  製品の中核的主張である「誠実さ」に反する。**この文書化なら哲学と衝突しない。**
+
 ### 1-6. テストスイートがCIで一度も実行されていなかった【プロセス課題 + 実バグ5件発覚】
 - **発覚(2026-07)**: `.github/workflows/` は `.gitignore` で除外されており、静的ゲート `check_comprehensive.sh` は `@Test` アノテーションを**数えるだけ**でテストを**実行しない**。つまり JVM ユニットテストは自動実行された実績が皆無だった。SESSION_SUMMARY.md 自身も過去に「static CI never caught them (only counts @Test annotations)」と言及していた。
 - **今セッションで初めて実行**: Gradle ディストリビューション同梱の `kotlin-compiler-embeddable` + `junit-4.13.2` を使い、Android SDK 無しで `tools/run-pure-tests.sh` を追加。当初は Android 非依存サブセット(199 tests)のみだったが、**最小の Android 型スタブ(SharedPreferences を Java で書き platform type を再現 / Base64 / keystore 型 / `edit` 拡張。ロジックなし、`/tmp` 限定・非コミット)を追加してストア層(SpamCache/OutboundGuard/WangiriTracker/RepeatCaller/RateLimiter/AllowSuffix/BlockHistory)も対象に拡大**。現在 **17 main sources + 17 test files, 276 tests** を実行。**NotificationManager/NotificationCompat/Context/Activity/Service/Widget 依存(WarningNotifier, ManualBlock, FamilyCallback, TrustNotifier, BusinessDirectoryBundle, UI 各種)は依然として対象外** — 通常の `./gradlew testReleaseUnitTest` が必要。

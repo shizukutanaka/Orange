@@ -24,6 +24,26 @@ Information disclosure / Denial of service / Elevation of privilege).
 | Google Play infrastructure | Full APK access, can serve modified update | Supply-chain compromise |
 | Malicious contributor / OSS hijack | PR merge authority | Insert telemetry, privacy regression |
 | OS-level attacker (root, bootloader) | Full system read | State actor, forensic seizure |
+| **Trusted insider (family member, caregiver)** | **Physical access to the unlocked device; often already in `FamilyCallback` / outbound-known; can disable or uninstall Orange** | **Financial elder abuse — statistically the most common way older adults lose money (see below); OUT OF SCOPE** |
+
+**On the trusted insider.** This adversary is listed because leaving it out
+would misrepresent the risk picture, not because Orange defends against it. A
+USC Keck analysis of ~2,000 National Center on Elder Abuse calls found financial
+abuse was the most-reported category (~55%) with family members the most
+frequently identified perpetrators (~48%); NCEA puts 53% of financial abuse on
+adult children and spouses, with average losses roughly 3x higher than
+stranger-perpetrated fraud. Japan's MHLW elder-abuse survey reports sons as the
+most frequent perpetrator category.
+
+Orange has no defence here and is structurally unable to acquire one: the whole
+engine classifies *phone numbers*, while this adversary is a person who already
+belongs on the allow list, holds the unlocked device, and can change or remove
+the app. An in-app PIN would not help against physical access and would break
+the supported case of a relative configuring Orange for a parent
+(`docs/SETUP_GUIDE_FAMILY.md`) — so it is deliberately not implemented rather
+than implemented weakly. Recorded honestly in `HONESTY_ADDENDUM.md` §14; the
+appropriate channels are 地域包括支援センター and 高齢者虐待防止法, not a call
+screener.
 
 ## STRIDE enumeration
 
@@ -169,6 +189,16 @@ All of the above can be verified by a reviewer grepping the unpacked APK.
    update, we cannot push a fix without them updating. This is the same
    trust model as any offline app and is deliberate — remote revocation
    would require a server, which we refuse.
+5. **Trusted insiders are undefended — including the most common perpetrator
+   of elder financial abuse.** See the Adversaries note above. Orange
+   classifies phone numbers; it cannot classify intent, and the person the
+   research identifies as most likely to take an older adult's money is
+   usually already on the allow list and holding the unlocked phone. We accept
+   this rather than shipping a PIN that would be weak against physical access
+   and would break caregiver-assisted setup. This is the single largest gap
+   between "what harms older adults financially" and "what Orange addresses,"
+   and it is stated plainly here and in `HONESTY_ADDENDUM.md` §14 rather than
+   papered over.
 
 ## External audit invitation
 

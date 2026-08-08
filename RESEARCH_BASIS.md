@@ -256,6 +256,13 @@ points the user to the right humans for everything else."
   IEEE S&P 2025 (CISPA). (Basis for rewriting `police_warn_body` from a terse
   "may be spoofed" to a contextual warning; 36 blind + 36 sighted participants,
   cold-called in a naturalistic setting.)
+- Keck School of Medicine of USC / National Center on Elder Abuse. *Analysis of
+  ~2,000 NCEA resource-line calls* (2019): financial abuse most-reported (~55%),
+  family members most frequently identified perpetrators (~48%); NCEA separately
+  attributes 53% of financial abuse to adult children and spouses, with average
+  losses ~3x stranger-perpetrated fraud. (Basis for naming the trusted insider
+  as an explicitly out-of-scope adversary in THREAT_MODEL and HONESTY_ADDENDUM
+  §14 — the largest gap between what harms older adults and what Orange does.)
 - Federal Communications Commission. *Second Report and Order on reassigned
   numbers* (FCC 17-90) and the **Reassigned Numbers Database** (operational
   2021-11). (Basis for the ~35M/year, ~10%-of-all-numbers reassignment figures
