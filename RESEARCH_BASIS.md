@@ -123,6 +123,40 @@ the modality and timing differ, so the effect size does not transfer directly.
 What transfers is the comparative finding that contextual framing outperforms a
 terse "this may be suspicious", which is a claim about content, not channel.
 
+## Phone numbers are recycled — which bounds how long a blocklist stays true
+
+A blocklist is a claim about a *number*, but the thing the user actually wants
+blocked is a *person*. Those two drift apart, and the industry data says they
+drift fast:
+
+- The FCC puts US reassignment at roughly **35 million numbers per year — about
+  10% of all US numbers** — and the mandated aging period before a disconnected
+  number can be reissued is as little as **45 days**, with major carriers
+  reissuing in **2–5 days** in practice. The FCC considered the resulting
+  wrong-party contact problem serious enough to stand up a national **Reassigned
+  Numbers Database** (live since 2021-11) so callers can check before dialing.
+- Japan is slower but not exempt: 総務省 has set out a reassignment policy for
+  unused numbers (~3 years as the stated target for mobile), while reported
+  real-world cancellation→reuse intervals run as short as **3 months**, and
+  "calls meant for the previous owner" is a well-documented nuisance.
+
+The implication for Orange is specific and uncomfortable: **a scammer's number,
+once abandoned, can belong to an ordinary person within months.** A blocklist
+entry with no expiry keeps silencing that new owner indefinitely. Neither side
+can detect it — the caller is never told they were blocked, and the user cannot
+notice a call that never rings. Silence is unobservable, so this failure mode
+never self-corrects.
+
+This is why every other bounded store in Orange decays with time
+(`NotificationRateLimiter` 5 min, `RepeatCallerTracker` 60 min,
+`WangiriTracker` 6 h, `OutboundGuard` 24 h, `BlockHistoryStore` 30 days).
+`SpamCache` is currently the lone exception, and the case for changing that —
+along with the argument for distinguishing *permanent properties of a number*
+(numbering-plan violations, premium-rate ranges) from *situational judgements*
+(carrier attestation state, "no outbound history yet") — is recorded in
+FEATURE_AUDIT §1-8. It is flagged rather than changed because it alters
+behaviour, not documentation.
+
 ## Platform contract: why respond-before-side-effects is safety-critical
 
 Not literature, but a primary-source constraint that shapes the adapter layer.
@@ -195,6 +229,14 @@ points the user to the right humans for everything else."
   IEEE S&P 2025 (CISPA). (Basis for rewriting `police_warn_body` from a terse
   "may be spoofed" to a contextual warning; 36 blind + 36 sighted participants,
   cold-called in a naturalistic setting.)
+- Federal Communications Commission. *Second Report and Order on reassigned
+  numbers* (FCC 17-90) and the **Reassigned Numbers Database** (operational
+  2021-11). (Basis for the ~35M/year, ~10%-of-all-numbers reassignment figures
+  and the 45-day minimum aging period — see FEATURE_AUDIT §1-8 on blocklist
+  expiry.)
+- 総務省. *電気通信番号規則および電気通信番号政策に関する資料* (番号再利用/再割当).
+  (Basis for the Japanese reassignment picture; ~3-year target for unused mobile
+  numbers, with far shorter observed cancellation→reuse intervals in practice.)
 - Android Open Source Project. *`CallScreeningService` API documentation*
   (`telecomm/java/android/telecom/CallScreeningService.java`). (Primary source
   for the 5-second deadline and for "the user's device will not begin ringing
