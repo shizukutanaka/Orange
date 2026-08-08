@@ -174,6 +174,33 @@ repeats on every call if the cause persists. This is why `SilentBlockerService`
 responds the moment the verdict is final and only then runs side effects, each
 under a catch (see FEATURE_AUDIT's resolved list).
 
+## Losing the screening role is undetectable by design (platform constraint)
+
+Orange's entire defence rests on holding `ROLE_CALL_SCREENING`. If that role
+moves to another app, every layer stops running at once — yet the app cannot be
+told. `RoleManager.addOnRoleHoldersChangedListener` requires
+`MANAGE_ROLE_HOLDERS`, a signature-level **system** permission unavailable to
+third-party apps, so **there is no callback, broadcast, or listener a normal app
+can register to learn it lost a role.** Polling is the only mechanism available.
+
+That reframes the gap recorded in FEATURE_AUDIT §1-11: the sparse detection
+points (boot, package replace, widget refresh) are a consequence of the platform
+API surface, not an oversight. What *is* a design choice is what Orange does
+with the polling opportunities it already has.
+
+The usable-security literature is blunt about the cost of getting this wrong:
+silent failures open a gap between **perceived security and actual risk**, and
+users keep behaving as though protected while fully exposed — the pattern
+documented repeatedly around silently-failed updates and rolled-back patches.
+Orange's variant is unusually severe, because after role loss the phone simply
+rings normally: from the user's side that is indistinguishable from the app
+working, and may even read as *improvement* ("it stopped blocking things").
+
+Nothing here argues for more notifications in general. It argues that the one
+recurring wake-up Orange already schedules — the `WeeklyDigest` alarm — should
+not disable itself precisely when protection is off, which is its current
+behaviour (`WeeklyDigest.kt:36`).
+
 ## Layer-by-layer mapping
 
 *Note: The table below documents the **literature-grounded mechanisms** in Orange's
@@ -237,6 +264,10 @@ points the user to the right humans for everything else."
 - 総務省. *電気通信番号規則および電気通信番号政策に関する資料* (番号再利用/再割当).
   (Basis for the Japanese reassignment picture; ~3-year target for unused mobile
   numbers, with far shorter observed cancellation→reuse intervals in practice.)
+- Android Developers. *`RoleManager` API reference* — `addOnRoleHoldersChangedListener`
+  requires the signature-level `MANAGE_ROLE_HOLDERS` permission (system apps
+  only). (Basis for the claim that role loss cannot be observed by callback in a
+  third-party app; see FEATURE_AUDIT §1-11.)
 - Android Open Source Project. *`CallScreeningService` API documentation*
   (`telecomm/java/android/telecom/CallScreeningService.java`). (Primary source
   for the 5-second deadline and for "the user's device will not begin ringing
