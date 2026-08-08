@@ -24,9 +24,19 @@ import javax.crypto.spec.GCMParameterSpec
  * KeyDroid found 56.3% of apps handling sensitive data fail to use the
  * hardware-backed Keystore. Orange uses it: the salt is encrypted with an
  * AES-256-GCM key generated inside the AndroidKeyStore. That key is
- * non-exportable and, on devices with a TEE/StrongBox, never leaves secure
- * hardware. A forensic image of /data yields only the ciphertext salt; without
- * the hardware key it cannot be decrypted off-device.
+ * non-exportable and, on devices with a TEE, never leaves secure hardware.
+ * A forensic image of /data yields only the ciphertext salt; without the
+ * hardware key it cannot be decrypted off-device.
+ *
+ * DELIBERATELY NOT StrongBox: setIsStrongBoxBacked() is not requested. StrongBox
+ * is a separate secure element and is far slower than the TEE — published
+ * benchmarks put 1 MiB symmetric encryption at ~15 s on a Pixel 8 (vs ~0.4 s in
+ * the TEE), and ~63 s on a Pixel 3. Our payload is a 16-byte salt, so we would
+ * not pay anything close to those figures, but this decrypt sits on the
+ * CallScreeningService hot path, which has a hard 5-second deadline — there is
+ * no upside worth spending that budget on. The TEE already satisfies the threat
+ * model (non-exportable key, useless /data image). If StrongBox is ever added,
+ * it must be benchmarked against that deadline first, not assumed cheap.
  *
  * GRACEFUL DEGRADATION: on a JVM unit-test host (no AndroidKeyStore) or a
  * device where Keystore init fails, this falls back to a plaintext salt so the

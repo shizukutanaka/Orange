@@ -93,6 +93,39 @@
 - 加えて SharedPreferences の初回ロードは同期 XML パースで、`SpamCache.MAX_ENTRIES = 10,000` の64桁ハッシュ + `KEY_ORDER` の重複コピー + outbound 1,000件 = **1MB超**を screening スレッドで解析しうる。`SilentBlockerService.kt:24-25` の KDoc「disk I/O は prefs 1回読みのみ」はこの規模を過小評価している。
 - **論点**: warmup への追加は容易だが、アプリ起動時に Keystore 初期化を持ち込む是非(起動コスト・キー無効化例外の扱い)は判断が要る。**要ユーザー判断**。
 
+#### 2026-07 追加調査 — リスクの実測的な切り分け(3つのうち1つは杞憂、2つは実在)
+
+1. **Keystore は「杞憂」寄り。StrongBox の巨大コストは該当しない**。
+   公開ベンチマークでは StrongBox は TEE より桁違いに遅く、**Pixel 8 で 1MiB の対称暗号化に平均 15.43 秒、
+   Pixel 3 では 63.43 秒**(TEE は Pixel 8 で 0.42 秒)。5秒デッドラインを単独で超える数字だが、
+   **Orange には該当しない**: (a) `SaltVault` は `setIsStrongBoxBacked` を**要求していない**
+   (KDoc が "TEE/StrongBox" に言及するのみで、`KeyGenParameterSpec.Builder` に指定なし)ため
+   TEE 実装が使われる、(b) 暗号化対象は **16バイトの salt(hex 32文字)** で、ベンチマークの 1MiB とは
+   5桁違う。TEE は「1MiB 以下ならネイティブ実行と無視できる差」とされる領域。
+   → よって `SaltVault` KDoc の「10–50 ms」という自己申告は妥当。**この単体では緊急性は低い**。
+2. **SharedPreferences の同期 XML パースは実在するリスク**。最悪ケースを実測算出すると:
+   `KEY_SET`(10,000 × 64桁hex)+ `KEY_ORDER`(**同じハッシュ列をスペース区切りで完全に重複保持**)
+   + outbound(1,000件)= **素で約 1.29 MB、XML タグのオーバーヘッド込みで約 1.7 MB**。
+   SharedPreferences はファイル全体をメモリにロードする同期 API で、大きなファイルは UI/呼び出しスレッドを
+   ブロックし ANR の要因になることが広く報告されている。これが screening コールバックの初回で発生する。
+   → `SilentBlockerService` KDoc の「disk I/O は prefs 1回読みのみ」は嘘ではないが、**その1回の規模を
+   過小評価**している。
+3. **さらに悪いのは毎回の O(n) 走査**。`SpamCache.orderList()` は呼ばれる度に
+   `KEY_ORDER` を `split(' ')` して全要素を `filter { it in known }` する(`known` は 10,000 要素の Set)。
+   そして `add()` は**ブロック1件につき全 `phoneVariants()`(通常2〜3個)** 呼ばれる
+   (`SilentBlockerService.kt:251`、`ManualBlock.kt:136`)。つまり **1ブロックあたり最大3万要素の走査**が
+   ホットパスで走る。これはコールドスタート限定ではなく**毎回**。
+
+**§1-8 との直結**: 上記の規模はすべて「キャッシュが 10,000 件上限まで単調増加する」ことが前提。
+**TTL があればそもそもこの規模に到達しない**。§1-8 の TTL 導入は誤爆回復だけでなく、
+**この性能問題の根本原因も同時に解消する**。逆に言えば、§1-10 を性能改善として個別に対処するより、
+§1-8 を解決する方が費用対効果が高い。
+
+**推奨(要承認)**: (a) §1-8 の TTL を優先(規模そのものを抑える)、(b) `KEY_ORDER` の重複保持を見直す
+(`KEY_SET` から順序を復元できないため現状の設計だが、`LinkedHashSet` 相当の単一表現にできれば約半減)、
+(c) `EngineWarmup` に `SpamCache.hash(prefs, "")` 相当の空打ちを1回入れて salt 復号と prefs ロードを
+起動時に前倒し(Keystore 自体は軽いので副作用は小さい)。
+
 ### 1-11. ロール失効がユーザーに実質伝わらない【要設計判断・哲学衝突】
 - `RoleMonitor` は意図的に無通知(KDoc `:37-39` 明記)。シグナルはウィジェットの `·` 一文字のみ(`OrangeWidget.kt:59`)で、**ウィジェット未設置なら永久に気づけない**(`RoleMonitor.kt:63` が `ids.isNotEmpty()` で gate)。
 - 検知タイミングも BOOT_COMPLETED / MY_PACKAGE_REPLACED / ウィジェット30分更新のみ。**再起動もウィジェットも無いセッション中の失効は検知されない**。
