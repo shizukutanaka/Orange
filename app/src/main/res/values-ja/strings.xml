@@ -33,7 +33,7 @@
     <string name="digest_text_monthly">今月 %1$d 件の着信を止めた。</string>
     <string name="notif_channel_police_warn">警察偽装警告</string>
     <string name="police_warn_title">%1$s の番号です</string>
-    <string name="police_warn_body">偽装の可能性。一度切って #9110 にかけ直す</string>
+    <string name="police_warn_body">本物の警察がLINEやビデオ通話に誘導したり、お金の話をすることはありません。あれば詐欺です。一度切って #9110 へ</string>
     <string name="police_warn_family">家族に連絡</string>
     <string name="tile_label_family">家族に連絡</string>
     <string name="notif_channel_outbound_warn">発信警告</string>

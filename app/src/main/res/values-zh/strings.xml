@@ -17,7 +17,7 @@
     <string name="digest_text_monthly">本月拦截了 %1$d 通来电。</string>
     <string name="notif_channel_police_warn">警方号码伪装警告</string>
     <string name="police_warn_title">来自 %1$s 的号码</string>
-    <string name="police_warn_body">可能是伪装。挂断后拨打 #9110 确认</string>
+    <string name="police_warn_body">真警察不会让你转到 LINE 或视频通话，也不会谈论你的钱。若有，即是诈骗。请挂断并拨打 #9110</string>
     <string name="police_warn_family">联系家人</string>
     <string name="tile_label_family">联系家人</string>
     <string name="notif_channel_outbound_warn">拨出警告</string>

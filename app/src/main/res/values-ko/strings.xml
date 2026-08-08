@@ -17,7 +17,7 @@
     <string name="digest_text_monthly">이번 달 %1$d 건 차단.</string>
     <string name="notif_channel_police_warn">경찰 사칭 경고</string>
     <string name="police_warn_title">%1$s 번호</string>
-    <string name="police_warn_body">사칭 가능성. 끊고 #9110으로 재확인</string>
+    <string name="police_warn_body">진짜 경찰은 LINE이나 영상통화로 유도하거나 돈 이야기를 하지 않습니다. 그러면 사기입니다. 끊고 #9110으로 전화하세요</string>
     <string name="police_warn_family">가족에게 연락</string>
     <string name="tile_label_family">가족에게 연락</string>
     <string name="notif_channel_outbound_warn">발신 경고</string>

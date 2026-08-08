@@ -59,10 +59,21 @@ class SilentBlockerService : CallScreeningService() {
         }
 
         // --- INCOMING: decide + act ---
-        // ORDERING IS SAFETY-CRITICAL. Telecom gives onScreenCall a hard deadline
-        // (~5s) and, if respondToCall() never arrives, the framework auto-allows
-        // the call only after that deadline expires — a multi-second delay on a
-        // real call, repeated on every subsequent call if the cause is persistent.
+        // ORDERING IS SAFETY-CRITICAL — and the platform contract is stronger than
+        // "the response is late". Per the CallScreeningService docs (AOSP
+        // telecomm/java/android/telecom/CallScreeningService.java):
+        //
+        //   "It is important to perform screening operations in a timely matter as
+        //    the user's device WILL NOT BEGIN RINGING until the response is
+        //    received (or the timeout is hit)."
+        //   "a CallScreeningService MUST call this method within 5 seconds of
+        //    onScreenCall(Call.Details) being invoked by the platform."
+        //
+        // So a missing respondToCall() does not merely delay bookkeeping: the phone
+        // stays SILENT for the full 5-second timeout on every affected call — an
+        // emergency callback included — and only then does the framework give up and
+        // ring. If the cause is persistent (a broken channel, a disabled tile), that
+        // 5-second dead air repeats on every single incoming call.
         //
         // handleDecision() is ALL side effects (notification channels, Quick
         // Settings tiles, widget broadcast, SharedPreferences writes) and any of

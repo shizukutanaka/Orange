@@ -88,6 +88,58 @@ The honest reading: the field data validates the **shape** of the defense
 point to a human) without changing any layer. It is logged here so a future
 reviewer does not mistake "no code change" for "not re-examined."
 
+## Warning wording: contextual beats terse (and it changed our copy)
+
+> Comparing **no warning / short warning / contextual warning** (one that states,
+> before the scam's own content arrives, what the scammer is about to do) by
+> cold-calling 36 legally blind and 36 sighted participants: **every sighted
+> participant who heard the contextual warning hung up.** Only two participants
+> complied with the scam, one due to a screen-reader accessibility problem and
+> one deliberately, to waste the scammer's time.
+> — *(Blind) Users Really Do Heed Aural Telephone Scam Warnings*,
+> arXiv:2412.04014 / IEEE S&P 2025 (CISPA), paraphrased.
+
+This is the rare usable-security result that maps onto a change Orange can
+actually make **without** escalating notification aggressiveness: it is about
+*what the warning says*, not how loudly it says it.
+
+Auditing our own copy against it found the two impersonation lanes were
+inconsistent. `tax_warn_body` was already contextual — "tax agencies never
+demand payment by phone" tells the user what is about to happen. But
+`police_warn_body` was the terse form the paper found weaker: "Caller ID may be
+spoofed." It named a *property of the call* rather than the *behaviour to
+expect*. Since ニセ警察詐欺 accounts for roughly 70% of 2026 losses, the weaker
+wording was on the higher-stakes lane.
+
+`police_warn_body` is now contextual in all four locales, built from the actual
+technique already documented in `PoliceStationDirectory.kt`'s KDoc (spoof a real
+station's number, then move the callback to LINE or a video call): *"Real police
+never move you to LINE or a video call, and never ask about your money. If they
+do, it is a scam."*
+
+Limits worth stating: the study measured **aural** warnings delivered in-call,
+while Orange delivers a **visual** heads-up notification before/around answer —
+the modality and timing differ, so the effect size does not transfer directly.
+What transfers is the comparative finding that contextual framing outperforms a
+terse "this may be suspicious", which is a claim about content, not channel.
+
+## Platform contract: why respond-before-side-effects is safety-critical
+
+Not literature, but a primary-source constraint that shapes the adapter layer.
+Per AOSP's `CallScreeningService` documentation:
+
+> "It is important to perform screening operations in a timely matter as the
+> user's device **will not begin ringing until the response is received** (or the
+> timeout is hit)." … "a CallScreeningService MUST call this method within
+> 5 seconds of `onScreenCall(Call.Details)` being invoked by the platform."
+
+The device is **silent** until `respondToCall()` arrives. So any failure that
+prevents the response does not merely delay bookkeeping — it costs the user up
+to five seconds of dead air on that call, an emergency callback included, and
+repeats on every call if the cause persists. This is why `SilentBlockerService`
+responds the moment the verdict is final and only then runs side effects, each
+under a catch (see FEATURE_AUDIT's resolved list).
+
 ## Layer-by-layer mapping
 
 *Note: The table below documents the **literature-grounded mechanisms** in Orange's
@@ -139,6 +191,15 @@ points the user to the right humans for everything else."
   Heterogeneous Telecommunication Systems.* ACM TOPS, 2023.
 - H. Mustafa, W. Xu, A.-R. Sadeghi, S. Schulz. *You can call but you can't hide:
   Detecting caller ID spoofing attacks.* DSN 2014.
+- *(Blind) Users Really Do Heed Aural Telephone Scam Warnings.* arXiv:2412.04014,
+  IEEE S&P 2025 (CISPA). (Basis for rewriting `police_warn_body` from a terse
+  "may be spoofed" to a contextual warning; 36 blind + 36 sighted participants,
+  cold-called in a naturalistic setting.)
+- Android Open Source Project. *`CallScreeningService` API documentation*
+  (`telecomm/java/android/telecom/CallScreeningService.java`). (Primary source
+  for the 5-second deadline and for "the user's device will not begin ringing
+  until the response is received" — the basis for responding before side
+  effects in `SilentBlockerService`.)
 - M. Sahin, A. Francillon. *Understanding and Detecting International Revenue
   Share Fraud.* NDSS 2021. (Basis for the IRSF/Wangiri elevated-risk corridors.)
 - Truecaller. *The State of Robocalls and Spam 2024.* 2024.
