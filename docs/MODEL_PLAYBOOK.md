@@ -33,7 +33,7 @@ FEATURE_AUDIT は「何が未解決か」を担当する。
 
 | # | 弱点 | 状態 |
 |---|------|------|
-| W1 | テストが CI で一度も実行されていなかった(静的ゲートは @Test を数えるだけ)| `tools/run-pure-tests.sh` で276テスト(純粋層+SharedPreferences依存ストア層)を実行可能に。**`.githooks/pre-push` が wrapper jar 無しの環境ではこのランナーを実行しpushをゲート**(既知の§1-7失敗2件以外があれば block)。WarningNotifier/UI 等 Context 大量依存は依然未実行 |
+| W1 | テストが CI で一度も実行されていなかった(静的ゲートは @Test を数えるだけ)| `tools/run-pure-tests.sh` で285テスト(純粋層+SharedPreferences依存ストア層)を実行可能に。**`.githooks/pre-push` が wrapper jar 無しの環境ではこのランナーを実行しpushをゲート**(既知の§1-7失敗2件以外があれば block)。WarningNotifier/UI 等 Context 大量依存は依然未実行 |
 | W2 | `DomesticSpoofDetector.toDomestic()` が先頭0/+81 以外を棄権 → 短縮番号・先頭ゼロ欠落の判定が到達不能。**テスト2件が実行すると失敗する**(意図的に残してある可視シグナル)| FEATURE_AUDIT §1-7。設計判断待ち |
 | W3 | business_directory.csv の宅配・メガバンク等がサイレント信頼のまま(偽装頻度高いが正当着信も多い)| FEATURE_AUDIT §1-2。機関別判断待ち |
 | W4 | 警察/税務署番号へのかけ直し(推奨される安全行動)に「ブロックした番号」という事実誤りの発信警告が出る | FEATURE_AUDIT §2-4。文言/挙動判断待ち |
@@ -46,7 +46,7 @@ FEATURE_AUDIT は「何が未解決か」を担当する。
 ## 3. 改善案(優先度順。着手条件を守ること)
 
 ### 今すぐ着手可(判断不要・機械的)
-1. ~~**ストア層テストの実行拡張**~~ **実装済み(2026-07)**: `run-pure-tests.sh` が最小 Android 型スタブ(heredoc 生成・非コミット)でストア層も実行、計276テスト。脆いテスト3件・設計矛盾テスト1件を修正済み。**次のフロンティア**: WarningNotifier/ManualBlock/FamilyCallback/TrustNotifier/BusinessDirectoryBundle/UI 各種(NotificationManager・NotificationCompat・Context 大量依存)。スタブ面が過大で偽陽性リスクが高いため、これらは実機/SDK 有りの `./gradlew testReleaseUnitTest` に委ねるのが妥当(無理にスタブ化しない)。
+1. ~~**ストア層テストの実行拡張**~~ **実装済み(2026-07)**: `run-pure-tests.sh` が最小 Android 型スタブ(heredoc 生成・非コミット)でストア層も実行、計285テスト。脆いテスト3件・設計矛盾テスト1件を修正済み。**次のフロンティア**: WarningNotifier/ManualBlock/FamilyCallback/TrustNotifier/BusinessDirectoryBundle/UI 各種(NotificationManager・NotificationCompat・Context 大量依存)。スタブ面が過大で偽陽性リスクが高いため、これらは実機/SDK 有りの `./gradlew testReleaseUnitTest` に委ねるのが妥当(無理にスタブ化しない)。
 2. **ドキュメント数値の定期突き合わせ**: このセッションで大量に発見・修正したパターン(件数・層数・閾値のドリフト)。ディレクトリや層を変更したら README/SPECIFICATION/DEVELOPING/THREAT_MODEL/HONESTY_ADDENDUM/`play_data_safety.json` を同時更新し、`ProtectionDataVersion.LAST_UPDATED` は**最古の検証日**を維持。
 
 ### ユーザー承認後に着手(製品判断)
@@ -74,7 +74,7 @@ FEATURE_AUDIT は「何が未解決か」を担当する。
 ### Opus/Sonnet 共通の作業手順(このセッションで有効だった規律)
 1. 開始時に `docs/FEATURE_AUDIT.md` を読む(再発見の無駄と制約違反を防ぐ)。
 2. 変更は小さく、**1論点=1コミット**。コミットメッセージに「何が矛盾していたか」を書く(将来の再発見防止)。
-3. 検証: Gradle ビルドはサンドボックスで不可 → `bash tools/run-pure-tests.sh`(276テスト、SDK不要)+ 机上トレース。push 後の CI は当てにしない(W1)。
+3. 検証: Gradle ビルドはサンドボックスで不可 → `bash tools/run-pure-tests.sh`(285テスト、SDK不要)+ 机上トレース。push 後の CI は当てにしない(W1)。
 4. 発見した問題は3分類 — **機械的に直せる**(直す)/**陳腐化**(記録どおり更新)/**設計判断**(FEATURE_AUDIT に記録して止まる)。テストの assertion を黙って実装に合わせる改変は禁止(gap の隠蔽)。
 5. 迷ったら削る方向へ(DESIGN_NOTES の subtraction 哲学)。機能追加 PR より削除 PR が歓迎される製品。
 
@@ -90,7 +90,7 @@ FEATURE_AUDIT は「何が未解決か」を担当する。
 
 ```bash
 # 純粋ロジック層のテスト実行(SDK 不要、~0.2秒)
-bash tools/run-pure-tests.sh          # 期待値: 276 run / 2 failures(W2 の意図的シグナル)
+bash tools/run-pure-tests.sh          # 期待値: 285 run / 2 failures(W2 の意図的シグナル)
 
 # ロケール4ファイルのキー集合一致
 cd app/src/main/res && for f in values values-ja values-zh values-ko; do \

@@ -80,29 +80,69 @@ internal object SpamCache {
     fun snapshot(prefs: SharedPreferences): Set<String> =
         prefs.getStringSet(KEY_SET, emptySet()) ?: emptySet()
 
-    /** True if [number] is in the cache (salted-hashes internally). */
+    /**
+     * True if [number] is in the cache (salted-hashes internally).
+     *
+     * Prunes expired entries first, so an expired judgement never produces a
+     * hit and the file does not accumulate dead entries. Pruning is a no-op
+     * (read-only) unless something actually expired.
+     */
     @Synchronized
-    fun contains(prefs: SharedPreferences, number: String): Boolean =
-        number.isNotEmpty() && hash(prefs, number) in snapshot(prefs)
+    @JvmOverloads
+    fun contains(
+        prefs: SharedPreferences,
+        number: String,
+        nowMs: Long = System.currentTimeMillis(),
+    ): Boolean {
+        if (number.isEmpty()) return false
+        pruneExpired(prefs, nowMs)
+        return hash(prefs, number) in snapshot(prefs)
+    }
+
+    /**
+     * Default lifetime for an entry added with [expiring] = true.
+     *
+     * 180 days. Chosen to sit above the realistic number-reassignment window
+     * without being so long that a stale judgement outlives its usefulness:
+     * JP carriers have been reported reusing cancelled numbers in as little as a
+     * few months, and 総務省 targets ~3 years for genuinely unused ranges. Six
+     * months keeps the fast path effective for a scammer who keeps working a
+     * number, while guaranteeing that a number they abandoned stops being
+     * silenced for its next owner. See docs/FEATURE_AUDIT.md §1-8.
+     */
+    const val DEFAULT_TTL_MS = 180L * 24 * 60 * 60 * 1000
 
     /**
      * Add a number (stored as its hash). Returns true if newly added.
      * FIFO eviction once MAX_ENTRIES is exceeded.
+     *
+     * @param expiring when true the entry is written with an expiry stamp of
+     *   [nowMs] + [ttlMs] and stops matching after that; when false (the
+     *   default) it is permanent, exactly as before. Callers decide via
+     *   [isExpiringSilence]; entries created from explicit user intent stay
+     *   permanent.
      */
     @Synchronized
-    fun add(prefs: SharedPreferences, number: String): Boolean {
+    @JvmOverloads
+    fun add(
+        prefs: SharedPreferences,
+        number: String,
+        expiring: Boolean = false,
+        nowMs: Long = System.currentTimeMillis(),
+        ttlMs: Long = DEFAULT_TTL_MS,
+    ): Boolean {
         if (number.isEmpty()) return false
         val h = hash(prefs, number)
         val current = prefs.getStringSet(KEY_SET, emptySet()).orEmpty().toMutableSet()
         if (h in current) return false
 
-        val order = orderList(prefs)
-        order.addLast(h)
+        val order = orderList(prefs, nowMs)
+        order.addLast(if (expiring) "$h$EXPIRY_SEP${nowMs + ttlMs}" else h)
         current.add(h)
 
         while (order.size > MAX_ENTRIES) {
             val oldest = order.removeFirst()
-            current.remove(oldest)
+            current.remove(oldest.substringBefore(EXPIRY_SEP))
         }
 
         prefs.edit {
@@ -114,13 +154,19 @@ internal object SpamCache {
 
     /** Remove a number (used by RestoreReceiver). Returns true if present. */
     @Synchronized
-    fun remove(prefs: SharedPreferences, number: String): Boolean {
+    @JvmOverloads
+    fun remove(
+        prefs: SharedPreferences,
+        number: String,
+        nowMs: Long = System.currentTimeMillis(),
+    ): Boolean {
         if (number.isEmpty()) return false
         val h = hash(prefs, number)
         val current = prefs.getStringSet(KEY_SET, emptySet()).orEmpty().toMutableSet()
         if (!current.remove(h)) return false
-        val order = orderList(prefs)
-        order.remove(h)
+        val order = orderList(prefs, nowMs)
+        // Match on the hash portion: the token may carry an expiry suffix.
+        order.removeAll { hashOf(it) == h }
         prefs.edit {
             putStringSet(KEY_SET, current)
             putString(KEY_ORDER, order.joinToString(" "))
@@ -128,12 +174,61 @@ internal object SpamCache {
         return true
     }
 
-    private fun orderList(prefs: SharedPreferences): ArrayDeque<String> {
+    /**
+     * Entries are stored in KEY_ORDER as either `hash` (permanent, the original
+     * format) or `hash|expiryEpochMs`. Reading tolerates both, so an install
+     * that predates expiry support keeps working and its existing entries stay
+     * permanent — no migration step, no data loss.
+     */
+    private const val EXPIRY_SEP = '|'
+
+    /** Hash portion of a KEY_ORDER token, with or without an expiry suffix. */
+    private fun hashOf(token: String): String = token.substringBefore(EXPIRY_SEP)
+
+    /**
+     * True if [token] carries an expiry stamp that is at or before [nowMs].
+     * A backward clock (nowMs < stamp) simply means "not yet expired", which is
+     * the safe direction: we keep silencing rather than suddenly un-blocking a
+     * scammer because the clock moved.
+     */
+    private fun isExpired(token: String, nowMs: Long): Boolean {
+        val sep = token.indexOf(EXPIRY_SEP)
+        if (sep < 0) return false                       // permanent entry
+        val stamp = token.substring(sep + 1).toLongOrNull() ?: return false
+        return nowMs >= stamp
+    }
+
+    private fun orderList(prefs: SharedPreferences, nowMs: Long): ArrayDeque<String> {
         val raw = prefs.getString(KEY_ORDER, "") ?: ""
         if (raw.isEmpty()) return ArrayDeque()
         // Cross-reference with KEY_SET to drop any stale hashes that survived a partial
         // write (e.g., process kill between putStringSet and putString on an older OS).
         val known = prefs.getStringSet(KEY_SET, emptySet()).orEmpty()
-        return ArrayDeque(raw.split(' ').filter { it.isNotBlank() && it in known })
+        return ArrayDeque(
+            raw.split(' ').filter {
+                it.isNotBlank() && hashOf(it) in known && !isExpired(it, nowMs)
+            }
+        )
+    }
+
+    /**
+     * Drop expired entries from both KEY_SET and KEY_ORDER. Called from
+     * [contains] on the screening hot path, which is also the only place that
+     * reliably runs often enough to keep the file from carrying dead weight.
+     * Writes only when something actually expired, so the common case is a
+     * read-only pass.
+     */
+    @Synchronized
+    private fun pruneExpired(prefs: SharedPreferences, nowMs: Long) {
+        val raw = prefs.getString(KEY_ORDER, "") ?: ""
+        if (raw.isEmpty() || EXPIRY_SEP !in raw) return  // nothing can expire
+        val tokens = raw.split(' ').filter { it.isNotBlank() }
+        val live = tokens.filterNot { isExpired(it, nowMs) }
+        if (live.size == tokens.size) return             // nothing expired
+        val liveHashes = live.map { hashOf(it) }.toMutableSet()
+        prefs.edit {
+            putStringSet(KEY_SET, liveHashes)
+            putString(KEY_ORDER, live.joinToString(" "))
+        }
     }
 }

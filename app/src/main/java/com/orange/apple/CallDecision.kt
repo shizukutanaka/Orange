@@ -436,6 +436,59 @@ internal fun callingCodeOf(iso: String?): String? = when (iso) {
  *
  * All other reasons reflect a PERSISTENT property of the number and are safe to cache.
  */
+/**
+ * Should a cache entry created by this reason EXPIRE?
+ *
+ * `isCacheableSilence` answers "may we remember this at all". This answers the
+ * separate question "for how long is the judgement still true", and the two are
+ * not the same, because the reasons fall into two kinds:
+ *
+ *  - **Permanent properties of the number itself.** A number that violates the
+ *    MIC numbering plan will still violate it next year; a premium-rate range is
+ *    premium-rate by allocation. Re-deciding these yearly buys nothing, so they
+ *    never expire.
+ *  - **Situational judgements that were true at the time.** "The carrier failed
+ *    to attest this call" depends on the carrier's configuration.
+ *    "International, and you have never dialled it" merely means the number was
+ *    absent from outbound history at that moment. Both can stop being true
+ *    without the number changing hands at all.
+ *
+ * And numbers DO change hands. The FCC puts US reassignment at ~35M numbers a
+ * year (~10% of all numbers) with as little as a 45-day aging period; 総務省
+ * targets ~3 years for unused JP mobile numbers, with reported real-world
+ * cancellation→reuse intervals as short as a few months. So a scammer's
+ * abandoned number can belong to an ordinary person within months, and an entry
+ * that never expires goes on silencing that new owner indefinitely.
+ *
+ * That failure is invisible from both sides: the caller is never told they were
+ * blocked, and the user cannot notice a call that never rings. Silence is
+ * unobservable, so this never self-corrects — which is exactly why it needs a
+ * clock rather than user vigilance. (See docs/FEATURE_AUDIT.md §1-8.)
+ *
+ * Explicit user intent — SPAM_CACHE (they blocked it) and MANUAL_BLOCK (they
+ * typed it in) — is never expired. Forgetting what the user deliberately told us
+ * would be its own bug.
+ */
+internal fun isExpiringSilence(reason: BlockReason): Boolean = when (reason) {
+    // Situational — the judgement can go stale while the number stays the same.
+    BlockReason.CARRIER_VERIFICATION_FAILED -> true
+    BlockReason.FOREIGN_GENERIC             -> true
+    // Permanent properties of the number / allocation.
+    BlockReason.DOMESTIC_SPOOF              -> false
+    BlockReason.PREMIUM_RATE_INTERNATIONAL  -> false
+    BlockReason.FOREIGN_ELEVATED            -> false
+    BlockReason.WANGIRI_CALLBACK            -> false
+    // Explicit user intent — never forget on a timer.
+    BlockReason.SPAM_CACHE                  -> false
+    BlockReason.MANUAL_BLOCK                -> false
+    // Never cached in the first place (isCacheableSilence == false), so the
+    // value is moot; stated explicitly so a new enum entry breaks the build here
+    // too and forces the author to classify it.
+    BlockReason.DND_HONOR                   -> false
+    BlockReason.REPEAT_CALLER               -> false
+    BlockReason.WITHHELD_NUMBER             -> false
+}
+
 internal fun isCacheableSilence(reason: BlockReason): Boolean = when (reason) {
     // Contextual silences — must NOT be cached (see block comment above).
     BlockReason.DND_HONOR       -> false

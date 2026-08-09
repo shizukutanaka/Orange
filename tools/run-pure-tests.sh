@@ -32,7 +32,7 @@
 # throws on the JVM and it falls back to a plaintext salt before any keystore
 # type is instantiated). No stub carries business logic, so none can mask a bug.
 #
-# EXPECTED: 276 tests run, 2 failures — the two DomesticSpoofDetector tests that
+# EXPECTED: 285 tests run, 2 failures — the two DomesticSpoofDetector tests that
 # assert isImpossibleJpNumber("110"/"9012345678") == true while the code abstains
 # (returns false). Those are an intentionally-unresolved design question, left
 # failing as a visible signal (docs/FEATURE_AUDIT.md §1-7). Any OTHER failure is
@@ -171,7 +171,7 @@ echo "==> compiling ${#TEST_SRCS[@]} test sources"
 KC "${TEST_SRCS[@]}" -d "$OUT/test" -no-reflect \
    -classpath "$OUT/main:$STDLIB:$JUNIT:$HAMCREST:$OUT/shimjava-out" -Xfriend-paths="$OUT/main"
 
-echo "==> running tests (expected steady state: 276 run / 2 failures = the FEATURE_AUDIT §1-7 signal)"
+echo "==> running tests (expected steady state: 285 run / 2 failures = the FEATURE_AUDIT §1-7 signal)"
 CLASSES=$(cd "$OUT/test" && find . -name '*Test.class' | sed 's|^\./||;s|\.class$||;s|/|.|g' | tr '\n' ' ')
 set +e
 RESULT=$(java -cp "$OUT/main:$OUT/test:$STDLIB:$JUNIT:$HAMCREST:$OUT/shimjava-out" org.junit.runner.JUnitCore $CLASSES 2>&1 | grep -v 'JAVA_TOOL_OPTIONS')

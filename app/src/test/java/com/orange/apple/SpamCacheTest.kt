@@ -114,4 +114,89 @@ class SpamCacheTest {
             assertTrue("$n missing after concurrent adds", SpamCache.contains(p, n))
         }
     }
+
+    // --- Expiry (FEATURE_AUDIT §1-8) -----------------------------------------
+    // Situational judgements expire so a reassigned number stops being silenced
+    // for its new owner; permanent properties and explicit user intent do not.
+
+    private val t0 = 1_700_000_000_000L
+
+    @Test fun expiring_entry_still_matches_before_its_ttl() {
+        val p = FakePrefs()
+        SpamCache.add(p, "+819012345678", expiring = true, nowMs = t0)
+        val justBefore = t0 + SpamCache.DEFAULT_TTL_MS - 1
+        assertTrue(SpamCache.contains(p, "+819012345678", justBefore))
+    }
+
+    @Test fun expiring_entry_stops_matching_after_its_ttl() {
+        val p = FakePrefs()
+        SpamCache.add(p, "+819012345678", expiring = true, nowMs = t0)
+        val after = t0 + SpamCache.DEFAULT_TTL_MS + 1
+        assertFalse(SpamCache.contains(p, "+819012345678", after))
+    }
+
+    @Test fun non_expiring_entry_survives_far_beyond_the_ttl() {
+        // DOMESTIC_SPOOF / user intent: a number that violates the numbering plan
+        // still violates it next year, so it must never age out.
+        val p = FakePrefs()
+        SpamCache.add(p, "+819012345678", expiring = false, nowMs = t0)
+        val muchLater = t0 + SpamCache.DEFAULT_TTL_MS * 10
+        assertTrue(SpamCache.contains(p, "+819012345678", muchLater))
+    }
+
+    @Test fun default_add_is_permanent() {
+        // The no-arg overload must keep the historical never-expires behaviour,
+        // so existing call sites are unchanged by the new parameter.
+        val p = FakePrefs()
+        SpamCache.add(p, "+819012345678")
+        assertTrue(SpamCache.contains(p, "+819012345678", t0 + SpamCache.DEFAULT_TTL_MS * 10))
+    }
+
+    @Test fun expiry_prunes_the_entry_from_the_stored_set() {
+        // Expiry must actually shrink the file, not just hide the hit — that is
+        // half the point (FEATURE_AUDIT §1-10: cache size drives the hot-path cost).
+        val p = FakePrefs()
+        SpamCache.add(p, "+819012345678", expiring = true, nowMs = t0)
+        assertEquals(1, SpamCache.snapshot(p).size)
+        SpamCache.contains(p, "+81900000000", t0 + SpamCache.DEFAULT_TTL_MS + 1)
+        assertEquals(0, SpamCache.snapshot(p).size)
+    }
+
+    @Test fun pruning_keeps_permanent_entries_and_drops_only_expired_ones() {
+        val p = FakePrefs()
+        SpamCache.add(p, "+81permanent", expiring = false, nowMs = t0)
+        SpamCache.add(p, "+81expiring", expiring = true, nowMs = t0)
+        val after = t0 + SpamCache.DEFAULT_TTL_MS + 1
+        assertFalse(SpamCache.contains(p, "+81expiring", after))
+        assertTrue(SpamCache.contains(p, "+81permanent", after))
+        assertEquals(1, SpamCache.snapshot(p).size)
+    }
+
+    @Test fun backward_clock_does_not_expire_an_entry_early() {
+        // Safe direction: keep silencing rather than un-blocking a scammer
+        // because the device clock moved backwards.
+        val p = FakePrefs()
+        SpamCache.add(p, "+819012345678", expiring = true, nowMs = t0)
+        assertTrue(SpamCache.contains(p, "+819012345678", t0 - 1_000_000))
+    }
+
+    @Test fun remove_works_on_an_expiring_entry() {
+        // Restore must clear the entry regardless of which storage form it uses;
+        // the token carries an expiry suffix, so a raw-hash match would miss it.
+        val p = FakePrefs()
+        SpamCache.add(p, "+819012345678", expiring = true, nowMs = t0)
+        assertTrue(SpamCache.remove(p, "+819012345678", t0))
+        assertFalse(SpamCache.contains(p, "+819012345678", t0))
+        assertEquals(0, SpamCache.snapshot(p).size)
+    }
+
+    @Test fun legacy_entries_without_an_expiry_stamp_stay_permanent() {
+        // Upgrade path: an install that predates expiry support has bare hashes
+        // in KEY_ORDER. Those must keep working and must never be treated as
+        // expired (no migration step, no silent data loss).
+        val p = FakePrefs()
+        val h = SpamCache.hash(p, "+819012345678")
+        p.edit().putStringSet("spam", mutableSetOf(h)).putString("spam_order", h).apply()
+        assertTrue(SpamCache.contains(p, "+819012345678", t0 + SpamCache.DEFAULT_TTL_MS * 10))
+    }
 }

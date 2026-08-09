@@ -246,9 +246,17 @@ class SilentBlockerService : CallScreeningService() {
             // Contextual silences (DND_HONOR) are excluded; see isCacheableSilence.
             // Store ALL domestic↔E.164 variants so the fast-path fires regardless of
             // which format the carrier delivers on the next call from the same number.
+            // Situational reasons (carrier attestation state, "international and not
+            // yet in outbound history") get an expiry — they can stop being true
+            // without the number changing hands, and numbers DO get reassigned to
+            // new owners. Permanent properties of the number keep the old
+            // never-expires behaviour. See isExpiringSilence / FEATURE_AUDIT §1-8.
             if (number.isNotEmpty() && decision.reason?.let(::isCacheableSilence) == true) {
                 val cacheCc = callingCodeOf(simCountryIso())
-                phoneVariants(number, cacheCc).forEach { v -> SpamCache.add(p, v) }
+                val expiring = decision.reason?.let(::isExpiringSilence) == true
+                phoneVariants(number, cacheCc).forEach { v ->
+                    SpamCache.add(p, v, expiring = expiring, nowMs = now)
+                }
             }
             decision.reason?.let { BlockHistoryStore.record(p, number, it, now) }
             if (NotificationRateLimiter.shouldNotify(p, number, now)) {
