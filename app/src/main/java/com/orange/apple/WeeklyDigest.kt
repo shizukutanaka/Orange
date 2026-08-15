@@ -25,15 +25,34 @@ import java.util.Calendar
  *
  * The digest stops after month 2 (8 weeks) to prevent notification fatigue.
  * The widget remains as the permanent, always-visible trophy.
+ *
+ * SECOND JOB (2026-07): this alarm is also Orange's only recurring wake-up, and
+ * therefore its only chance to notice that the CallScreening role is gone —
+ * Android offers third-party apps no callback for role loss. When the role is
+ * missing the digest is replaced (not supplemented) by a single "protection has
+ * stopped" notice, shown once per loss episode. Same channel, same notification
+ * id, same alarm: the notification surface does not grow, its content adapts.
+ * See FEATURE_AUDIT §1-11.
  */
 class WeeklyDigest : BroadcastReceiver() {
 
     override fun onReceive(ctx: Context, intent: Intent?) {
-        // If the user revoked the CallScreening role, Orange is no longer screening
-        // calls. Showing a digest notification when the app is effectively disabled
-        // would be confusing and spammy. Skip silently; alarm continues to be
-        // scheduled so the digest resumes if the user re-grants the role.
-        if (!RoleMonitor.isRoleHeld(ctx)) return
+        // If the CallScreening role is gone, Orange is not screening anything —
+        // and this alarm is the only recurring wake-up the app has, because
+        // Android gives a third-party app no way to be TOLD it lost a role
+        // (RoleManager.addOnRoleHoldersChangedListener requires the
+        // signature-level MANAGE_ROLE_HOLDERS). Returning silently here used to
+        // discard the one detection opportunity in exactly the state the user
+        // most needs to hear about. See RESEARCH_BASIS "Losing the screening
+        // role is undetectable by design" and FEATURE_AUDIT §1-11.
+        if (!RoleMonitor.isRoleHeld(ctx)) {
+            maybeShowRoleLostNotice(ctx)
+            return
+        }
+        // Role is held: arm the notice again so a *future* loss episode is
+        // reported. Without this the flag would latch after the first episode.
+        ctx.getSharedPreferences(SilentBlockerService.PREFS, Context.MODE_PRIVATE)
+            .edit { putBoolean(KEY_ROLE_LOST_NOTIFIED, false) }
 
         val prefs = ctx.getSharedPreferences(SilentBlockerService.PREFS, Context.MODE_PRIVATE)
 
@@ -77,20 +96,78 @@ class WeeklyDigest : BroadcastReceiver() {
         resetWeekCounter(prefs)
     }
 
+    /**
+     * Tell the user, ONCE per loss episode, that protection has stopped.
+     *
+     * Why once and not every week: habituation to security warnings is a
+     * measured neural effect, not user laziness — fMRI work (BYU Neurosecurity /
+     * MIS Quarterly 2018, "Tuning Out Security Warnings") shows visual-processing
+     * response to a repeated warning drops sharply, and the same group found the
+     * effect *generalises*: habituation built up by routine non-security
+     * notifications carries over into lower adherence to real security warnings.
+     * A weekly "still off!" nag would therefore not just be ignored itself — it
+     * would erode attention to Orange's actual scam warnings, which are the
+     * product. One notice per episode, re-armed when the role comes back.
+     *
+     * Reuses the existing digest channel, notification id, and alarm: the total
+     * number of notification surfaces is unchanged, only the content adapts to
+     * the state. That keeps the "don't add notifications" philosophy intact.
+     */
+    private fun maybeShowRoleLostNotice(ctx: Context) {
+        val prefs = ctx.getSharedPreferences(SilentBlockerService.PREFS, Context.MODE_PRIVATE)
+
+        // Never onboarded (no install timestamp) — nothing was ever protected,
+        // so there is nothing to report and no re-grant flow worth pushing.
+        if (prefs.getLong(TrustNotifier.KEY_INSTALL_TS, 0L) == 0L) return
+
+        // Already told them about THIS episode.
+        if (prefs.getBoolean(KEY_ROLE_LOST_NOTIFIED, false)) return
+
+        val mgr = ctx.getSystemService(Context.NOTIFICATION_SERVICE) as? NotificationManager
+            ?: return
+        ensureDigestChannel(ctx, mgr)
+
+        // Tapping goes to onboarding, which re-requests the role (and finishes
+        // immediately if the role turns out to be held again by then).
+        val regrantPi = PendingIntent.getActivity(
+            ctx, 0,
+            Intent(ctx, OnboardingActivity::class.java).apply {
+                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP)
+            },
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+
+        val notif = NotificationCompat.Builder(ctx, CHANNEL)
+            .setSmallIcon(android.R.drawable.stat_sys_phone_call_forward)
+            .setContentTitle(ctx.getString(R.string.app_name))
+            .setContentText(ctx.getString(R.string.digest_role_lost_text))
+            .setContentIntent(regrantPi)
+            .setAutoCancel(true)
+            .setOnlyAlertOnce(true)
+            .setPriority(NotificationCompat.PRIORITY_LOW)
+            .build()
+
+        mgr.notify(NOTIF_ID, notif)
+        prefs.edit { putBoolean(KEY_ROLE_LOST_NOTIFIED, true) }
+    }
+
+    private fun ensureDigestChannel(ctx: Context, mgr: NotificationManager) {
+        if (mgr.getNotificationChannel(CHANNEL) != null) return
+        mgr.createNotificationChannel(
+            NotificationChannel(CHANNEL, ctx.getString(R.string.notif_channel_digest),
+                NotificationManager.IMPORTANCE_LOW).apply {
+                setShowBadge(false)
+                enableVibration(false)
+                setSound(null, null)
+            }
+        )
+    }
+
     private fun showDigest(ctx: Context, count: Int, isMonthly: Boolean) {
         val mgr = ctx.getSystemService(Context.NOTIFICATION_SERVICE) as? NotificationManager
             ?: return
 
-        if (mgr.getNotificationChannel(CHANNEL) == null) {
-            mgr.createNotificationChannel(
-                NotificationChannel(CHANNEL, ctx.getString(R.string.notif_channel_digest),
-                    NotificationManager.IMPORTANCE_LOW).apply {
-                    setShowBadge(false)
-                    enableVibration(false)
-                    setSound(null, null)
-                }
-            )
-        }
+        ensureDigestChannel(ctx, mgr)
 
         val text = if (isMonthly)
             ctx.getString(R.string.digest_text_monthly, count)
@@ -127,6 +204,14 @@ class WeeklyDigest : BroadcastReceiver() {
         const val CHANNEL = "orange_digest"
         const val NOTIF_ID = 0x0D16E57  // "DIGEST" in hex
         const val KEY_WEEK_COUNT = "week_count"
+
+        /**
+         * True once the "protection has stopped" notice has been shown for the
+         * CURRENT loss episode. Cleared on any digest firing where the role is
+         * held again, so a later loss is reported afresh. See
+         * maybeShowRoleLostNotice for why this is once-per-episode.
+         */
+        const val KEY_ROLE_LOST_NOTIFIED = "role_lost_notified"
         const val WEEK_MS = 7L * 24 * 60 * 60 * 1000
 
         /**

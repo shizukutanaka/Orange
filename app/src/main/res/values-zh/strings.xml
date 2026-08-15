@@ -14,6 +14,7 @@
     <string name="tile_label_paused">Orange 已暂停</string>
     <string name="widget_a11y_role_lost">Orange 已停用。点击重新激活。</string>
     <string name="digest_text">本周拦截了 %1$d 通来电。</string>
+    <string name="digest_role_lost_text">来电保护已停止。点按以重新开启</string>
     <string name="digest_text_monthly">本月拦截了 %1$d 通来电。</string>
     <string name="notif_channel_police_warn">警方号码伪装警告</string>
     <string name="police_warn_title">来自 %1$s 的号码</string>

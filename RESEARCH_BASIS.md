@@ -198,8 +198,19 @@ working, and may even read as *improvement* ("it stopped blocking things").
 
 Nothing here argues for more notifications in general. It argues that the one
 recurring wake-up Orange already schedules — the `WeeklyDigest` alarm — should
-not disable itself precisely when protection is off, which is its current
-behaviour (`WeeklyDigest.kt:36`).
+not disable itself precisely when protection is off.
+
+**Implemented (2026-07).** `WeeklyDigest` now reports the loss instead of
+returning silently — but exactly **once per loss episode**, re-armed only when
+the role comes back. That restraint is itself evidence-driven: habituation to
+warnings is a measured neural effect rather than user carelessness (BYU
+Neurosecurity / *MIS Quarterly* 2018, "Tuning Out Security Warnings" — fMRI
+shows visual-processing response to a repeated warning dropping sharply), and
+the same line of work finds the effect **generalises**: habituation accumulated
+from routine, non-security notifications carries into lower adherence to real
+security warnings. A weekly "still off!" reminder would therefore not merely be
+ignored — it would spend down the attention Orange needs for its actual scam
+warnings. One notice, same channel, same notification id, same alarm.
 
 ## Layer-by-layer mapping
 
@@ -271,6 +282,12 @@ points the user to the right humans for everything else."
 - 総務省. *電気通信番号規則および電気通信番号政策に関する資料* (番号再利用/再割当).
   (Basis for the Japanese reassignment picture; ~3-year target for unused mobile
   numbers, with far shorter observed cancellation→reuse intervals in practice.)
+- A. Vance, B. Kirwan, D. Bjornn, J. Jenkins, B. Anderson. *Tuning Out Security
+  Warnings: A Longitudinal Examination of Habituation Through fMRI, Eye
+  Tracking, and Field Experiments.* MIS Quarterly 42(2), 2018; and related BYU
+  Neurosecurity work on the generalisation of habituation from non-security
+  notifications. (Basis for showing the role-loss notice once per episode rather
+  than on every weekly firing — see FEATURE_AUDIT §1-11.)
 - Android Developers. *`RoleManager` API reference* — `addOnRoleHoldersChangedListener`
   requires the signature-level `MANAGE_ROLE_HOLDERS` permission (system apps
   only). (Basis for the claim that role loss cannot be observed by callback in a

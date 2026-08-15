@@ -156,7 +156,12 @@
 (c) `EngineWarmup` に `SpamCache.hash(prefs, "")` 相当の空打ちを1回入れて salt 復号と prefs ロードを
 起動時に前倒し(Keystore 自体は軽いので副作用は小さい)。
 
-### 1-11. ロール失効がユーザーに実質伝わらない【要設計判断・哲学衝突】
+### 1-11. ロール失効がユーザーに実質伝わらない【✅ 2026-07 解決済み】
+
+> **解決**: `WeeklyDigest.onReceive` の早期 return を分岐に置き換え、ロール喪失時に
+> **エピソードにつき1回だけ**「保護が停止しています」を既存チャンネル・既存 NOTIF_ID・
+> 既存アラームで表示するようにした(タップで `OnboardingActivity` = 再付与フロー)。
+> 実装詳細は §4「解消済み」を参照。以下は判断に至るまでの分析記録。
 - `RoleMonitor` は意図的に無通知(KDoc `:37-39` 明記)。シグナルはウィジェットの `·` 一文字のみ(`OrangeWidget.kt:59`)で、**ウィジェット未設置なら永久に気づけない**(`RoleMonitor.kt:63` が `ids.isNotEmpty()` で gate)。
 - 検知タイミングも BOOT_COMPLETED / MY_PACKAGE_REPLACED / ウィジェット30分更新のみ。**再起動もウィジェットも無いセッション中の失効は検知されない**。
 - さらに唯一の定期接点である `WeeklyDigest` が `if (!RoleMonitor.isRoleHeld(ctx)) return`(`:36`)で**自らを抑止**するため、最も知らせるべき状態でこそ沈黙する。
@@ -254,6 +259,12 @@
   - `WangiriTrackerTest.forget removes entry` / `forget with E164 ...`: `forget()` は `snapshot(nowMs)` 経由で6h窓外を先に除去するため、既定の `System.currentTimeMillis()`(実2026)では固定2023エントリを消せなかった。姉妹の合格テスト同様に**明示 nowMs**(`t0 + 1`)を渡すよう変更 → 合格。
 - **設計矛盾テスト1件を実挙動へ修正**: `BlockHistoryStoreTest.short number masked correctly` は `mask("110")` に `"****"` を期待していたが、`PhoneNumbers.mask()` は短縮番号(≤4桁)を**意図的にそのまま表示**する(「110/119 は公開情報・非PII」と KDoc に明記)。テスト名を `short number shown in full, not masked` に変更し `"110"` を期待するよう修正(110 は緊急番号で Layer 1 で鳴り実際には履歴記録されない moot 入力だが、マスク契約を検証する意味は残す)。**gap 隠蔽ではなく、文書化された意図的挙動へのアラインメント**
 - 🔴 **【最重要・製品機能不全】`POST_NOTIFICATIONS` が実行時に一度も要求されていなかった** → `OnboardingActivity` に要求フローを追加。`targetSdk = 35`(API 33+)ではこの権限は**実行時許可必須・デフォルト拒否**なのに、全ソースに `requestPermissions`/`checkSelfPermission`/`ActivityResultContracts.RequestPermission` が皆無だった(唯一の `ActivityResultContracts` はロール取得用の `StartActivityForResult`)。結果 **Android 13+ の新規インストールでは全通知が一切表示されない**。警察/税務署偽装は「鳴らすが警告する」設計(`WarningNotifier` の warn-but-never-block)なので、警告が出ない = **偽装された警察の電話がただ鳴るだけ**——被害額7割を占める手口に対する中核防御が沈黙していた。修正: ロール取得が片付いた直後(`finishToSilent()` 冒頭、Activity 生存中)に API 33+ かつ未許可なら要求し、許可/拒否どちらでも `completeSetup()` で従来のオンボーディング完了処理へ進む(拒否してもブロック機能自体は動くため中断しない)。
+- ✅ **【保護停止の不可視】§1-11 WeeklyDigest がロール喪失を1回だけ通知** → `WeeklyDigest.onReceive` の `if (!RoleMonitor.isRoleHeld(ctx)) return` を分岐に置換。Android は third-party にロール失効を通知しない(`addOnRoleHoldersChangedListener` は signature 権限 `MANAGE_ROLE_HOLDERS` が必要)ため、このアラームが**唯一の定期的な検知機会**であり、従来はそれを最も知らせるべき状態で捨てていた。
+  - **エピソードにつき1回だけ**(`KEY_ROLE_LOST_NOTIFIED`、ロール復帰時にクリアして次回の喪失で再武装)。毎週の nag にしない根拠は**警告への慣れ(habituation)が実測された神経的効果**であること: BYU Neurosecurity / MIS Quarterly 2018 "Tuning Out Security Warnings" は fMRI で反復警告への視覚処理応答が急減することを示し、同グループは**日常的な非セキュリティ通知への慣れがセキュリティ警告の遵守率低下に般化する**ことも報告している。つまり「まだ止まっています」を毎週出すと、それ自体が無視されるだけでなく、**Orange の本体である詐欺警告への注意まで削る**。
+  - **通知面は増えない**: 既存 `orange_digest` チャンネル・既存 `NOTIF_ID`・既存アラームを再利用し、**内容だけが状態に応じて変わる**。新チャンネル・新設定画面・新権限はゼロなので、この項目が判断待ちだった理由(「通知を増やさない」哲学との衝突)は発生しない。
+  - `installTs == 0L`(一度もオンボーディングしていない)なら何もしない。ロール保持時の従来動作は完全に不変。
+  - `showDigest` と共通の `ensureDigestChannel()` に切り出し(重複排除)。ロケール4言語に `digest_role_lost_text` を追加(87→88キー)。
+  - **検証**: `WeeklyDigest` は BroadcastReceiver で `run-pure-tests.sh` の対象外のため、専用スタブを書いて**単独で型チェック(29クラス生成・エラーゼロ)**し、状態遷移6通り(保持/喪失1回目/喪失継続/再付与/再喪失/未オンボーディング)を机上トレースで確認。
 - ✅ **【誤爆の恒久化】§1-8 SpamCache に TTL を導入(状況依存の判断のみ失効)** → `CallDecision.kt` に `isExpiringSilence()` を新設し、`isCacheableSilence()` が「記憶してよいか」を答えるのに対し、こちらが「その判断はいつまで真か」を答える二段構えにした。分類は **番号そのものの恒久的性質**(`DOMESTIC_SPOOF`=番号計画違反、`PREMIUM_RATE_INTERNATIONAL`=番号帯の割当、`FOREIGN_ELEVATED`、`WANGIRI_CALLBACK`)=**失効しない** と、**その時点の状況判断**(`CARRIER_VERIFICATION_FAILED`=キャリア設定次第、`FOREIGN_GENERIC`=単にその時点で発信履歴に無かっただけ)=**180日で失効**。ユーザーの明示的意思(`SPAM_CACHE`/`MANUAL_BLOCK`)は当然**失効しない**(意図的に伝えたことを時間で忘れるのは別のバグ)。`isCacheableSilence` と同じ網羅的 `when` にしたので、新しい `BlockReason` を足すとコンパイルエラーで分類を強制される。
   - **保存形式**: `KEY_ORDER` のトークンを `hash`(恒久・従来形式)または `hash|失効エポックms` に拡張。読み取りは両形式を許容するので、**失効機能より前のインストールはマイグレーション不要でそのまま動き、既存エントリは恒久のまま**。
   - **180日の根拠**: FCC は米国で年約3,500万件(全番号の約10%)の再割当・最短45日のエージング期間、総務省は未使用JP携帯に約3年を掲げる一方、実際の解約→再利用は数ヶ月との報告がある。半年は「詐欺師が使い続けている番号には fast-path が効く」一方「捨てられた番号が次の持ち主を黙らせ続けない」境界。
@@ -270,13 +281,13 @@
 1. ~~**1-8**(SpamCache に TTL 無し)~~ — **✅ 2026-07 解決済み**。`isExpiringSilence()` で状況依存の判断のみ180日失効。§4「解消済み」参照。副次的に §1-10 のキャッシュ規模問題も緩和
 2. **1-9**(salt 回転で信頼集合が黙って失効)— 1-8 と連鎖して被害が拡大する。検知・再構築の設計が要る
 3. **1-7**(DomesticSpoofDetector の棄権挙動 + 失敗する2テスト)— 実行して初めて分かる矛盾。numbering-plan 厳格性の設計判断。ユーザー確認推奨
-4. **1-11**(ロール失効が実質伝わらない)— 保護が消えたこと自体に気づけない。「通知を増やさない」哲学と衝突
+4. ~~**1-11**(ロール失効が実質伝わらない)~~ — **✅ 2026-07 解決済み**。WeeklyDigest が喪失エピソードごとに1回通知(通知面は不変)。§4「解消済み」参照
 5. **1-10**(コールドスタート時の Keystore/prefs がホットパス)— 5秒デッドラインに対するリスク。**§1-8 の TTL 導入で規模の前提が崩れたため優先度低下**。残るのは `KEY_ORDER` の重複保持見直しと warmup 追加の是非
 6. **1-2**(CSV 監査)— 機関ごとの個別判断。ユーザー確認推奨
 7. **1-5 / 2-2 / 2-4** — 製品哲学・文言とのトレードオフ。**必ずユーザーに確認してから着手**
 8. `play_data_safety.json` の `privacy_policy_url` — Play Console 提出前に `docs/privacy_policy.html` の実ホスティング先URLを確定して記入すること(現状「未設定」マーカー)
 9. **CI で実テスト実行**(§1-6)— `.github/workflows/` 復活時に `tools/run-pure-tests.sh`(+ SDK 有りなら `./gradlew testReleaseUnitTest`)を組み込み、「@Test を数えるだけ」の状態を解消すること
 
-低リスクな解消(ドキュメント整備・整合性確認・市販品質監査の機械的修正・具体的に特定できた1件の通知重複・陳腐化テスト1件・テスト実行基盤・**POST_NOTIFICATIONS 未要求と応答順序という2つの重大バグ**・**§1-5 脅威モデルの明示**・**§1-8 の TTL 導入**)は完了済み。残る項目は全て要ユーザー判断。
+低リスクな解消(ドキュメント整備・整合性確認・市販品質監査の機械的修正・具体的に特定できた1件の通知重複・陳腐化テスト1件・テスト実行基盤・**POST_NOTIFICATIONS 未要求と応答順序という2つの重大バグ**・**§1-5 脅威モデルの明示**・**§1-8 の TTL 導入**・**§1-11 のロール喪失通知**)は完了済み。残る項目は全て要ユーザー判断。
 
 > **First Principles 監査(2026-07)の総括**: 「高齢者が詐欺で金を失うのを防ぐ」という第一原理から要件を導出し実装と突き合わせた結果、**機能の不足ではなく、実装済み機能が届かない経路**に最大の欠陥があった。すなわち (a) 通知権限を要求しないので警告が誰にも届かない、(b) 副作用の例外で応答が返らず着信が遅延する、(c) 一度の誤判定が TTL 無しで恒久化する、(d) 保護が消えたことに気づけない。(a)(b) は機械的に修正済み。(c)(d) は §1-8/§1-11 として判断待ち。**新機能の追加ではなく既存機能の到達性の確保が、この製品の次の改善軸**。
