@@ -123,6 +123,34 @@ the modality and timing differ, so the effect size does not transfer directly.
 What transfers is the comparative finding that contextual framing outperforms a
 terse "this may be suspicious", which is a claim about content, not channel.
 
+## Two Keystore facts that decided what NOT to build
+
+`SaltVault`'s key protects the per-install salt behind every stored hash, so its
+loss is not a privacy event but an availability one: the outbound-known trust
+set, SpamCache and RepeatCallerTracker all stop matching at once, and previously
+trusted callers quietly fall through to the FOREIGN_* layers. Two documented
+platform behaviours bound that risk, and both argue for restraint:
+
+- **`KeyPermanentlyInvalidatedException` only affects auth-bound keys.** Android
+  invalidates a key permanently when the secure lock screen is disabled or
+  reconfigured, or when biometrics are added or removed — but only for keys
+  created with `setUserAuthenticationRequired()`. Orange does not set it, so an
+  elderly user re-enrolling a fingerprint cannot lose their whitelist. Adding
+  that flag would read as hardening while actually introducing exactly that
+  failure, which is why the KDoc now forbids it explicitly.
+- **Device migration cannot orphan the trust set**, because nothing migrates.
+  `data_extraction_rules.xml` excludes every domain under both `<cloud-backup>`
+  and `<device-transfer>` (with `allowBackup="false"` as the belt to that
+  suspenders). A new phone starts empty rather than inheriting hashes whose salt
+  it can no longer decrypt.
+
+What remains is the narrow case of Keystore entries corrupted by an OS or
+security patch, reported on some devices. There `decrypt()` returns null, no
+plaintext fallback survives, and a fresh salt is generated. Since the §1-8 TTL
+landed, even that resolves itself: the situational silences it would cause
+expire within 180 days instead of persisting. Recorded in FEATURE_AUDIT §1-9,
+deliberately not engineered around.
+
 ## Caller-ID spoofing is inbound-only — so the callback is safe
 
 A point that decides a real behaviour question (FEATURE_AUDIT §2-4): spoofing
@@ -310,6 +338,11 @@ points the user to the right humans for everything else."
   Neurosecurity work on the generalisation of habituation from non-security
   notifications. (Basis for showing the role-loss notice once per episode rather
   than on every weekly firing — see FEATURE_AUDIT §1-11.)
+- Android Developers. *`KeyPermanentlyInvalidatedException`* — raised only for
+  keys authorized to be used after user authentication; triggered by disabling
+  or reconfiguring the secure lock screen, or changing enrolled biometrics.
+  (Basis for never setting `setUserAuthenticationRequired()` on the salt key —
+  FEATURE_AUDIT §1-9.)
 - Android Developers. *`RoleManager` API reference* — `addOnRoleHoldersChangedListener`
   requires the signature-level `MANAGE_ROLE_HOLDERS` permission (system apps
   only). (Basis for the claim that role loss cannot be observed by callback in a
