@@ -123,6 +123,24 @@ the modality and timing differ, so the effect size does not transfer directly.
 What transfers is the comparative finding that contextual framing outperforms a
 terse "this may be suspicious", which is a claim about content, not channel.
 
+## Caller-ID spoofing is inbound-only — so the callback is safe
+
+A point that decides a real behaviour question (FEATURE_AUDIT §2-4): spoofing
+falsifies only what your screen shows on an *incoming* call. It cannot redirect
+a call you *place*. If a scammer spoofs a real police or tax-agency number and
+you hang up and dial that number back, you reach the real agency — never the
+scammer. This is exactly why the FCC's standard guidance is "hang up and redial
+independently," and why Orange's own police warning says "hang up and call
+#9110."
+
+The consequence for Orange: it must not treat that callback as dangerous.
+Recording a warn-but-ring police/tax number into OutboundGuard did exactly that
+— it fired the outbound warning on the very action anti-scam guidance
+recommends, and labelled the number "recently blocked" when in fact it had been
+rung through. Those numbers are therefore no longer recorded (§2-4). The
+high-risk-hour case is kept, because that number is unknown rather than a
+spoofed known agency, so a callback genuinely can reach a scammer.
+
 ## Phone numbers are recycled — which bounds how long a blocklist stays true
 
 A blocklist is a claim about a *number*, but the thing the user actually wants
@@ -267,6 +285,10 @@ points the user to the right humans for everything else."
   IEEE S&P 2025 (CISPA). (Basis for rewriting `police_warn_body` from a terse
   "may be spoofed" to a contextual warning; 36 blind + 36 sighted participants,
   cold-called in a naturalistic setting.)
+- Federal Communications Commission. *Caller ID Spoofing* consumer guide
+  (fcc.gov/consumers/guides/spoofing): spoofing falsifies inbound caller ID only,
+  and the recommended response is "hang up and redial independently." (Basis for
+  not obstructing the callback to a spoofed agency number — FEATURE_AUDIT §2-4.)
 - Keck School of Medicine of USC / National Center on Elder Abuse. *Analysis of
   ~2,000 NCEA resource-line calls* (2019): financial abuse most-reported (~55%),
   family members most frequently identified perpetrators (~48%); NCEA separately
