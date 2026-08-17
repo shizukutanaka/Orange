@@ -123,6 +123,29 @@ the modality and timing differ, so the effect size does not transfer directly.
 What transfers is the comparative finding that contextual framing outperforms a
 terse "this may be suspicious", which is a claim about content, not channel.
 
+## The leading zero is a trunk prefix, not part of the number
+
+ITU-T E.164 treats Japan's leading `0` as a **national trunk prefix** — a signal
+to the domestic network that a long-distance call follows — not as part of the
+subscriber's identity. It is stripped for international routing, which is why
+`090-1234-5678` becomes `+81 90 1234 5678` rather than `+81 090 …`.
+
+That definition settles a question logged as a design call in FEATURE_AUDIT
+§1-7. `DomesticSpoofDetector.isImpossibleJpNumber()` answers "is this number
+structurally impossible under the MIC plan", and a bare `9012345678` is not
+impossible — it is the national significant number with no prefix attached. So
+abstaining (`false`) matches the function's contract rather than dodging it.
+
+Two consequences worth recording. First, accepting the bare form would not even
+produce the behaviour the failing test asks for: prefixing the `0` yields
+`09012345678`, a perfectly valid 11-digit mobile, so the detector would still
+return `false`. The test is asking for an "anomalous delivery format" rule, not
+a numbering-plan rule. Second, `phoneVariants()` — the codebase's single source
+of truth for number matching — expands only the domestic-trunk and E.164 forms
+too. Teaching the detector a form the variant expander does not know would split
+the two apart, which is worse than either treating the form consistently or not
+at all.
+
 ## Two Keystore facts that decided what NOT to build
 
 `SaltVault`'s key protects the per-install salt behind every stored hash, so its
@@ -313,6 +336,10 @@ points the user to the right humans for everything else."
   IEEE S&P 2025 (CISPA). (Basis for rewriting `police_warn_body` from a terse
   "may be spoofed" to a contextual warning; 36 blind + 36 sighted participants,
   cold-called in a naturalistic setting.)
+- ITU-T. *E.164 numbering plan* and the Japan national numbering plan notification
+  (country code +81): the leading `0` is a national trunk prefix, removed in
+  international format. (Basis for treating a bare national significant number
+  as valid-but-unprefixed rather than impossible — FEATURE_AUDIT §1-7.)
 - Federal Communications Commission. *Caller ID Spoofing* consumer guide
   (fcc.gov/consumers/guides/spoofing): spoofing falsifies inbound caller ID only,
   and the recommended response is "hang up and redial independently." (Basis for
