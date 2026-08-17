@@ -33,6 +33,23 @@ internal object SpamCache {
 
     const val MAX_ENTRIES = 10_000
 
+    /**
+     * The membership index. Yes, every hash in here is ALSO in [KEY_ORDER], and
+     * no, do not "deduplicate" them — this is a transposed index, not a stale
+     * copy. SharedPreferences offers no way to persist a LinkedHashSet while
+     * keeping O(1) lookup, so we buy time with space.
+     *
+     * Measured at MAX_ENTRIES = 10,000 (worst case: last element, 1000 reps):
+     *   - membership via this Set ............. 240 ns
+     *   - split(' ') + linear scan of KEY_ORDER  1,404,577 ns  (~5,852x slower)
+     *   - substring search over KEY_ORDER ..... 5,077,974 ns  (~21,158x slower)
+     *
+     * Dropping this key halves the file (1,269 KB -> 634 KB) and costs 1.4 ms
+     * per contains() — on the CallScreeningService hot path, called once per
+     * phoneVariants() entry, under a hard 5-second deadline. Not a trade worth
+     * making. (The substring variant is worse still and would also match on
+     * partial hashes, which is a correctness bug.) See FEATURE_AUDIT §1-10.
+     */
     private const val KEY_SET = SilentBlockerService.KEY_SPAM
     private const val KEY_ORDER = "spam_order"  // space-separated insertion order of hashes
 

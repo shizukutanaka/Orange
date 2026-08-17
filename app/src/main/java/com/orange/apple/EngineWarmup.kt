@@ -41,6 +41,35 @@ class EngineWarmup : ContentProvider() {
         // being loaded just as much as Layer 9 depends on PoliceStationDirectory).
         PoliceStationDirectory.entries.size
         TaxAgencyDirectory.entries.size
+
+        // Warm the two remaining synchronous costs on the screening path
+        // (FEATURE_AUDIT §1-10). Neither was covered above, so the first call
+        // after every process start was still paying them inside the 5-second
+        // window:
+        //
+        //  1. The Keystore round-trip. SpamCache caches the decrypted salt in
+        //     memory, but that cache dies with the process, so the first
+        //     SpamCache.hash() after a cold start goes to SaltVault ->
+        //     AndroidKeyStore + an AES-GCM decrypt. SpamCache's own KDoc puts
+        //     this at 10-50 ms and calls paying it per-call unnecessary — yet
+        //     the first call did pay it.
+        //  2. The SharedPreferences load, which parses the whole XML file
+        //     synchronously on first touch. That file holds the spam cache and
+        //     outbound set, so it is the largest thing Orange reads.
+        //
+        // hash("") is a real hash of the empty string: it forces both the prefs
+        // load and the salt decrypt, writes nothing, and cannot collide with a
+        // stored entry because callers reject empty numbers before hashing.
+        //
+        // Wrapped because a corrupted or unavailable Keystore must not stop app
+        // startup — SaltVault already degrades to a plaintext salt, and warmup
+        // is an optimization, never a correctness requirement.
+        try {
+            SpamCache.hash(ctx.getSharedPreferences(
+                SilentBlockerService.PREFS, android.content.Context.MODE_PRIVATE), "")
+        } catch (_: Throwable) {
+            // Warmup is best-effort; the first call will pay the cost instead.
+        }
         return true
     }
 
