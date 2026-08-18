@@ -108,5 +108,6 @@
   },
 
   "deletion_url": "N/A — uninstall is complete deletion; no server data exists to delete.",
-  "privacy_policy_url": "NOT YET SET — Play Console requires a real, reachable URL here before submission. Source content is docs/privacy_policy.html; publish it (e.g. GitHub Pages) and put the actual resulting URL here. The previous value was a template placeholder domain that was never a real, specified address."
+  "privacy_policy_url": "PENDING PAGES ENABLEMENT — https://shizukutanaka.github.io/Orange/privacy_policy.html",
+  "privacy_policy_url_note": "The URL above is already correct and needs no decision; it is simply not live yet. GitHub Pages is currently disabled for this repo (has_pages: false, verified 2026-07 via the API). To activate: Settings -> Pages -> Deploy from a branch -> branch `main`, folder `/docs`. That publishes the existing docs/privacy_policy.html at exactly the address above, because the Pages URL for a user-owned public repo is deterministic (https://<user>.github.io/<repo>/<path>). Two conditions before it resolves: (1) Pages must be enabled as described, and (2) docs/privacy_policy.html must exist on `main` — it currently lives on the working branch, so merge first. Confirm the page loads in a browser BEFORE pasting the URL into Play Console; a privacy-policy URL that 404s is a submission rejection."
 }

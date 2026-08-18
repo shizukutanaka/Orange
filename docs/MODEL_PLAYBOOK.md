@@ -58,7 +58,7 @@ FEATURE_AUDIT は「何が未解決か」を担当する。
 ### 人間の環境が必要
 7. W9 の3ステップ(`RELEASING.md` 手順、約2分)。
 8. ~~`.github/workflows/` 復活~~ → **✅ 実施済み**(`ci.yml`)。以後は CI が壊れていないかを確認するだけでよい。
-9. `play_data_safety.json` の `privacy_policy_url`: GitHub Pages 等でホスティングして実URLを記入(現状 NOT YET SET マーカー)。
+9. `play_data_safety.json` の `privacy_policy_url`: **URL は確定済み**(`https://shizukutanaka.github.io/Orange/privacy_policy.html`)。残るのは Settings → Pages → `main` / `/docs` を有効化することと、`docs/privacy_policy.html` を `main` にマージすること。判断は不要、操作のみ。
 
 ## 4. モデル使い分け(このリポジトリでの実績ベース)
 
