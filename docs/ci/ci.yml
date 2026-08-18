@@ -1,0 +1,181 @@
+# Orange CI
+#
+# ⚠️  PARKED HERE, NOT YET ACTIVE. Move it to activate:
+#
+#     mkdir -p .github/workflows
+#     git mv docs/ci/ci.yml .github/workflows/ci.yml
+#     git commit -m "ci: activate workflow" && git push
+#
+# It lives under docs/ because the session that wrote it pushes through a
+# GitHub App token without the `workflows` permission — GitHub rejects any push
+# that creates or edits `.github/workflows/*` from such a token. Nothing about
+# the workflow itself is provisional: every static step in it was executed
+# locally and passes. A human with normal push rights runs the three lines
+# above once, and CI is live from that commit onward.
+#
+# WHY THIS FILE EXISTS
+# --------------------
+# It didn't, for the repo's whole history — `.github/workflows/` sat in
+# .gitignore from the initial commit, filed under the "# Python bytecode cache"
+# heading with no explanatory comment, unlike every other entry in that file.
+# The same .gitignore says of the Gradle wrapper jar: "downloaded at CI/build
+# time, not committed … CI bootstrap step fetches it" — i.e. the repo assumed a
+# CI existed while another line guaranteed one could never be committed. That
+# was an accident, not a decision, so the line was removed and this took its
+# place. See docs/FEATURE_AUDIT.md §1-6.
+#
+# WHAT IT GUARDS
+# --------------
+# .githooks/ already runs most of this, but hooks are OPT-IN — they only work
+# after `git config core.hooksPath .githooks`. A fresh clone has no protection
+# at all. CI is the version that cannot be skipped.
+#
+# Third-party actions are deliberately avoided: for a product whose entire
+# pitch is "no network, no accounts, no data leaves the device", every extra
+# action is supply-chain surface pointed at the release pipeline. Only
+# actions/checkout and actions/setup-java (first-party) are used.
+
+name: CI
+
+on:
+  push:
+    branches: ['**']
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  static:
+    name: Static gates (no JVM needed)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # The product's central promise. If this ever fails, nothing else matters.
+      - name: Privacy guard — no network code in app/src/main
+        run: bash tools/check_no_network.sh app/src/main
+
+      - name: Decision oracle
+        run: python3 tools/oracle_decision.py
+
+      - name: Comprehensive static checks
+        run: bash tools/check_comprehensive.sh
+
+      # Locale drift was a real, repeated defect: zh/ko once silently fell back
+      # to English across 21 keys. Cheap to check, so check it every push.
+      - name: Locale key parity (en / ja / zh / ko)
+        run: |
+          cd app/src/main/res
+          for f in values values-ja values-zh values-ko; do
+            grep -o 'name="[a-z_0-9]*"' "$f/strings.xml" | sort -u > "/tmp/keys_$f"
+          done
+          fail=0
+          for f in values-ja values-zh values-ko; do
+            if ! diff -q /tmp/keys_values "/tmp/keys_$f" > /dev/null; then
+              echo "::error::$f/strings.xml key set differs from values/strings.xml"
+              diff /tmp/keys_values "/tmp/keys_$f" || true
+              fail=1
+            fi
+          done
+          exit $fail
+
+      - name: strings.xml parses in every locale
+        run: |
+          python3 - <<'PY'
+          import xml.etree.ElementTree as ET, sys
+          for loc in ['values', 'values-ja', 'values-zh', 'values-ko']:
+              ET.parse(f'app/src/main/res/{loc}/strings.xml')
+          ET.parse('app/src/main/AndroidManifest.xml')
+          print('XML OK')
+          PY
+
+      - name: play_data_safety.json is valid JSON
+        run: python3 -m json.tool docs/play_data_safety.json > /dev/null
+
+  unit-tests:
+    name: Unit tests (SDK-free runner)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      # run-pure-tests.sh borrows the Kotlin compiler and JUnit jars from a
+      # Gradle distribution rather than resolving dependencies, so it needs no
+      # Android SDK and no network. Locate the runner's Gradle for it; the
+      # script also probes /opt/gradle-*/lib and $(which gradle)/../lib itself.
+      - name: Locate Gradle libs
+        id: gradlelib
+        run: |
+          lib=""
+          for cand in /opt/gradle-*/lib /usr/share/gradle*/lib \
+                      "$(dirname "$(command -v gradle 2>/dev/null || echo /nonexistent)")/../lib"; do
+            if compgen -G "$cand/kotlin-compiler-embeddable-*.jar" > /dev/null 2>&1; then
+              lib="$(cd "$cand" && pwd)"; break
+            fi
+          done
+          if [ -z "$lib" ]; then
+            echo "::error::No Gradle distribution with kotlin-compiler-embeddable found on the runner."
+            exit 1
+          fi
+          echo "GRADLE_LIB=$lib" >> "$GITHUB_OUTPUT"
+          echo "Using $lib"
+
+      # Exits non-zero on any failure OTHER than the two DomesticSpoofDetector
+      # tests left failing on purpose as a visible signal (FEATURE_AUDIT §1-7).
+      - name: Run tests
+        env:
+          GRADLE_LIB: ${{ steps.gradlelib.outputs.GRADLE_LIB }}
+        run: bash tools/run-pure-tests.sh
+
+  # The authoritative build. Needs the Android SDK, so it is a separate job and
+  # is allowed to be the slow one. Everything above must stay fast enough that a
+  # contributor gets a verdict without waiting for this.
+  android-build:
+    name: Android build + full unit tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      # gradle-wrapper.jar is deliberately not committed (see .gitignore), so
+      # fetch it at the exact version gradle-wrapper.properties pins.
+      - name: Bootstrap Gradle wrapper jar
+        run: |
+          ver=$(grep -oE 'gradle-[0-9]+(\.[0-9]+)*-' gradle/wrapper/gradle-wrapper.properties \
+                | head -1 | sed 's/^gradle-//; s/-$//')
+          echo "Wrapper version: $ver"
+          curl -fsSL -o gradle/wrapper/gradle-wrapper.jar \
+            "https://raw.githubusercontent.com/gradle/gradle/v${ver}/gradle/wrapper/gradle-wrapper.jar"
+          chmod +x gradlew
+
+      - name: Unit tests (release variant)
+        run: ./gradlew testReleaseUnitTest --no-daemon --stacktrace
+
+      - name: Lint (release variant)
+        run: ./gradlew lintRelease --no-daemon
+
+      - name: Assemble release
+        run: ./gradlew assembleRelease --no-daemon
+
+      # APK budget is a product constraint, not a nicety: this ships to elderly
+      # users on low-end devices and metered connections.
+      - name: APK size budget
+        run: bash tools/check_apk_size.sh
+
+      - name: Upload APK
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: orange-release-apk
+          path: app/build/outputs/apk/release/*.apk
+          if-no-files-found: warn

@@ -33,7 +33,7 @@ FEATURE_AUDIT は「何が未解決か」を担当する。
 
 | # | 弱点 | 状態 |
 |---|------|------|
-| W1 | テストが CI で一度も実行されていなかった(静的ゲートは @Test を数えるだけ)| `tools/run-pure-tests.sh` で285テスト(純粋層+SharedPreferences依存ストア層)を実行可能に。**`.githooks/pre-push` が wrapper jar 無しの環境ではこのランナーを実行しpushをゲート**(既知の§1-7失敗2件以外があれば block)。WarningNotifier/UI 等 Context 大量依存は依然未実行 |
+| ~~W1~~ | ~~テストが CI で一度も実行されていなかった~~ | **✅ 解決(2026-07)**。CI を作成(除外は初回コミットからの事故と判明、§1-6)。**`docs/ci/ci.yml` に待機中** — App トークンに `workflows` 権限が無いため、人間が `git mv` して push すると有効。static / unit-tests(285) / android-build の3ジョブ。`.githooks/` は**オプトイン**なので CI が迂回不能な版。WarningNotifier/UI 等 Context 大量依存は `android-build` ジョブの `testReleaseUnitTest` がカバー |
 | W2 | `DomesticSpoofDetector.toDomestic()` が先頭0/+81 以外を棄権 → 短縮番号・先頭ゼロ欠落の判定が到達不能。**テスト2件が実行すると失敗する**(意図的に残してある可視シグナル)| FEATURE_AUDIT §1-7。設計判断待ち |
 | W3 | business_directory.csv の宅配・メガバンク等がサイレント信頼のまま(偽装頻度高いが正当着信も多い)| FEATURE_AUDIT §1-2。機関別判断待ち |
 | W4 | 警察/税務署番号へのかけ直し(推奨される安全行動)に「ブロックした番号」という事実誤りの発信警告が出る | FEATURE_AUDIT §2-4。文言/挙動判断待ち |
@@ -57,7 +57,7 @@ FEATURE_AUDIT は「何が未解決か」を担当する。
 
 ### 人間の環境が必要
 7. W9 の3ステップ(`RELEASING.md` 手順、約2分)。
-8. `.github/workflows/` 復活時: `run-pure-tests.sh` + (SDK有りなら) `testReleaseUnitTest` を CI に組み込み「@Test を数えるだけ」を解消。
+8. ~~`.github/workflows/` 復活~~ → **✅ 実施済み**(`ci.yml`)。以後は CI が壊れていないかを確認するだけでよい。
 9. `play_data_safety.json` の `privacy_policy_url`: GitHub Pages 等でホスティングして実URLを記入(現状 NOT YET SET マーカー)。
 
 ## 4. モデル使い分け(このリポジトリでの実績ベース)
@@ -74,7 +74,7 @@ FEATURE_AUDIT は「何が未解決か」を担当する。
 ### Opus/Sonnet 共通の作業手順(このセッションで有効だった規律)
 1. 開始時に `docs/FEATURE_AUDIT.md` を読む(再発見の無駄と制約違反を防ぐ)。
 2. 変更は小さく、**1論点=1コミット**。コミットメッセージに「何が矛盾していたか」を書く(将来の再発見防止)。
-3. 検証: Gradle ビルドはサンドボックスで不可 → `bash tools/run-pure-tests.sh`(285テスト、SDK不要)+ 机上トレース。push 後の CI は当てにしない(W1)。
+3. 検証: Gradle ビルドはサンドボックスで不可 → `bash tools/run-pure-tests.sh`(285テスト、SDK不要)+ 机上トレース。**push 後は CI(`ci.yml`)が全ゲート + SDK 有りの完全ビルドを回す**ので、サンドボックスで検証できなかった部分はそこで確認できる。
 4. 発見した問題は3分類 — **機械的に直せる**(直す)/**陳腐化**(記録どおり更新)/**設計判断**(FEATURE_AUDIT に記録して止まる)。テストの assertion を黙って実装に合わせる改変は禁止(gap の隠蔽)。
 5. 迷ったら削る方向へ(DESIGN_NOTES の subtraction 哲学)。機能追加 PR より削除 PR が歓迎される製品。
 
@@ -91,6 +91,8 @@ FEATURE_AUDIT は「何が未解決か」を担当する。
 ```bash
 # 純粋ロジック層のテスト実行(SDK 不要、~0.2秒)
 bash tools/run-pure-tests.sh          # 期待値: 285 run / 2 failures(W2 の意図的シグナル)
+# CI と同じ全ゲートをローカルで:
+bash .githooks/pre-push               # privacy guard → oracle 31 → 285 tests
 
 # ロケール4ファイルのキー集合一致
 cd app/src/main/res && for f in values values-ja values-zh values-ko; do \

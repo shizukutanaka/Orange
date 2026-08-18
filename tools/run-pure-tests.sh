@@ -4,11 +4,14 @@
 #
 # WHY THIS EXISTS
 # ----------------
-# The repo has no .github/workflows/ (it's .gitignore'd), and the static gate
-# `check_comprehensive.sh` only *counts* @Test annotations — it never *runs*
-# the tests. So until this script, the JVM unit tests had never actually been
-# executed in any automated way. Running them for the first time (2026-07)
-# surfaced real issues (see docs/FEATURE_AUDIT.md → "Test suite never executed").
+# For the repo's whole history there was no CI: `.github/workflows/` sat in
+# .gitignore from the initial commit (an accident — see .github/workflows/ci.yml),
+# and the static gate `check_comprehensive.sh` only *counts* @Test annotations,
+# it never *runs* the tests. So until this script, the JVM unit tests had never
+# actually been executed in any automated way. Running them for the first time
+# (2026-07) surfaced real issues (docs/FEATURE_AUDIT.md §1-6). CI now exists and
+# invokes this script, but it stays useful standalone: it needs no Android SDK
+# and no network, so a contributor can run the suite locally in ~10 seconds.
 #
 # It works by reusing the Kotlin compiler and JUnit 4 jars that ship *inside*
 # the Gradle distribution (no network, no Android SDK needed), plus a tiny
