@@ -11,38 +11,38 @@ TEST="app/src/test/java/com/orange/apple"
 RES="app/src/main/res"
 FAIL=0
 
-echo "=== 1/9. Privacy guard ==="
+echo "=== 1/11. Privacy guard ==="
 bash tools/check_no_network.sh app/src/main || FAIL=1
 
-echo "=== 2/9. R.string coverage ==="
+echo "=== 2/11. R.string coverage ==="
 for str in $(grep -ohP 'R\.string\.\K\w+' "$MAIN"/*.kt 2>/dev/null | sort -u); do
     if ! grep -q "name=\"$str\"" "$RES/values/strings.xml"; then
         echo "FAIL: R.string.$str not declared"; FAIL=1
     fi
 done
 
-echo "=== 3/9. R.color coverage ==="
+echo "=== 3/11. R.color coverage ==="
 for col in $(grep -ohP '@color/\K\w+' "$RES/values/themes.xml" 2>/dev/null | sort -u); do
     if ! grep -q "name=\"$col\"" "$RES/values/colors.xml"; then
         echo "FAIL: @color/$col not declared"; FAIL=1
     fi
 done
 
-echo "=== 4/9. Manifest class definitions ==="
+echo "=== 4/11. Manifest class definitions ==="
 for cls in $(grep -oP 'android:name="\.\K[^"]+' app/src/main/AndroidManifest.xml); do
     if ! grep -rql "class $cls" "$MAIN/"*.kt 2>/dev/null; then
         echo "FAIL: Manifest .$cls has no class"; FAIL=1
     fi
 done
 
-echo "=== 5/9. Emergency coverage ==="
+echo "=== 5/11. Emergency coverage ==="
 for n in 110 119 118 911 112 999 000; do
     if ! grep -q "\"$n\"" "$MAIN/EmergencyWhitelist.kt"; then
         echo "FAIL: Emergency $n missing"; FAIL=1
     fi
 done
 
-echo "=== 6/9. BlockReason + WarnReason test coverage ==="
+echo "=== 6/11. BlockReason + WarnReason test coverage ==="
 for reason in SPAM_CACHE FOREIGN_ELEVATED FOREIGN_GENERIC DOMESTIC_SPOOF WANGIRI_CALLBACK CARRIER_VERIFICATION_FAILED WITHHELD_NUMBER PREMIUM_RATE_INTERNATIONAL DND_HONOR REPEAT_CALLER; do
     if ! grep -rq "BlockReason\.$reason" "$TEST/"*.kt 2>/dev/null; then
         echo "FAIL: BlockReason.$reason has no test assertion"; FAIL=1
@@ -54,7 +54,7 @@ for warn in POLICE_IMPERSONATION POLICE_IMPERSONATION_HIGH HIGH_RISK_HOUR_DOMEST
     fi
 done
 
-echo "=== 7/9. Cross-file class references ==="
+echo "=== 7/11. Cross-file class references ==="
 for cls in EmergencyWhitelist DomesticSpoofDetector ScamPrefixSeed BusinessDirectoryBundle \
            SpamCache WangiriTracker NotificationRateLimiter PauseTile RoleMonitor TrustNotifier \
            SilentBlockerService OnboardingActivity OrangeWidget CallStateObserver WeeklyDigest \
@@ -71,7 +71,7 @@ if [ ! -f "$MAIN/CallDecision.kt" ]; then
     echo "FAIL: CallDecision.kt missing"; FAIL=1
 fi
 
-echo "=== 8/9. Decision oracle (behavioral tripwire) ==="
+echo "=== 8/11. Decision oracle (behavioral tripwire) ==="
 if command -v python3 >/dev/null 2>&1; then
     if ! python3 tools/oracle_decision.py; then
         echo "FAIL: decision oracle detected a behavioral regression"; FAIL=1
@@ -80,7 +80,7 @@ else
     echo "SKIP: python3 not available (oracle runs in CI)"
 fi
 
-echo "=== 9/10. Business directory integrity ==="
+echo "=== 9/11. Business directory integrity ==="
 CSV="app/src/main/assets/business_directory.csv"
 if [ -f "$CSV" ]; then
     # Duplicate E.164 keys cause the later entry to silently overwrite the earlier
@@ -103,7 +103,26 @@ else
     FAIL=1
 fi
 
-echo "=== 10/10. Required documentation present ==="
+echo "=== 10/11. Locale key parity (en / ja / zh / ko) ==="
+# Hard failure, deliberately. tools/check_static.sh used to check this as a
+# WARN and that is exactly how zh/ko once shipped 21 keys short, silently
+# falling back to English in the Settings, tax-warning and outbound-warning UI.
+# A warning nobody reads is not a gate.
+_base=$(grep -o 'name="[a-z_0-9]*"' app/src/main/res/values/strings.xml | sort -u)
+for _loc in values-ja values-zh values-ko; do
+    _f="app/src/main/res/$_loc/strings.xml"
+    if [ ! -f "$_f" ]; then
+        echo "FAIL: $_f missing"; FAIL=1; continue
+    fi
+    _cur=$(grep -o 'name="[a-z_0-9]*"' "$_f" | sort -u)
+    if [ "$_base" != "$_cur" ]; then
+        echo "FAIL: $_loc key set differs from values/"
+        diff <(echo "$_base") <(echo "$_cur") | head -20
+        FAIL=1
+    fi
+done
+
+echo "=== 11/11. Required documentation present ==="
 for doc in README.md PRIVACY_MANIFESTO.md HONESTY_ADDENDUM.md THREAT_MODEL.md \
            DESIGN_NOTES.md RESEARCH_BASIS.md CHANGELOG.md SECURITY.md \
            CONTRIBUTING.md DEVELOPING.md LICENSE \
