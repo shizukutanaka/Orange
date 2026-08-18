@@ -47,7 +47,14 @@ FEATURE_AUDIT は「何が未解決か」を担当する。
 
 ### 今すぐ着手可(判断不要・機械的)
 1. ~~**ストア層テストの実行拡張**~~ **実装済み(2026-07)**: `run-pure-tests.sh` が最小 Android 型スタブ(heredoc 生成・非コミット)でストア層も実行、計285テスト。脆いテスト3件・設計矛盾テスト1件を修正済み。**次のフロンティア**: WarningNotifier/ManualBlock/FamilyCallback/TrustNotifier/BusinessDirectoryBundle/UI 各種(NotificationManager・NotificationCompat・Context 大量依存)。スタブ面が過大で偽陽性リスクが高いため、これらは実機/SDK 有りの `./gradlew testReleaseUnitTest` に委ねるのが妥当(無理にスタブ化しない)。
-2. **ドキュメント数値の定期突き合わせ**: このセッションで大量に発見・修正したパターン(件数・層数・閾値のドリフト)。ディレクトリや層を変更したら README/SPECIFICATION/DEVELOPING/THREAT_MODEL/HONESTY_ADDENDUM/`play_data_safety.json` を同時更新し、`ProtectionDataVersion.LAST_UPDATED` は**最古の検証日**を維持。
+2. ~~**ドキュメント数値の定期突き合わせ**~~ → **自動化済み(2026-07)**。`check_comprehensive.sh` の
+   **11/12「Doc/data count drift」**が ADR 数・警察ディレクトリ件数・高リスク国番号数・
+   マニフェスト項目数をコードから抽出して文書の主張と突き合わせ、**不一致で exit 1**。
+   pre-commit / pre-push / CI の3箇所で走る。**手で数えるのをやめること** — この欠陥は
+   今セッションだけで5回再発した(47→54、11→12、199→285、7/9→10、8→20)。
+   残る手作業は「意味を伴う更新」のみ: ディレクトリや層を変えたら
+   README/SPECIFICATION/DEVELOPING/THREAT_MODEL/HONESTY_ADDENDUM/`play_data_safety.json` の
+   **記述**を更新し、`ProtectionDataVersion.LAST_UPDATED` は**最古の検証日**を維持。
 
 ### ユーザー承認後に着手(製品判断)
 3. W2: `toDomestic()` の棄権挙動(numbering-plan 厳格性)。
