@@ -1,6 +1,17 @@
 # Orange — Privacy Manifesto
 
-## Seven things Orange does NOT do
+## Ten promises: eight refusals, and two things it does narrowly
+
+Items 1–7 and 10 are refusals — capabilities Orange declines to ask for at all.
+Items 8 and 9 are the opposite and are listed here deliberately: two things
+Orange *does* do, stated with their exact bounds, because a list of refusals
+that quietly omits the exceptions is not honest.
+
+(This heading previously said "Seven", while README and CONTRIBUTING both said
+"nine" and the list held ten. A document whose entire purpose is precision about
+what a product does and does not do should be able to count its own list; the
+mismatch is recorded rather than quietly corrected, since the drift is the
+useful part.)
 
 Competitors in this category — Truecaller, Whoscall, Hiya, and several
 Japanese alternatives — all make similar promises about blocking unwanted
