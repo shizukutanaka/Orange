@@ -21,8 +21,7 @@ import androidx.core.content.edit
  * Competitor failure: Hiya users complained loudly that disabling Hiya was
  * unintuitive AND that re-enabling after an OS update was even less obvious.
  * Orange goes the other way: silently watches, and on next launch (or via
- * the widget tap) tells the user "open this to fix" — never harasses them
- * with notifications.
+ * the widget tap) tells the user "open this to fix" — without nagging.
  *
  * Detection strategy:
  *   - On boot, on package replace, and on first widget render after
@@ -33,10 +32,24 @@ import androidx.core.content.edit
  *     open the app)
  *   - When the user opens Onboarding while role is missing, re-request it
  *
- * No notification is fired. The widget glyph change is the only signal.
- * If the user never re-grants, Orange degrades silently to the OS default
- * (everything rings) — which is annoying but not unsafe. Rams #5
- * (unobtrusive) at all costs.
+ * This class fires no notification of its own; the widget glyph is its only
+ * signal. That used to be the whole story, and it was too quiet: the glyph
+ * requires a widget to be placed, and detection only happens on boot, package
+ * replace, or a widget refresh — so a user with no widget who has not rebooted
+ * could stay unprotected indefinitely without a hint. Android offers no fix
+ * from this side: RoleManager.addOnRoleHoldersChangedListener needs the
+ * signature-level MANAGE_ROLE_HOLDERS, so a third-party app can never be *told*
+ * it lost a role. Polling is the only mechanism there is.
+ *
+ * So WeeklyDigest — the one recurring alarm Orange schedules — now reports the
+ * loss once per episode instead of returning early (FEATURE_AUDIT §1-11). It
+ * reuses the existing digest channel, id and alarm, so the notification surface
+ * did not grow; only its content adapts. Once per episode, not weekly, because
+ * habituation to repeated warnings is a measured effect that also degrades
+ * attention to the scam warnings that are the actual product.
+ *
+ * If the user never re-grants, Orange still degrades to the OS default
+ * (everything rings) — annoying, not unsafe.
  */
 internal object RoleMonitor {
 

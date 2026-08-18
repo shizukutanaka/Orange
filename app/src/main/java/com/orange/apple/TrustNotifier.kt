@@ -215,8 +215,16 @@ object TrustNotifier {
 
 /**
  * Restore action: user says "that wasn't spam."
- * We don't argue. We don't ask for feedback. We just trust them forever.
- * Number moves into the outbound-known set so it always rings going forward.
+ * We don't argue and we don't ask for feedback — the number moves into the
+ * outbound-known set, which Layer 4 checks before any silencing layer, so it
+ * rings from then on.
+ *
+ * "Forever" with one honest asterisk: that set is bounded at
+ * SilentBlockerService.MAX_OUTBOUND_ENTRIES (1,000) with FIFO eviction, so an
+ * entry is only lost after a thousand further distinct numbers are dialled or
+ * restored. For this product's users that is effectively permanent, but the
+ * bound is real and the KDoc should not claim an absolute the code does not
+ * provide.
  */
 class RestoreReceiver : BroadcastReceiver() {
     override fun onReceive(ctx: Context, intent: Intent) {
