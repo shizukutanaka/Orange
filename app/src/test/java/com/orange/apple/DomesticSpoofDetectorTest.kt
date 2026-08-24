@@ -44,8 +44,22 @@ class DomesticSpoofDetectorTest {
     @Test fun eight_consecutive_identical_digits_is_spoof() =
         assertTrue(DomesticSpoofDetector.isImpossibleJpNumber("09011111111"))
 
-    @Test fun missing_leading_zero_is_spoof() =
-        assertTrue(DomesticSpoofDetector.isImpossibleJpNumber("9012345678"))
+    @Test fun bare_nsn_without_leading_zero_is_not_impossible() =
+        // Deliberately false, settled by ITU-T E.164 (FEATURE_AUDIT §1-7).
+        // JP's leading 0 is a national TRUNK PREFIX — a routing signal, not part
+        // of the subscriber identity; it is stripped in international format
+        // (090-1234-5678 → +81 90 1234 5678). So "9012345678" is the national
+        // significant number with no prefix attached: unusual as a delivery
+        // format, but not a numbering-plan violation, which is the only thing
+        // this function's contract covers. Decisive detail: even if
+        // toDomestic() prefixed the 0, the result "09012345678" is a VALID
+        // 11-digit mobile — so asserting true here was asking for an
+        // "anomalous delivery format" rule this function is not named or
+        // documented for. phoneVariants() (the matching source of truth) also
+        // only expands domestic-trunk and E.164 forms; teaching just the
+        // detector a third form would split the two. In the live engine a
+        // bare-NSN delivery falls through to Layer 16 = RING (fail-open).
+        assertFalse(DomesticSpoofDetector.isImpossibleJpNumber("9012345678"))
 
     @Test fun too_short_is_spoof() =
         assertTrue(DomesticSpoofDetector.isImpossibleJpNumber("035555"))
@@ -133,9 +147,17 @@ class DomesticSpoofDetectorTest {
     @Test fun cn_number_is_not_flagged() =
         assertFalse(DomesticSpoofDetector.isImpossibleJpNumber("+8613812345678"))
 
-    @Test fun short_code_110_is_flagged_as_impossible_by_detector() =
-        // 110 is under 10 digits — impossible as a JP full number. The detector
-        // correctly flags it; EmergencyWhitelist at Layer 1 prevents it from
-        // ever reaching this detector in the live engine.
-        assertTrue(DomesticSpoofDetector.isImpossibleJpNumber("110"))
+    @Test fun short_code_110_is_abstained_on_not_flagged() =
+        // The old assertion (true) came with a comment claiming "the detector
+        // correctly flags it" — which was simply false: toDomestic() abstains
+        // on anything not starting with "0" or "+81", so "110" never reaches
+        // the length checks at all. The abstain is also the right answer:
+        // short codes are not in the detector's domain (they are not full JP
+        // numbers under the MIC plan, they are service codes), and in the live
+        // engine EmergencyWhitelist at Layer 1 hard-allows 110 before any
+        // detector runs — a spoofed "110" caller ID must RING there, because
+        // silencing a real emergency callback is the worst possible failure.
+        // Asserting the abstain keeps this documented and stops the suite from
+        // carrying a permanently-failing test (FEATURE_AUDIT §1-7).
+        assertFalse(DomesticSpoofDetector.isImpossibleJpNumber("110"))
 }

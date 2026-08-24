@@ -35,11 +35,12 @@
 # throws on the JVM and it falls back to a plaintext salt before any keystore
 # type is instantiated). No stub carries business logic, so none can mask a bug.
 #
-# EXPECTED: 285 tests run, 2 failures — the two DomesticSpoofDetector tests that
-# assert isImpossibleJpNumber("110"/"9012345678") == true while the code abstains
-# (returns false). Those are an intentionally-unresolved design question, left
-# failing as a visible signal (docs/FEATURE_AUDIT.md §1-7). Any OTHER failure is
-# a regression.
+# EXPECTED: 285 tests run, 0 failures. (Two DomesticSpoofDetector tests spent a
+# while intentionally failing as the visible signal of a design question; ITU-T
+# E.164 settled it — the leading 0 is a trunk prefix, so the abstain is the
+# contract being honoured — and the tests now assert the correct behaviour with
+# the analysis inline. See docs/FEATURE_AUDIT.md §1-7.) ANY failure is a
+# regression.
 #
 # USAGE:  bash tools/run-pure-tests.sh   (from the repo root)
 set -euo pipefail
@@ -174,18 +175,18 @@ echo "==> compiling ${#TEST_SRCS[@]} test sources"
 KC "${TEST_SRCS[@]}" -d "$OUT/test" -no-reflect \
    -classpath "$OUT/main:$STDLIB:$JUNIT:$HAMCREST:$OUT/shimjava-out" -Xfriend-paths="$OUT/main"
 
-echo "==> running tests (expected steady state: 285 run / 2 failures = the FEATURE_AUDIT §1-7 signal)"
+echo "==> running tests (expected steady state: 285 run / 0 failures)"
 CLASSES=$(cd "$OUT/test" && find . -name '*Test.class' | sed 's|^\./||;s|\.class$||;s|/|.|g' | tr '\n' ' ')
 set +e
 RESULT=$(java -cp "$OUT/main:$OUT/test:$STDLIB:$JUNIT:$HAMCREST:$OUT/shimjava-out" org.junit.runner.JUnitCore $CLASSES 2>&1 | grep -v 'JAVA_TOOL_OPTIONS')
 set -e
 echo "$RESULT"
 
-# Exit-code contract (so this can gate a push): succeed iff EVERY failing test
-# is one of the two known, intentionally-unresolved DomesticSpoofDetector
-# design-question tests (FEATURE_AUDIT §1-7). Any other failure is a regression.
-# Robust to new tests being added (checks the failure identities, not a count).
-ALLOWED='short_code_110_is_flagged_as_impossible_by_detector missing_leading_zero_is_spoof'
+# Exit-code contract (so this can gate a push): succeed iff NO test fails.
+# ALLOWED is the escape hatch for a future deliberately-failing signal test;
+# it is empty now that the §1-7 design question is settled, and should stay
+# empty absent an equally-well-documented reason.
+ALLOWED=''
 FAILED=$(printf '%s\n' "$RESULT" | grep -oE '^[0-9]+\) [a-zA-Z_0-9]+\(' | sed 's/^[0-9]*) //; s/($//' || true)
 UNEXPECTED=""
 for f in $FAILED; do
@@ -194,7 +195,7 @@ done
 if [ -n "$UNEXPECTED" ]; then
   echo ""
   echo "REGRESSION: unexpected test failure(s):$UNEXPECTED" >&2
-  echo "(Only the 2 DomesticSpoofDetector §1-7 tests may fail. See docs/FEATURE_AUDIT.md.)" >&2
+  echo "(No failures are tolerated; see the ALLOWED list in this script.)" >&2
   exit 1
 fi
-echo "==> OK (only the known FEATURE_AUDIT §1-7 signal failures, if any)"
+echo "==> OK (no unexpected failures)"

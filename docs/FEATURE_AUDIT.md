@@ -120,10 +120,18 @@ warn ディレクトリへ、満たさないなら CSV へ、と振り分けれ�
   - 1件: 今セッションの意図的変更(高リスク時間帯警告が Pause 中も残る)による陳腐化テスト → 修正済み。
   - 3件: **非現実的なタイムスタンプに起因する脆いテスト**(本番コードは正しいことをプローブで確認)→ 修正済み(下記「解消済み」)。
   - 2件: **DomesticSpoofDetector の設計判断**(§1-7)→ 意図的に失敗のまま残置。
-- **現在の期待値**: `bash tools/run-pure-tests.sh` → **285 run / 2 failures**(2件は §1-7 のシグナル。それ以外の失敗は回帰)。スクリプトは「§1-7 の2件以外が失敗したら exit 1」の終了コード契約を持つ。
+- **現在の期待値**: `bash tools/run-pure-tests.sh` → **285 run / 0 failures**(§1-7 の意図的失敗2件は E.164 決着後にテスト側を修正して green 化)。スクリプトの終了コード契約は「ALLOWED リスト外の失敗で exit 1」で、**ALLOWED は現在空** = いかなる失敗も回帰。
 - **`.githooks/pre-push` に配線済み**: `./gradlew` + wrapper jar があれば従来どおり `testReleaseUnitTest`(全件)。無ければ(fresh clone / SDK 無しサンドボックス等)`run-pure-tests.sh` を実行して push をゲートする。これにより「テストが一度も走らないまま push される」状態を、SDK が無い環境でも部分的に解消。**CI(`.github/workflows/` 復活時)にも同じランナーを組み込むこと**(§5 対応推奨順)。
 
-### 1-7. DomesticSpoofDetector が先頭ゼロ無し/短縮番号を棄権する【要設計判断】
+### 1-7. DomesticSpoofDetector が先頭ゼロ無し/短縮番号を棄権する【✅ 2026-07 解決済み】
+
+> **解決**: ITU-T E.164 の分析(下記)で「棄権 = 契約どおり」と確定したため、**テスト側を修正**した。
+> `missing_leading_zero_is_spoof` → `bare_nsn_without_leading_zero_is_not_impossible`(false を期待)、
+> `short_code_110_is_flagged_as_impossible_by_detector` → `short_code_110_is_abstained_on_not_flagged`
+> (false を期待。旧コメント「The detector correctly flags it」は事実と異なった)。
+> **分析の全文を両テストのコメントに移植**したので、シグナルとしての役割は失われていない —
+> 失敗し続けるテストから、理由を語る green テストへ形を変えただけ。スイートは **285/0**、
+> ランナーの ALLOWED は空になり「失敗は正常」という壊れ窓が消えた。以下は分析記録。
 - **場所**: `DomesticSpoofDetector.toDomestic()`(`app/src/main/java/com/orange/apple/DomesticSpoofDetector.kt`)。
 - **事象**: `toDomestic()` は入力が `"0"` 始まりでも `"+81"` 始まりでもない場合 `null` を返し、`isImpossibleJpNumber()` は `?: return false` で即座に**棄権**(= 偽装ではない)する。この結果、後続の `d.length < 10 → true`(短すぎる)や「先頭ゼロ欠落」判定は**到達不能**になっている。
 - **実測(`tools/run-pure-tests.sh`)**: `isImpossibleJpNumber("110") = false`、`isImpossibleJpNumber("9012345678") = false`。しかし `DomesticSpoofDetectorTest` の2テスト(`short_code_110_is_flagged_as_impossible_by_detector`, `missing_leading_zero_is_spoof`)は `true` を期待しており、**実行すると失敗する**(コードとテストの矛盾)。
