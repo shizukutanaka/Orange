@@ -44,9 +44,35 @@ Before adding a feature, ask:
 If any answer is "no," the feature doesn't ship.
 
 ## What to build next (in order, and only if the prior is complete)
-1. **SMS spam screen** — same three-rule pattern, same zero-UI surface. Huge in JP market.
-2. **Carrier-reported scam signatures** — fetch JP telecom's public block lists at install time, never again (offline product).
-3. **Watch complication** — same as widget: one number, zero interactions.
+
+1. **Watch complication** — same as widget: one number, zero interactions.
+
+That is the whole list, and it used to be three items. The other two were struck
+in 2026-07 because they contradicted the section immediately below this one — in
+the same file, a few lines apart:
+
+- ~~**SMS spam screen**~~ — "What NOT to build" already forbids *"SMS filtering
+  in same APK (separate role + doubles permission surface)"*. Android grants SMS
+  read access essentially only to the default SMS handler, so this is not a
+  feature to add to Orange; it is a different product. Worth noting from the
+  §1-2 research: fake 不在通知 SMS really is the dominant delivery-impersonation
+  vector, so the market instinct was right — but a call screener structurally
+  cannot see SMS, and pretending otherwise on a roadmap does not change that.
+- ~~**Carrier-reported scam signatures**~~ ("fetch JP telecom's public block
+  lists at install time, never again") — "What NOT to build" forbids
+  *"Background network sync of any kind (INTERNET permission = product soul
+  lost)"*. The "install time, never again (offline product)" hedge does not
+  survive contact with the mechanism: a fetch of any frequency needs the
+  INTERNET permission, and `tools/check_no_network.sh` hard-fails on that string
+  appearing in any manifest. This item was an instruction to do something CI is
+  built to reject.
+
+The contradiction is recorded rather than quietly deleted because of where this
+list sits: README and CONTRIBUTING both send contributors *here* as the gate on
+new features. A roadmap that proposes what the constraints forbid does not just
+waste a contributor's afternoon — it invites the argument "but the roadmap says
+so" against the product's two load-bearing promises. A roadmap is a requirement
+like any other, and it gets audited like any other.
 
 ## What NOT to build
 - Call recording (legal minefield in Japan — 盗聴禁止法, scope creep)
