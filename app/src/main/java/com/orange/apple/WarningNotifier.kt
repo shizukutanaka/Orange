@@ -267,6 +267,37 @@ internal object WarningNotifier {
         builder.addAction(0, ctx.getString(R.string.police_warn_family), pi)
     }
 
+    /**
+     * Channel factory for all four warning channels.
+     *
+     * The combination below looks contradictory and is not, so it is worth
+     * stating — the original choice carried no comment, and a future reader
+     * weighing "should the warnings be louder?" (FEATURE_AUDIT §1-4 / W8) needs
+     * to know which parts are deliberate:
+     *
+     *  - IMPORTANCE_HIGH + CATEGORY_ALARM: earns a heads-up banner and asks the
+     *    OS to let it through Do Not Disturb. Correct — a spoofed-police warning
+     *    is worthless if DND swallows it, and DND is exactly when an elderly
+     *    user is most likely to answer a call they should not.
+     *  - enableVibration(true): the one channel of physical signal that works
+     *    with the phone held to an ear.
+     *  - setSound(null, null): deliberately silent, and NOT a weaker setting
+     *    that should be "upgraded". These warnings fire on the warn-but-ring
+     *    lanes, i.e. while the phone is ALREADY RINGING. A notification tone on
+     *    top of the ringtone is noise competing with noise: it does not add
+     *    urgency, it costs the user the moment of clarity in which they are
+     *    supposed to read "real police never move you to LINE".
+     *
+     * So the escalation axis has rungs, not a switch. Sound is at "off" on
+     * purpose and should stay there; the only genuinely open rung is the
+     * full-screen intent (§1-4), which is a separate decision about
+     * interrupting rather than about volume.
+     *
+     * Note the OS-level asymmetry: importance is honoured only at channel
+     * CREATION. If a user later downgrades the channel, nothing here re-asserts
+     * it — by design, since overriding a user's explicit notification choice is
+     * not a thing this product does.
+     */
     private fun ensureChannel(
         ctx: Context, mgr: NotificationManager,
         id: String, name: String, importance: Int
