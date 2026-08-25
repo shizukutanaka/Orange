@@ -178,10 +178,25 @@ class CallDecisionTest {
         assertEquals(BlockReason.DOMESTIC_SPOOF, d.reason)
     }
 
-    @Test fun jp_premium_0990_caller_is_spoof() {
+    @Test fun jp_premium_0990_wellformed_is_not_a_spoof_and_currently_rings() {
+        // "0990123456" is EXACTLY 10 digits, which is the correct length for a
+        // 0990 teledome number under the MIC plan — so it is not a numbering-plan
+        // violation and DomesticSpoofDetector rightly declines to flag it.
+        //
+        // This test previously asserted SILENCE + DOMESTIC_SPOOF, i.e. it asked
+        // the SPOOF detector to enforce a PREMIUM-RATE policy. Wrong mechanism:
+        // "is this number structurally possible" and "do we want calls from this
+        // range" are different questions. Never having been executed, it went on
+        // asserting a behaviour the engine does not and should not have.
+        //
+        // What it does legitimately expose is a gap: Layer 11 covers
+        // INTERNATIONAL premium rate (+800 etc.) and there is no domestic
+        // equivalent, so an inbound 0990 falls to Layer 16 and rings. Whether it
+        // should is a product decision, recorded in docs/FEATURE_AUDIT.md §1-12
+        // rather than smuggled in through a test assertion.
         val d = decide(call("0990123456"), emptyState)
-        assertEquals(Verdict.SILENCE, d.verdict)
-        assertEquals(BlockReason.DOMESTIC_SPOOF, d.reason)
+        assertEquals(Verdict.RING, d.verdict)
+        assertNull(d.reason)
     }
 
     @Test fun jp_repeating_digit_block_is_spoof() {
@@ -534,14 +549,20 @@ class CallDecisionTest {
         assertNull(d.warning)
     }
 
-    @Test fun midday_no_warning() {
-        // 12:30 JST Tuesday — between the two peak windows (12:00-13:00)
+    @Test fun midday_is_inside_high_risk() {
+        // 12:30 JST Tuesday. This test used to assert "no warning", on the
+        // premise that noon sits BETWEEN the peak windows. That premise was the
+        // bug: isHighRiskHour() read `9..11 || 13..15` while the police advisory
+        // it implements specifies 09:00-12:00 and 13:00-16:00, so the 12:00 and
+        // 16:00 hours — when calls actually peak — were excluded. The engine was
+        // fixed to `9..12 || 13..16` (see CHANGELOG); this test was never run and
+        // so kept asserting the pre-fix behaviour.
         val cal = java.util.Calendar.getInstance(java.util.TimeZone.getTimeZone("Asia/Tokyo"))
         cal.set(2025, java.util.Calendar.MAY, 6, 12, 30, 0) // Tuesday 12:30 JST
         cal.set(java.util.Calendar.MILLISECOND, 0)
         val d = decide(call("09012345678").copy(nowMillis = cal.timeInMillis), emptyState)
-        assertEquals(Verdict.RING, d.verdict)
-        assertNull(d.warning)
+        assertEquals(Verdict.RING, d.verdict)          // warn-but-ring, never silence
+        assertEquals(WarnReason.HIGH_RISK_HOUR_DOMESTIC, d.warning)
     }
 
     @Test fun afternoon_peak_gets_warning() {
@@ -734,9 +755,12 @@ class CallDecisionTest {
         assertEquals(WarnReason.HIGH_RISK_HOUR_DOMESTIC, d.warning)
     }
 
-    @Test fun hour_12_is_outside_high_risk() {
+    @Test fun hour_12_is_inside_high_risk() {
+        // Boundary: 12:00-12:59 is INSIDE the 09:00-12:00 window as the police
+        // advisory defines it. Asserting the opposite is what the off-by-one
+        // fix corrected — see midday_is_inside_high_risk above.
         val d = decide(call("09012345678").copy(nowMillis = jstHour(12)), emptyState)
-        assertNull(d.warning)
+        assertEquals(WarnReason.HIGH_RISK_HOUR_DOMESTIC, d.warning)
     }
 
     @Test fun hour_13_is_inside_high_risk() {
@@ -749,9 +773,11 @@ class CallDecisionTest {
         assertEquals(WarnReason.HIGH_RISK_HOUR_DOMESTIC, d.warning)
     }
 
-    @Test fun hour_16_is_outside_high_risk() {
+    @Test fun hour_16_is_inside_high_risk() {
+        // Boundary: 16:00-16:59 is INSIDE the 13:00-16:00 window. Same off-by-one
+        // fix as hour 12.
         val d = decide(call("09012345678").copy(nowMillis = jstHour(16)), emptyState)
-        assertNull(d.warning)
+        assertEquals(WarnReason.HIGH_RISK_HOUR_DOMESTIC, d.warning)
     }
 
     // --- callingCodeOf --------------------------------------------------------
