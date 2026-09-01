@@ -72,6 +72,29 @@
     しかも「正直に」する唯一の方法は Kotlin を走らせることで、その時点で冗長になる。
   - **チェックの削除はメンテナの判断**なので独断では行わない。
 
+### 1-14. リリース版数が3方向で食い違っていた【✅ 2026-07 解決 + ゲート化】
+- **発見経緯**: 「判断を要さない技術作業はゼロ」という自分の完成宣言を検証するため、
+  **一度も監査していない領域**(ストア公開用メタデータ)を点検して発覚。
+- **事象**: v1.6.0 リリースとして準備してきたのに、**実際にビルドされる APK は 1.1.0 を名乗る**状態だった。
+
+  | 出典 | 主張 |
+  |---|---|
+  | `app/build.gradle.kts`(**APK の実体**) | **1.1.0** / versionCode 2 |
+  | CHANGELOG / README / RELEASING / 公開済み `v1.6.0` ref | **1.6.0** |
+  | `metadata/com.orange.apple.yml`(F-Droid) | **1.0.0** / code 1 / `commit: v1.0.0`(**存在しないタグ**) |
+
+- **併発していた欠陥**: F-Droid メタデータに **`OWNER` プレースホルダが4箇所未置換**
+  (`https://github.com/OWNER/orange` = 存在しない URL)、リポジトリ名の大文字小文字違い、
+  versionCode 名の fastlane changelog(`3.txt`)欠落。
+- **修正**: `versionName = "1.6.0"` / `versionCode = 3`(1→1.0.0、2→1.1.0 の履歴に従う)、
+  F-Droid を実 URL と 1.6.0/3 と `commit: v1.6.0` に、`changelogs/3.txt` を既存書式で新規作成。
+- **✅ 再発防止をゲート化**: `check_comprehensive.sh` に **12/13「Version identity」**を追加。
+  versionName↔CHANGELOG 最新、F-Droid CurrentVersion/Code↔build.gradle、
+  versionCode 名の changelog 存在、`OWNER` 残存 を検査し**不一致で exit 1**。
+  負のテストで双方向を実証済み(1.5.0 に戻す→FAIL 2件、OWNER を戻す→FAIL 1件、復元→exit 0)。
+- **教訓**: 「完成した」という自分の宣言こそ最も検証すべき主張だった。**未監査領域は
+  監査済み領域より危険**であり、しかもこれは**出荷物そのもの**の誤りだった。
+
 ### 1-2. business_directory.csv 残り約73エントリの偽装リスク監査【✅ 2026-07 判断基準を確立・現状維持が正しいと確認】
 - **場所**: `app/src/main/assets/business_directory.csv`(Layer 5 = 無条件サイレント信頼。警告なしで着信、STIR/SHAKEN 失敗すら無視)。
 - **経緯**: 警察庁・国税庁がこのバンドルに誤って入っていた(= 偽装されても警告ゼロ)バグを発見・修正済み。警察庁 → `PoliceStationDirectory.kt`、国税庁 → `TaxAgencyDirectory.kt` に移し、「鳴らすが警告する」レーンへ変更した。

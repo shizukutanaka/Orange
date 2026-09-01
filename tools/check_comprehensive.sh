@@ -11,38 +11,38 @@ TEST="app/src/test/java/com/orange/apple"
 RES="app/src/main/res"
 FAIL=0
 
-echo "=== 1/12. Privacy guard ==="
+echo "=== 1/13. Privacy guard ==="
 bash tools/check_no_network.sh app/src/main || FAIL=1
 
-echo "=== 2/12. R.string coverage ==="
+echo "=== 2/13. R.string coverage ==="
 for str in $(grep -ohP 'R\.string\.\K\w+' "$MAIN"/*.kt 2>/dev/null | sort -u); do
     if ! grep -q "name=\"$str\"" "$RES/values/strings.xml"; then
         echo "FAIL: R.string.$str not declared"; FAIL=1
     fi
 done
 
-echo "=== 3/12. R.color coverage ==="
+echo "=== 3/13. R.color coverage ==="
 for col in $(grep -ohP '@color/\K\w+' "$RES/values/themes.xml" 2>/dev/null | sort -u); do
     if ! grep -q "name=\"$col\"" "$RES/values/colors.xml"; then
         echo "FAIL: @color/$col not declared"; FAIL=1
     fi
 done
 
-echo "=== 4/12. Manifest class definitions ==="
+echo "=== 4/13. Manifest class definitions ==="
 for cls in $(grep -oP 'android:name="\.\K[^"]+' app/src/main/AndroidManifest.xml); do
     if ! grep -rql "class $cls" "$MAIN/"*.kt 2>/dev/null; then
         echo "FAIL: Manifest .$cls has no class"; FAIL=1
     fi
 done
 
-echo "=== 5/12. Emergency coverage ==="
+echo "=== 5/13. Emergency coverage ==="
 for n in 110 119 118 911 112 999 000; do
     if ! grep -q "\"$n\"" "$MAIN/EmergencyWhitelist.kt"; then
         echo "FAIL: Emergency $n missing"; FAIL=1
     fi
 done
 
-echo "=== 6/12. BlockReason + WarnReason test coverage ==="
+echo "=== 6/13. BlockReason + WarnReason test coverage ==="
 for reason in SPAM_CACHE FOREIGN_ELEVATED FOREIGN_GENERIC DOMESTIC_SPOOF WANGIRI_CALLBACK CARRIER_VERIFICATION_FAILED WITHHELD_NUMBER PREMIUM_RATE_INTERNATIONAL DND_HONOR REPEAT_CALLER; do
     if ! grep -rq "BlockReason\.$reason" "$TEST/"*.kt 2>/dev/null; then
         echo "FAIL: BlockReason.$reason has no test assertion"; FAIL=1
@@ -54,7 +54,7 @@ for warn in POLICE_IMPERSONATION POLICE_IMPERSONATION_HIGH HIGH_RISK_HOUR_DOMEST
     fi
 done
 
-echo "=== 7/12. Cross-file class references ==="
+echo "=== 7/13. Cross-file class references ==="
 for cls in EmergencyWhitelist DomesticSpoofDetector ScamPrefixSeed BusinessDirectoryBundle \
            SpamCache WangiriTracker NotificationRateLimiter PauseTile RoleMonitor TrustNotifier \
            SilentBlockerService OnboardingActivity OrangeWidget CallStateObserver WeeklyDigest \
@@ -71,7 +71,7 @@ if [ ! -f "$MAIN/CallDecision.kt" ]; then
     echo "FAIL: CallDecision.kt missing"; FAIL=1
 fi
 
-echo "=== 8/12. Decision oracle (behavioral tripwire) ==="
+echo "=== 8/13. Decision oracle (behavioral tripwire) ==="
 if command -v python3 >/dev/null 2>&1; then
     if ! python3 tools/oracle_decision.py; then
         echo "FAIL: decision oracle detected a behavioral regression"; FAIL=1
@@ -80,7 +80,7 @@ else
     echo "SKIP: python3 not available (oracle runs in CI)"
 fi
 
-echo "=== 9/12. Business directory integrity ==="
+echo "=== 9/13. Business directory integrity ==="
 CSV="app/src/main/assets/business_directory.csv"
 if [ -f "$CSV" ]; then
     # Duplicate E.164 keys cause the later entry to silently overwrite the earlier
@@ -103,7 +103,7 @@ else
     FAIL=1
 fi
 
-echo "=== 10/12. Locale key parity (en / ja / zh / ko) ==="
+echo "=== 10/13. Locale key parity (en / ja / zh / ko) ==="
 # Hard failure, deliberately. tools/check_static.sh used to check this as a
 # WARN and that is exactly how zh/ko once shipped 21 keys short, silently
 # falling back to English in the Settings, tax-warning and outbound-warning UI.
@@ -122,7 +122,7 @@ for _loc in values-ja values-zh values-ko; do
     fi
 done
 
-echo "=== 11/12. Doc/data count drift ==="
+echo "=== 11/13. Doc/data count drift ==="
 # This repo produces one defect class over and over: a count stated in prose
 # drifts from the data it describes. Fixed by hand this session alone: police
 # numbers 47->54, ADRs 11->12, test count 199->276->285, and the privacy
@@ -155,7 +155,29 @@ done
 _pm_actual=$(grep -cE '^[0-9]+\. \*\*' PRIVACY_MANIFESTO.md)
 [ "$_pm_actual" -ne 10 ] && { echo "FAIL: PRIVACY_MANIFESTO has $_pm_actual items; README/CONTRIBUTING describe 10 (8 refusals + 2 bounded)"; FAIL=1; }
 
-echo "=== 12/12. Required documentation present ==="
+echo "=== 12/13. Version identity (APK / CHANGELOG / store metadata) ==="
+# Version identity must agree across the APK, the changelog and both store
+# metadata sets. It did not (2026-07): build.gradle.kts said 1.1.0/code 2 while
+# CHANGELOG, README and RELEASING all said 1.6.0, and the F-Droid file still said
+# 1.0.0 with a commit tag that never existed — so the "v1.6.0 release" would have
+# shipped an APK calling itself 1.1.0.
+_vn=$(grep -oE 'versionName = "[0-9.]+"' app/build.gradle.kts | grep -oE '[0-9.]+')
+_vc=$(grep -oE 'versionCode = [0-9]+' app/build.gradle.kts | grep -oE '[0-9]+')
+_cl=$(grep -oE '^## \[[0-9.]+\]' CHANGELOG.md | head -1 | grep -oE '[0-9.]+')
+[ "$_vn" != "$_cl" ] && { echo "FAIL: versionName $_vn != newest CHANGELOG entry $_cl"; FAIL=1; }
+_fd=$(grep -oE 'CurrentVersion: [0-9.]+' metadata/com.orange.apple.yml | grep -oE '[0-9.]+')
+[ "$_fd" != "$_vn" ] && { echo "FAIL: F-Droid CurrentVersion $_fd != versionName $_vn"; FAIL=1; }
+_fdc=$(grep -oE 'CurrentVersionCode: [0-9]+' metadata/com.orange.apple.yml | grep -oE '[0-9]+')
+[ "$_fdc" != "$_vc" ] && { echo "FAIL: F-Droid CurrentVersionCode $_fdc != versionCode $_vc"; FAIL=1; }
+# Play/F-Droid changelogs are named by versionCode; the current one must exist.
+[ ! -f "fastlane/metadata/android/changelogs/$_vc.txt" ] && \
+    { echo "FAIL: fastlane/metadata/android/changelogs/$_vc.txt missing for versionCode $_vc"; FAIL=1; }
+# Unreplaced scaffold placeholders in shipped metadata.
+if grep -q "OWNER" metadata/com.orange.apple.yml; then
+    echo "FAIL: metadata/com.orange.apple.yml still contains the OWNER placeholder"; FAIL=1
+fi
+
+echo "=== 13/13. Required documentation present ==="
 for doc in README.md PRIVACY_MANIFESTO.md HONESTY_ADDENDUM.md THREAT_MODEL.md \
            DESIGN_NOTES.md RESEARCH_BASIS.md CHANGELOG.md SECURITY.md \
            CONTRIBUTING.md DEVELOPING.md LICENSE \
