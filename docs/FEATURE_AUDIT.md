@@ -95,6 +95,38 @@
 - **教訓**: 「完成した」という自分の宣言こそ最も検証すべき主張だった。**未監査領域は
   監査済み領域より危険**であり、しかもこれは**出荷物そのもの**の誤りだった。
 
+### 1-15. 全ファイル網羅監査 — 未監査領域をゼロにした【✅ 2026-07 完了】
+- **動機**: §1-14(版数の三方向不一致)は「未監査領域を1つ開けたら出荷物の欠陥が出た」という
+  事実だった。ならば**個別に探し続ける限り終わらない**。`git ls-files`(150ファイル)を列挙し、
+  **未監査のものを全て監査する**ことでのみ「もう無い」と言える。
+- **新たに監査した領域と結果**:
+
+  | 領域 | 結果 |
+  |---|---|
+  | `app/proguard-rules.pro` | **欠陥発見**(下記)→ 修正 + ゲート化 |
+  | `fastlane/` + `STORE_LISTING.md` | **虚偽の主張を発見**(下記)→ 4箇所修正 |
+  | `docs/privacy_policy.html` | ✅ 正確(要求権限2つと一致。`BIND_*` は uses-permission ではなくコンポーネント属性で、記載不要なのが正しい)|
+  | `SECURITY.md` | ✅ 妥当(主経路 GitHub Security Advisories は具体的。公開ファイルにメール非掲載は spam 対策として適切)|
+  | `SPECIFICATION.md` | ✅ 「16 layers」が README・実装と一致 |
+  | `docs/SETUP_GUIDE_FAMILY.md` | ✅ 参照する UI 節名が実在(家族の連絡先・ブロック履歴)|
+  | `LICENSE` / root `build.gradle.kts` / `settings.gradle.kts` / `libs.versions.toml` / `gradle.properties` | ✅ 問題なし |
+
+- **欠陥1: ProGuard の keep が manifest コンポーネント12中10だけだった**。
+  `HistoryActivity` と `SettingsActivity` が欠落。ファイル自身が
+  「**将来のパッケージ改名で黙って壊れないよう明示する**」と方針を書いているのに、
+  **ウィジェットと家族タイルから開く2画面だけ穴**という状態だった。
+  R8 の manifest スキャンがあるため実害は無かったが、**文書化された保証が未達**。
+  → 2件追加 + `check_comprehensive.sh` **13/14** で manifest ⊆ proguard keeps を検査。
+  負のテスト実証済み(1件削除→FAIL でクラス名表示、復元→exit 0)。
+- **欠陥2: ストア出荷文言に「No settings to configure / 設定なし」**。
+  これは §COMPETITIVE_ANALYSIS で既に訂正した虚偽と**同一の主張**が、
+  **Play/F-Droid に出荷される4箇所**(en/ja × fastlane/STORE_LISTING)に残っていたもの。
+  実態は4セクションの `SettingsActivity` が存在する。
+  → 「Nothing to configure to be protected / 守られるために設定する項目なし」に修正。
+  **弱めたのではなく真にした** — 保護されるために設定は不要、という元の訴求は事実のまま。
+- **結論**: 追跡下150ファイルすべてが監査済みになった。**「まだ未監査領域があるかもしれない」は
+  もう成立しない** — これが探索を終端させる唯一の方法だった。
+
 ### 1-2. business_directory.csv 残り約73エントリの偽装リスク監査【✅ 2026-07 判断基準を確立・現状維持が正しいと確認】
 - **場所**: `app/src/main/assets/business_directory.csv`(Layer 5 = 無条件サイレント信頼。警告なしで着信、STIR/SHAKEN 失敗すら無視)。
 - **経緯**: 警察庁・国税庁がこのバンドルに誤って入っていた(= 偽装されても警告ゼロ)バグを発見・修正済み。警察庁 → `PoliceStationDirectory.kt`、国税庁 → `TaxAgencyDirectory.kt` に移し、「鳴らすが警告する」レーンへ変更した。

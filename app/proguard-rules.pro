@@ -21,6 +21,15 @@
 -keep class com.orange.apple.WeeklyDigest { *; }
 -keep class com.orange.apple.FamilyCallbackTile { *; }
 -keep class com.orange.apple.EngineWarmup { *; }
+# HistoryActivity and SettingsActivity were missing from this list until 2026-07
+# while the other ten were present — so the "future package rename doesn't
+# silently break" guarantee above had a hole in exactly the two screens a user
+# reaches from the widget and the family tile. R8's manifest scanning meant no
+# live bug, but the stated protection was not what the comment claimed.
+# check_comprehensive.sh 13/14 now asserts this list covers every manifest
+# component, so the two can't drift apart again.
+-keep class com.orange.apple.HistoryActivity { *; }
+-keep class com.orange.apple.SettingsActivity { *; }
 
 # --- Kotlin reflection: we don't use it. If code below breaks, that's the
 # bug, not a missing keep rule. Keeping this comment as a tripwire for
