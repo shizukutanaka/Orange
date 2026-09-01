@@ -21,21 +21,37 @@
 # ------------------
 # Runs the tests whose transitive dependencies are either Android-free OR touch
 # only android.content.SharedPreferences (+ androidx.core.content.edit,
-# android.util.Base64, android.security.keystore.* for SaltVault). That covers
-# the whole decision engine, the numbering-plan / directory logic, and the
-# SharedPreferences-backed stores (SpamCache, OutboundGuard, WangiriTracker,
-# RepeatCallerTracker, NotificationRateLimiter, AllowSuffixStore,
-# BlockHistoryStore). Tests that need NotificationManager / NotificationCompat /
-# Context / Activity / Service / Widget (WarningNotifier, ManualBlock,
-# FamilyCallback, TrustNotifier, BusinessDirectoryBundle, the UI classes) still
-# require a real `./gradlew testReleaseUnitTest` with the SDK.
+# android.util.Base64, android.security.keystore.* for SaltVault), plus anything
+# reachable through a CONSTANTS-ONLY stub. That is 24 of the repo's 33 test
+# files: the whole decision engine (CallDecisionTest's 111 cases,
+# EngineInvariantTest, DecisionPriorityTest, PhoneVariantsTest), the
+# numbering-plan and directory logic, and the SharedPreferences-backed stores.
+#
+# The other 9 were each measured (2026-07), not guessed, and every one needs a
+# stub that would carry BEHAVIOUR — which is where this script stops, because a
+# stub with behaviour is a place for a false pass to hide:
+#   ManualBlockTest              ManualBlock cascades into BusinessDirectoryBundle.load
+#                                (reads assets) and SilentBlockerService.screenIncoming
+#   FamilyCallbackTest           calls only the pure normalizeAndValidate, but compiling
+#                                FamilyCallback.kt needs PendingIntent/TileService/Uri/Intent
+#   PauseTileTest                TileService/Tile/Icon, and executes onClick
+#   WarningNotifierRateLimitTest really invokes showOutboundWarning/showHighRiskHourWarning,
+#                                so it needs the whole NotificationCompat.Builder chain
+#   BusinessDirectoryBundleTest  Context + asset loading
+#   CallStateObserverTest        Context + the real service
+#   PostCallAdvisorTest          Context
+#   TrustNotifierTest            Context + NotificationManager
+#   WeeklyDigestTest             Context + NotificationManager
+# These are covered by CI's android-build job (./gradlew testReleaseUnitTest on a
+# real SDK). The boundary above is measured; re-deriving it is wasted effort —
+# to move it, use an SDK, not a bigger shim.
 #
 # The Android shim is type-signatures only (the one behavioural stub, Base64,
 # delegates to java.util.Base64; SaltVault's KeyStore.getInstance("AndroidKeyStore")
 # throws on the JVM and it falls back to a plaintext salt before any keystore
 # type is instantiated). No stub carries business logic, so none can mask a bug.
 #
-# EXPECTED: 419 tests run, 0 failures. (Two DomesticSpoofDetector tests spent a
+# EXPECTED: 435 tests run, 0 failures. (Two DomesticSpoofDetector tests spent a
 # while intentionally failing as the visible signal of a design question; ITU-T
 # E.164 settled it — the leading 0 is a trunk prefix, so the abstain is the
 # contract being honoured — and the tests now assert the correct behaviour with
@@ -146,6 +162,12 @@ internal object SilentBlockerService {
     const val PREFS = "orange_apple"; const val KEY_OUTBOUND = "outbound"
     const val KEY_SPAM = "spam"; const val KEY_COUNT = "count"
 }
+// Same treatment for RoleMonitor: the real object pulls in RoleManager,
+// AppWidgetManager, BroadcastReceiver and ComponentName, but RoleMonitorTest
+// only ever touches this one constant plus FakePrefs — the RoleManager
+// interaction is explicitly out of scope there ("we deliberately avoid
+// Robolectric"). Constants only, so it carries no behaviour to get wrong.
+internal object RoleMonitor { const val KEY_ROLE_HELD = "role_held" }
 KOTLIN
 
 # --- Compile main (decision engine + SharedPreferences-backed stores) -------
@@ -173,13 +195,14 @@ TEST_SRCS=(
   # Engine-level suites. CallDecisionTest alone is 111 tests over decide() —
   # the product's core — and had never been executed by anything.
   "$T/CallDecisionTest.kt" "$T/EngineInvariantTest.kt" "$T/ComponentTests.kt"
-  "$T/WangiriCallbackWarningTest.kt" "$T/SaltVaultTest.kt"
+  "$T/WangiriCallbackWarningTest.kt" "$T/SaltVaultTest.kt" "$T/PhoneVariantsTest.kt"
+  "$T/RoleMonitorTest.kt" "$T/PhoneVariantsTest.kt"
 )
 echo "==> compiling ${#TEST_SRCS[@]} test sources"
 KC "${TEST_SRCS[@]}" -d "$OUT/test" -no-reflect \
    -classpath "$OUT/main:$STDLIB:$JUNIT:$HAMCREST:$OUT/shimjava-out" -Xfriend-paths="$OUT/main"
 
-echo "==> running tests (expected steady state: 419 run / 0 failures)"
+echo "==> running tests (expected steady state: 435 run / 0 failures)"
 CLASSES=$(cd "$OUT/test" && find . -name '*Test.class' | sed 's|^\./||;s|\.class$||;s|/|.|g' | tr '\n' ' ')
 set +e
 RESULT=$(java -cp "$OUT/main:$OUT/test:$STDLIB:$JUNIT:$HAMCREST:$OUT/shimjava-out" org.junit.runner.JUnitCore $CLASSES 2>&1 | grep -v 'JAVA_TOOL_OPTIONS')

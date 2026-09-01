@@ -154,7 +154,7 @@ warn ディレクトリへ、満たさないなら CSV へ、と振り分けれ�
   - 1件: 今セッションの意図的変更(高リスク時間帯警告が Pause 中も残る)による陳腐化テスト → 修正済み。
   - 3件: **非現実的なタイムスタンプに起因する脆いテスト**(本番コードは正しいことをプローブで確認)→ 修正済み(下記「解消済み」)。
   - 2件: **DomesticSpoofDetector の設計判断**(§1-7)→ 意図的に失敗のまま残置。
-- **現在の期待値**: `bash tools/run-pure-tests.sh` → **419 run / 0 failures**(§1-7 の意図的失敗2件は E.164 決着後にテスト側を修正して green 化)。スクリプトの終了コード契約は「ALLOWED リスト外の失敗で exit 1」で、**ALLOWED は現在空** = いかなる失敗も回帰。
+- **現在の期待値**: `bash tools/run-pure-tests.sh` → **435 run / 0 failures**(§1-7 の意図的失敗2件は E.164 決着後にテスト側を修正して green 化)。スクリプトの終了コード契約は「ALLOWED リスト外の失敗で exit 1」で、**ALLOWED は現在空** = いかなる失敗も回帰。
 - **`.githooks/pre-push` に配線済み**: `./gradlew` + wrapper jar があれば従来どおり `testReleaseUnitTest`(全件)。無ければ(fresh clone / SDK 無しサンドボックス等)`run-pure-tests.sh` を実行して push をゲートする。これにより「テストが一度も走らないまま push される」状態を、SDK が無い環境でも部分的に解消。**CI(`.github/workflows/` 復活時)にも同じランナーを組み込むこと**(§5 対応推奨順)。
 
 ### 1-7. DomesticSpoofDetector が先頭ゼロ無し/短縮番号を棄権する【✅ 2026-07 解決済み】

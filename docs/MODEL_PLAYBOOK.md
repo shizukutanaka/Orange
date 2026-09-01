@@ -33,8 +33,8 @@ FEATURE_AUDIT は「何が未解決か」を担当する。
 
 | # | 弱点 | 状態 |
 |---|------|------|
-| ~~W1~~ | ~~テストが CI で一度も実行されていなかった~~ | **✅ 解決(2026-07)**。CI を作成(除外は初回コミットからの事故と判明、§1-6)。**`docs/ci/ci.yml` に待機中** — App トークンに `workflows` 権限が無いため、人間が `git mv` して push すると有効。static / unit-tests(419) / android-build の3ジョブ。`.githooks/` は**オプトイン**なので CI が迂回不能な版。WarningNotifier/UI 等 Context 大量依存は `android-build` ジョブの `testReleaseUnitTest` がカバー |
-| ~~W2~~ | ~~bare NSN の棄権 vs 失敗する2テスト~~ | **✅ 解決(2026-07)**。ITU-T E.164 で棄権が契約上正しいと確定 → **テスト側を修正**(分析全文をテストコメントに移植)。スイートは **419/0 green**、ランナーの ALLOWED リストは空 = 以後いかなる失敗も回帰 |
+| ~~W1~~ | ~~テストが CI で一度も実行されていなかった~~ | **✅ 解決(2026-07)**。CI を作成(除外は初回コミットからの事故と判明、§1-6)。**`docs/ci/ci.yml` に待機中** — App トークンに `workflows` 権限が無いため、人間が `git mv` して push すると有効。static / unit-tests(435) / android-build の3ジョブ。`.githooks/` は**オプトイン**なので CI が迂回不能な版。WarningNotifier/UI 等 Context 大量依存は `android-build` ジョブの `testReleaseUnitTest` がカバー |
+| ~~W2~~ | ~~bare NSN の棄権 vs 失敗する2テスト~~ | **✅ 解決(2026-07)**。ITU-T E.164 で棄権が契約上正しいと確定 → **テスト側を修正**(分析全文をテストコメントに移植)。スイートは **435/0 green**、ランナーの ALLOWED リストは空 = 以後いかなる失敗も回帰 |
 | ~~W3~~ | ~~宅配・メガバンクがサイレント信頼のまま~~ | **✅ 解決(2026-07)**。A/B/C の3条件基準を確立し**現状配置が正しい**と確認(§1-2)。宅配は攻撃ベクターが SMS で Orange が構造的に観測不能、銀行は代表番号偽装が手口の中核でない |
 | ~~W4~~ | ~~かけ直しに事実誤りの発信警告~~ | **✅ 修正済み(2026-07)**。スプーフィングは着信のみ=かけ直すと本物に繋がるため、警察/税務署の `OutboundGuard.record()` を削除(§2-4)。高リスク時間帯は未知番号なので維持 |
 | ~~W5~~ | ~~インサイダー脅威への防御なし~~ | **✅ 解決(2026-07)**。USC/NCEA 統計(家族が最頻・被害額3倍)を踏まえ **THREAT_MODEL に対象外の敵対者として明記** + HONESTY_ADDENDUM §14。PIN は**意図的に不採用**(物理アクセスに無力・介護者支援を破壊・セキュリティシアター)|
@@ -46,7 +46,16 @@ FEATURE_AUDIT は「何が未解決か」を担当する。
 ## 3. 改善案(優先度順。着手条件を守ること)
 
 ### 今すぐ着手可(判断不要・機械的)
-1. ~~**ストア層テストの実行拡張**~~ **実装済み(2026-07)**: `run-pure-tests.sh` が最小 Android 型スタブ(heredoc 生成・非コミット)でストア層も実行、計419テスト。脆いテスト3件・設計矛盾テスト1件を修正済み。**次のフロンティア**: WarningNotifier/ManualBlock/FamilyCallback/TrustNotifier/BusinessDirectoryBundle/UI 各種(NotificationManager・NotificationCompat・Context 大量依存)。スタブ面が過大で偽陽性リスクが高いため、これらは実機/SDK 有りの `./gradlew testReleaseUnitTest` に委ねるのが妥当(無理にスタブ化しない)。
+1. ~~**ストア層テストの実行拡張**~~ **実装済み(2026-07)**: `run-pure-tests.sh` が最小 Android 型スタブ(heredoc 生成・非コミット)でストア層も実行、計435テスト。脆いテスト3件・設計矛盾テスト1件を修正済み。**境界は実測済み — 再測定は不要**(2026-07): 33テストファイル中 **24 を実行**。残る9件は
+   1件ずつ阻害要因を測定した結果、**すべて「挙動を持つスタブ」が必須**と判明した
+   (挙動を持つスタブは偽陽性の隠れ場所なので、ここが線):
+   `ManualBlockTest`=BusinessDirectoryBundle.load(assets読込)+SilentBlockerService.screenIncoming へカスケード /
+   `FamilyCallbackTest`=呼ぶのは純関数だが FamilyCallback.kt のコンパイルに PendingIntent/TileService/Uri/Intent /
+   `PauseTileTest`=TileService/Tile/Icon + onClick 実行 /
+   `WarningNotifierRateLimitTest`=show 系を**実呼び出し**するため NotificationCompat.Builder チェーン一式 /
+   BusinessDirectoryBundle/CallStateObserver/PostCallAdvisor/TrustNotifier/WeeklyDigest=Context・NotificationManager・assets。
+   これらは CI の `android-build`(実 SDK の `testReleaseUnitTest`)がカバーする。
+   **境界を動かすなら SDK を使うこと。シムを太らせない。**
 2. ~~**ドキュメント数値の定期突き合わせ**~~ → **自動化済み(2026-07)**。`check_comprehensive.sh` の
    **11/12「Doc/data count drift」**が ADR 数・警察ディレクトリ件数・高リスク国番号数・
    マニフェスト項目数をコードから抽出して文書の主張と突き合わせ、**不一致で exit 1**。
@@ -80,7 +89,7 @@ FEATURE_AUDIT は「何が未解決か」を担当する。
 ### Opus/Sonnet 共通の作業手順(このセッションで有効だった規律)
 1. 開始時に `docs/FEATURE_AUDIT.md` を読む(再発見の無駄と制約違反を防ぐ)。
 2. 変更は小さく、**1論点=1コミット**。コミットメッセージに「何が矛盾していたか」を書く(将来の再発見防止)。
-3. 検証: Gradle ビルドはサンドボックスで不可 → `bash tools/run-pure-tests.sh`(419テスト、SDK不要)+ 机上トレース。**push 後は CI(`ci.yml`)が全ゲート + SDK 有りの完全ビルドを回す**ので、サンドボックスで検証できなかった部分はそこで確認できる。
+3. 検証: Gradle ビルドはサンドボックスで不可 → `bash tools/run-pure-tests.sh`(435テスト、SDK不要)+ 机上トレース。**push 後は CI(`ci.yml`)が全ゲート + SDK 有りの完全ビルドを回す**ので、サンドボックスで検証できなかった部分はそこで確認できる。
 4. 発見した問題は3分類 — **機械的に直せる**(直す)/**陳腐化**(記録どおり更新)/**設計判断**(FEATURE_AUDIT に記録して止まる)。テストの assertion を黙って実装に合わせる改変は禁止(gap の隠蔽)。
 5. 迷ったら削る方向へ(DESIGN_NOTES の subtraction 哲学)。機能追加 PR より削除 PR が歓迎される製品。
 
@@ -96,9 +105,9 @@ FEATURE_AUDIT は「何が未解決か」を担当する。
 
 ```bash
 # 純粋ロジック層のテスト実行(SDK 不要、~0.2秒)
-bash tools/run-pure-tests.sh          # 期待値: 419 run / 0 failures(いかなる失敗も回帰)
+bash tools/run-pure-tests.sh          # 期待値: 435 run / 0 failures(いかなる失敗も回帰)
 # CI と同じ全ゲートをローカルで:
-bash .githooks/pre-push               # privacy guard → oracle 31 → 419 tests
+bash .githooks/pre-push               # privacy guard → oracle 31 → 435 tests
 
 # ロケール4ファイルのキー集合一致
 cd app/src/main/res && for f in values values-ja values-zh values-ko; do \
