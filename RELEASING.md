@@ -10,15 +10,19 @@ down. Work top to bottom.
 | # | Action | Time | Why it wasn't done here |
 |---|--------|------|--------------------------|
 | 1 | Activate CI (`git mv docs/ci/ci.yml .github/workflows/ci.yml`) | 30 s | The session's GitHub App token lacks the `workflows` permission; GitHub rejects any push touching `.github/workflows/*` |
-| 2 | Merge `claude/sleepy-hypatia-o9gwuv` into `main` | 1 min | Branch-scoped push policy; the session may only push its own branch |
+| 2 | ~~Merge `claude/sleepy-hypatia-o9gwuv` into `main`~~ | — | **Done** (PR #4, merge commit `b513490`). Kept in the list so the numbering below still matches |
 | 3 | Enable GitHub Pages (Settings → Pages → `main` / `/docs`) | 30 s | Repo settings are not reachable from the session's toolset |
 | 4 | Tag `v1.6.0`, cut the GitHub Release, attach a signed APK | ~2 min | Three independent hard blockers — see the table further down |
-| 5 | Decide the two intentionally-failing tests (§1-7) | your call | The only genuine open **decision**; a recommendation is written up in `docs/FEATURE_AUDIT.md` §1-7 |
 
-Steps 1–4 are described in full below. Step 5 is the sole item that wants your
-judgement rather than your hands, and the analysis argues for fixing the tests
-rather than the code (ITU-T E.164 says the current abstain is contractually
-correct).
+Steps 1, 3 and 4 are described in full below. All three are mechanical.
+
+**The open product decisions live elsewhere.** This file used to carry one
+("decide the two intentionally-failing `DomesticSpoofDetector` tests") — that is
+**resolved**: both now assert the abstain with the ITU-T E.164 reasoning written
+into the test body, and the suite runs 435/0 with an empty allowed-failure list.
+The four decisions that genuinely remain are W6, W8, §1-12 and §1-13, each with
+its options and evidence laid out in `docs/MODEL_PLAYBOOK.md`. **None of them
+blocks a release** — they are direction, not defects.
 
 ## 1. Activate CI
 
@@ -33,8 +37,8 @@ git commit -m "ci: activate workflow" && git push
 ```
 
 From that commit on, every push and PR runs: the static gates (privacy guard,
-decision oracle, 11/11 comprehensive checks, locale key parity across
-en/ja/zh/ko, XML + JSON validity), the SDK-free 285-test suite, and the full
+decision oracle, 14/14 comprehensive checks, locale key parity across
+en/ja/zh/ko, XML + JSON validity), the SDK-free 435-test suite, and the full
 Android build (`testReleaseUnitTest` → `lintRelease` → `assembleRelease` → APK
 size budget), uploading the APK as an artifact.
 
@@ -42,10 +46,11 @@ This matters more than it looks: `.githooks/` only protects people who ran
 `git config core.hooksPath .githooks`. A fresh clone has nothing. CI is the
 copy that cannot be skipped.
 
-## 2. Merge to `main`
+## 2. Merge to `main` — done
 
 `main` is the default branch and is what Pages (step 3) and most visitors see.
-The release work all lives on `claude/sleepy-hypatia-o9gwuv`.
+The release work was merged there via PR #4 (merge commit `b513490`), so steps 3
+and 4 below act on `main` directly.
 
 ## 3. Enable GitHub Pages — publishes the privacy policy
 
@@ -77,8 +82,9 @@ in sync with the code (see this session's commits).
 excluded … so there's no CI this runbook is standing in for." That was wrong on
 both counts. The exclusion came from the initial commit, filed under an
 unrelated heading with no rationale, while the same `.gitignore` assumed a CI
-existed — see `.github/workflows/ci.yml`. CI now runs the static gates, the
-285-test SDK-free suite, and the full Android build.)
+existed. The workflow now lives at `docs/ci/ci.yml` until step 1 activates it,
+and runs the static gates, the
+435-test SDK-free suite, and the full Android build.)
 
 What IS already public and needs no further action: the source (public
 repo), the immutable `v1.6.0` ref + its verified-downloadable source
@@ -91,7 +97,6 @@ The steps below upgrade that from "published source + announcement" to
 ```bash
 git clone https://github.com/shizukutanaka/Orange.git
 cd Orange
-git checkout claude/sleepy-hypatia-o9gwuv
 
 # 1. Tag the release (already-written CHANGELOG.md entry: v1.6.0)
 git tag -a v1.6.0 -m "Orange v1.6.0 — see CHANGELOG.md"

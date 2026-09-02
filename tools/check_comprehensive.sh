@@ -152,6 +152,28 @@ for _f in README.md SPECIFICATION.md; do
     [ -n "$_cc_doc" ] && _drift "Elevated-risk country codes" "$_cc_actual" "$_f" "$_cc_doc"
 done
 
+# The comment above names "test count 199->276->285" as a repeat offender, yet
+# no assertion covered it — and it drifted again (RELEASING.md still advertised
+# a 285-test suite after the runner reached 435). The runner's own runtime
+# message is the source of truth; every present-tense restatement must match it.
+# Scope is deliberately narrow: FEATURE_AUDIT/CHANGELOG cite old counts as
+# HISTORY ("199 -> 285 this session"), which is correct prose, not drift.
+_tc_actual=$(grep -oE 'expected steady state: [0-9]+ run' tools/run-pure-tests.sh \
+             | grep -oE '[0-9]+' | head -1)
+if [ -z "$_tc_actual" ]; then
+    echo "FAIL: could not read the expected test count from tools/run-pure-tests.sh"; FAIL=1
+else
+    _tc_hdr=$(grep -oE '^# EXPECTED: [0-9]+ tests run' tools/run-pure-tests.sh | grep -oE '[0-9]+')
+    _drift "Test count (runner header vs runtime message)" \
+           "$_tc_actual" "tools/run-pure-tests.sh header" "$_tc_hdr"
+    for _n in $(grep -oE '[0-9]+[- ]test' RELEASING.md | grep -oE '^[0-9]+'); do
+        _drift "Test count" "$_tc_actual" "RELEASING.md" "$_n"
+    done
+    for _n in $(grep -oE '[0-9]+ expected green' docs/ci/ci.yml | grep -oE '^[0-9]+'); do
+        _drift "Test count" "$_tc_actual" "docs/ci/ci.yml" "$_n"
+    done
+fi
+
 _pm_actual=$(grep -cE '^[0-9]+\. \*\*' PRIVACY_MANIFESTO.md)
 [ "$_pm_actual" -ne 10 ] && { echo "FAIL: PRIVACY_MANIFESTO has $_pm_actual items; README/CONTRIBUTING describe 10 (8 refusals + 2 bounded)"; FAIL=1; }
 
