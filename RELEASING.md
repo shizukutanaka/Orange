@@ -20,9 +20,12 @@ Steps 1, 3 and 4 are described in full below. All three are mechanical.
 ("decide the two intentionally-failing `DomesticSpoofDetector` tests") — that is
 **resolved**: both now assert the abstain with the ITU-T E.164 reasoning written
 into the test body, and the suite runs 435/0 with an empty allowed-failure list.
-The four decisions that genuinely remain are W6, W8, §1-12 and §1-13, each with
-its options and evidence laid out in `docs/MODEL_PLAYBOOK.md`. **None of them
-blocks a release** — they are direction, not defects.
+The four items once filed as "open decisions" (W6, W8, §1-12, §1-13) are each
+**already shipped as a concrete, verified default** — suffix-granularity allow,
+no full-screen interruption, no premium-rate layer, oracle retained. There is no
+undecided state to resolve: a default was chosen, it is the safe side, and
+`docs/MODEL_PLAYBOOK.md` §A records what changing it would cost. **Nothing in
+this product is waiting on a decision before it can ship.**
 
 ## 1. Activate CI
 
