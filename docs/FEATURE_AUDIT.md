@@ -110,6 +110,12 @@
   | `SPECIFICATION.md` | ✅ 「16 layers」が README・実装と一致 |
   | `docs/SETUP_GUIDE_FAMILY.md` | ✅ 参照する UI 節名が実在(家族の連絡先・ブロック履歴)|
   | `LICENSE` / root `build.gradle.kts` / `settings.gradle.kts` / `libs.versions.toml` / `gradle.properties` | ✅ 問題なし |
+  | **UI 層本体**(HistoryActivity/SettingsActivity/OnboardingActivity/OrangeWidget)— i18n 掃討 | ✅ **クリーン**。`Text("…")`/`text = "…"`/`contentDescription = "…"` の走査でヒット2件のみ、両方良性(`Text("›")` は装飾グリフ、`"$revokeLabel $suffix"` の `revokeLabel` は `stringResource` 由来で正しくローカライズ済み)|
+  | **UI 層本体** — a11y 掃討(対象者が高齢者なので本質的)| ✅ **クリーン**。`Icon(` の使用ゼロ、`contentDescription = null` ゼロ、3 Activity すべてに contentDescription あり |
+
+- **終端の証拠**: 上の2行が本セッションで初めて**欠陥を探す目的の掃討が空振りした**回。
+  §1-14 と §1-15 前半では「未監査領域を開けるたびに欠陥が出た」が、次の領域(UI 本体)からは
+  出なかった。探索が終端したと言えるのは、この状態に達した時だけ。
 
 - **欠陥1: ProGuard の keep が manifest コンポーネント12中10だけだった**。
   `HistoryActivity` と `SettingsActivity` が欠落。ファイル自身が
