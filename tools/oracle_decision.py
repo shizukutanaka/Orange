@@ -2,19 +2,39 @@
 """
 Reference oracle for the Orange decision engine's number-classification rules.
 
-WHY THIS EXISTS
----------------
-The authoritative engine is Kotlin (`DomesticSpoofDetector.kt`,
-`CaribbeanPremiumNANP.kt`, etc.) and is tested by `gradlew testReleaseUnitTest`
-in a JVM. But during rapid local iteration WITHOUT a JVM (e.g. inside a
-container that only has Python), a pure-static grep check cannot catch a
-behavioral regression — exactly the class of bug that once made every 0120
-freephone call get silenced after a refactor (see docs/adr/004).
+WHAT THIS DOES AND DOES NOT DETECT  (read this before trusting a green run)
+--------------------------------------------------------------------------
+This script re-implements the numbering-plan rules in Python and checks them
+against its own table of known-good / known-bad numbers. That is the whole
+mechanism, and it has a consequence people keep assuming away:
 
-This script encodes the SAME numbering-plan rules in Python and asserts them
-against a table of known-good / known-bad numbers. It is NOT a replacement for
-the Kotlin tests; it is a fast tripwire. If the Python oracle and the Kotlin
-source disagree on a rule, one of them is wrong — investigate before shipping.
+    IT CANNOT DETECT A CHANGE IN THE KOTLIN ENGINE.
+
+Measured, not argued (2026-07). Changing DomesticSpoofDetector's
+repeating-digit threshold from 8 to 9 — a real behavioural regression —
+produced:
+
+    tools/oracle_decision.py    exit 0, "All 31 oracle cases passed"
+    tools/run-pure-tests.sh     exit 1, naming the two tests that broke
+
+So "oracle passed" means "the Python is still consistent with the Python". It
+is a second opinion that a human must compare by hand, not a tripwire. The old
+header claimed otherwise ("if the Python oracle and the Kotlin source disagree,
+one of them is wrong — investigate") — true, but nothing here does the
+comparing, so nobody was ever told to investigate.
+
+The premise it was written under has also expired. It assumed local iteration
+"WITHOUT a JVM (e.g. a container that only has Python)". tools/run-pure-tests.sh
+now runs 435 real Kotlin tests in ~30s with no Android SDK and no network, so
+the engine can be exercised directly almost anywhere this script can run.
+
+Kept for now because it costs nothing and a divergence IS visible to a reader
+who checks both. Whether to keep paying for a hand-synced duplicate is recorded
+as an open question in docs/FEATURE_AUDIT.md §1-13 — deleting a check is a call
+for a maintainer, not a cleanup.
+
+Authoritative for behaviour: the Kotlin, exercised by tools/run-pure-tests.sh
+and by `gradlew testReleaseUnitTest`.
 
 USAGE
 -----
@@ -142,7 +162,10 @@ def main() -> int:
     if failures:
         print(f"\n{failures}/{total} oracle cases FAILED")
         return 1
-    print(f"All {total} oracle cases passed")
+    # Deliberately not "all checks passed": this verifies the Python against the
+    # Python. See the module docstring — it cannot see a Kotlin regression.
+    print(f"All {total} oracle cases passed (Python rules self-check only —")
+    print("  engine behaviour is verified by tools/run-pure-tests.sh)")
     return 0
 
 

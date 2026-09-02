@@ -12,10 +12,20 @@ import androidx.core.content.edit
  * HistoryActivity.
  *
  * Privacy trade-offs (deliberate):
- * - Numbers are masked: last 4 digits only ("****1234"). Full number is
- *   NOT stored — the restore action uses the hash to clear the spam cache,
- *   not plaintext. This means history is display-only; it cannot be used
- *   to reconstruct caller identity.
+ * - Numbers are masked: last 4 digits only ("****1234"). Neither the full
+ *   number NOR its hash is stored, so history is display-only and cannot
+ *   reconstruct caller identity.
+ *
+ *   That has a direct consequence for recovery, and the two undo paths are
+ *   not equivalent because of it (see FEATURE_AUDIT §2-2):
+ *     - Restore (from the per-block notification) has the full number in the
+ *       Intent, so it can hash it and clear the exact SpamCache entry.
+ *     - Allow (from HistoryActivity) has only what is stored here — the
+ *       masked suffix — so it cannot address a SpamCache entry at all. It
+ *       instead writes the 4-digit suffix to AllowSuffixStore, which
+ *       SilentBlockerService checks before the engine runs.
+ *   Storing a hash here would make Allow exact, at the cost of this
+ *   display-only property. That trade is recorded in §2-2, not taken.
  * - TTL: entries older than 30 days are dropped on next access.
  * - Bound: MAX_ENTRIES = 50. Oldest entries are evicted first.
  */

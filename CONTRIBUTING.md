@@ -8,7 +8,7 @@ clearing a higher bar.
 
 Read these in order:
 1. `DESIGN_NOTES.md` — what was deliberately removed and why
-2. `PRIVACY_MANIFESTO.md` — the nine things Orange does not do
+2. `PRIVACY_MANIFESTO.md` — eight things Orange does not do, and two it does narrowly
 3. `THREAT_MODEL.md` — security and privacy invariants we maintain
 4. `HONESTY_ADDENDUM.md` — what Orange does not catch by design
 5. `docs/adr/` — Architecture Decision Records for key design choices

@@ -35,6 +35,7 @@
     <string name="tile_label_active">Orange</string>
     <string name="tile_label_paused">Orange paused</string>
     <string name="digest_text">Silenced %1$d calls this week.</string>
+    <string name="digest_role_lost_text">Orange is no longer screening calls. Tap to turn protection back on.</string>
     <string name="digest_text_monthly">Silenced %1$d calls this month.</string>
     <string name="notif_channel_police_warn">Police impersonation warning</string>
     <string name="police_warn_title">Possible %1$s impersonation</string>

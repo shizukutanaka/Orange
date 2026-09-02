@@ -8,6 +8,57 @@ FEATURE_AUDIT は「何が未解決か」を担当する。
 
 ---
 
+## 完成状態 (2026-07) — サンドボックスで到達可能な最大点
+
+**判断を要さない技術作業はゼロになった。** これが本セッションの終着点であり、
+以降に残るものは性質が2種類しかない(下記 A / B)。
+
+**到達点**: **435テスト0失敗** / 全ゲート green(privacy guard・decision oracle 31・
+comprehensive **14-14**)/ 文書とコードの矛盾ゼロ(自動ゲート化済み)。
+
+**探索を終端させた根拠 — 追跡下150ファイルすべてを監査済み**(§1-15)。
+個別に欠陥を探し続ける限り終わりは来ないため、`git ls-files` を列挙して
+**未監査ファイルをゼロにした**。最後に開いた3領域からも実際に欠陥が出ている:
+版数の三方向不一致(§1-14、**1.6.0 として 1.1.0 の APK を出荷するところだった**)、
+ProGuard の keep 漏れ2件(§1-15)、**ストア出荷文言の虚偽主張**(§1-15、
+「設定なし」が Play/F-Droid 向け4箇所に残存)。いずれも修正済みで、
+**3件とも再発をゲート化**した(12/14・13/14 と既存の 11/14)。
+「まだ未監査領域があるかもしれない」はもう成立しない。
+最後の掃討(UI 本体の i18n / a11y、§1-15)は**空振り**だった — 欠陥を探す検査が
+何も返さなくなった時点が終端であり、そこに達した。
+
+**長所・短所・改善点の所在**: 長所は §1、短所は §2 の W 表、改善案は §3。
+個別の技術的経緯と根拠は `docs/FEATURE_AUDIT.md`(全14項目、うち10件が解決済み)。
+
+### A. 人間の「意思」が要る4件 — 研究不足ではなく**価値判断**
+
+| # | 問い | 状態 |
+|---|---|---|
+| W6 / §2-2 | Allow を exact 化するため History にハッシュを持たせるか = **「display-only」の主張を弱めてよいか** | 中間案は実測で撤回済み。**現状維持か完全解の二択**に純化 |
+| W8 / §1-4 | 警告を**フルスクリーンで割り込ませてよいか** | 他の3段(DND突破・振動・音)は決着済み。音量でなく**割り込み**の問題 |
+| §1-12 | 国内プレミアムレート(0990)に層を設けるか | 着信の危険は低く、自然な対策は発信警告 — だが §2-4 で削ったばかりの領域 |
+| §1-13 | `oracle_decision.py` を維持するか削除するか | Kotlin 回帰を検出できないことを実験で証明済み。手動同期の重複実装 |
+
+いずれも**選択肢と根拠は記録済み**で、足りないのは情報ではなく意思決定。
+
+### B. 人間の「権限」が要る4手順 — 手順は `RELEASING.md` に順序付きで完備
+
+CI 有効化 → main マージ → Pages 有効化 → タグ+Release+APK(計約4分、**判断は不要**)。
+
+**なぜここで止まるのが正しいか**: いずれも実測で三重確認した環境の硬い制約 —
+App トークンに `workflows` 権限が無い(push が GitHub 側で拒否される)/
+push はこのブランチのみ許可/リポジトリ設定(Pages)に到達する手段がない/
+Android SDK と AGP の Maven ホストが組織 egress ポリシーで 403。
+**これらは能力の問題ではなく権限の問題**なので、再試行は無駄。
+
+### この節の扱い
+
+数値が古くなったら `bash tools/run-pure-tests.sh` の実測で更新すること。
+**陳腐化した状態報告は負の価値**(同じ理由で `SESSION_SUMMARY.md` は削除した)。
+A の4件が決まり B の4手順が済んだ時点で、この節ごと削除してよい。
+
+---
+
 ## 0. 絶対制約(モデル問わず。違反 = 即 revert 対象)
 
 1. `INTERNET` / `READ_CONTACTS` / `READ_CALL_LOG` 権限の追加禁止。製品のプライバシー上の核心的約束。
@@ -33,32 +84,53 @@ FEATURE_AUDIT は「何が未解決か」を担当する。
 
 | # | 弱点 | 状態 |
 |---|------|------|
-| W1 | テストが CI で一度も実行されていなかった(静的ゲートは @Test を数えるだけ)| `tools/run-pure-tests.sh` で285テスト(純粋層+SharedPreferences依存ストア層)を実行可能に。**`.githooks/pre-push` が wrapper jar 無しの環境ではこのランナーを実行しpushをゲート**(既知の§1-7失敗2件以外があれば block)。WarningNotifier/UI 等 Context 大量依存は依然未実行 |
-| W2 | `DomesticSpoofDetector.toDomestic()` が先頭0/+81 以外を棄権 → 短縮番号・先頭ゼロ欠落の判定が到達不能。**テスト2件が実行すると失敗する**(意図的に残してある可視シグナル)| FEATURE_AUDIT §1-7。設計判断待ち |
-| W3 | business_directory.csv の宅配・メガバンク等がサイレント信頼のまま(偽装頻度高いが正当着信も多い)| FEATURE_AUDIT §1-2。機関別判断待ち |
-| W4 | 警察/税務署番号へのかけ直し(推奨される安全行動)に「ブロックした番号」という事実誤りの発信警告が出る | FEATURE_AUDIT §2-4。文言/挙動判断待ち |
-| W5 | インサイダー脅威(ロック解除済み端末を持つ家族・介護者)への防御なし。PIN は「設定を増やさない」哲学と衝突 | FEATURE_AUDIT §1-5。判断待ち |
-| W6 | Allow(末尾4桁)と Restore(完全番号)の解除二重化 | FEATURE_AUDIT §2-2。プライバシー設計とのトレードオフ |
+| ~~W1~~ | ~~テストが CI で一度も実行されていなかった~~ | **✅ 解決(2026-07)**。CI を作成(除外は初回コミットからの事故と判明、§1-6)。**`docs/ci/ci.yml` に待機中** — App トークンに `workflows` 権限が無いため、人間が `git mv` して push すると有効。static / unit-tests(435) / android-build の3ジョブ。`.githooks/` は**オプトイン**なので CI が迂回不能な版。WarningNotifier/UI 等 Context 大量依存は `android-build` ジョブの `testReleaseUnitTest` がカバー |
+| ~~W2~~ | ~~bare NSN の棄権 vs 失敗する2テスト~~ | **✅ 解決(2026-07)**。ITU-T E.164 で棄権が契約上正しいと確定 → **テスト側を修正**(分析全文をテストコメントに移植)。スイートは **435/0 green**、ランナーの ALLOWED リストは空 = 以後いかなる失敗も回帰 |
+| ~~W3~~ | ~~宅配・メガバンクがサイレント信頼のまま~~ | **✅ 解決(2026-07)**。A/B/C の3条件基準を確立し**現状配置が正しい**と確認(§1-2)。宅配は攻撃ベクターが SMS で Orange が構造的に観測不能、銀行は代表番号偽装が手口の中核でない |
+| ~~W4~~ | ~~かけ直しに事実誤りの発信警告~~ | **✅ 修正済み(2026-07)**。スプーフィングは着信のみ=かけ直すと本物に繋がるため、警察/税務署の `OutboundGuard.record()` を削除(§2-4)。高リスク時間帯は未知番号なので維持 |
+| ~~W5~~ | ~~インサイダー脅威への防御なし~~ | **✅ 解決(2026-07)**。USC/NCEA 統計(家族が最頻・被害額3倍)を踏まえ **THREAT_MODEL に対象外の敵対者として明記** + HONESTY_ADDENDUM §14。PIN は**意図的に不採用**(物理アクセスに無力・介護者支援を破壊・セキュリティシアター)|
+| W6 | Allow(末尾4桁)と Restore(完全番号)の解除二重化 | §2-2。**判断材料は精密化済み**(ハッシュ保存の増分は小さいが「display-only」の主張強度が下がる/現状は1万分の1を16層迂回で許可)。中間案(桁数追加)は**配送形式非依存性の欠如で撤回済み** — 選択肢は現状維持か完全解の二択。**残る判断は「主張を弱めてよいか」のみ** |
 | W7 | STIR/SHAKEN 層は日本キャリアでは休眠(国内未導入)| 仕様として文書化済み。触らない |
-| W8 | 警告通知の実効性が未検証(オフラインゆえテレメトリ不可)| CHI 2025 論文がフルスクリーン化を支持するが UX 判断待ち(§1-4)|
+| W8 | 警告通知の実効性が未検証(オフラインゆえテレメトリ不可)| **文言は改善済み**(IEEE S&P 2025 の contextual warning で4ロケール改訂)。**「攻撃性」は二択でなく段階**と判明: DND突破・振動は既にON、音は**鳴動中ゆえ意図的にOFFで維持すべき**(KDoc に明文化)。**残る判断はフルスクリーンインテントのみ** = 音量でなく**割り込み**の問題(§1-4)|
 | W9 | サンドボックスからタグ push / GitHub Release / APK ビルド不可(三重確認済みの環境制約)| `RELEASING.md` の人間用ランブックが正式な引き継ぎ。**再試行しない** |
 
 ## 3. 改善案(優先度順。着手条件を守ること)
 
 ### 今すぐ着手可(判断不要・機械的)
-1. ~~**ストア層テストの実行拡張**~~ **実装済み(2026-07)**: `run-pure-tests.sh` が最小 Android 型スタブ(heredoc 生成・非コミット)でストア層も実行、計285テスト。脆いテスト3件・設計矛盾テスト1件を修正済み。**次のフロンティア**: WarningNotifier/ManualBlock/FamilyCallback/TrustNotifier/BusinessDirectoryBundle/UI 各種(NotificationManager・NotificationCompat・Context 大量依存)。スタブ面が過大で偽陽性リスクが高いため、これらは実機/SDK 有りの `./gradlew testReleaseUnitTest` に委ねるのが妥当(無理にスタブ化しない)。
-2. **ドキュメント数値の定期突き合わせ**: このセッションで大量に発見・修正したパターン(件数・層数・閾値のドリフト)。ディレクトリや層を変更したら README/SPECIFICATION/DEVELOPING/THREAT_MODEL/HONESTY_ADDENDUM/`play_data_safety.json` を同時更新し、`ProtectionDataVersion.LAST_UPDATED` は**最古の検証日**を維持。
+1. ~~**ストア層テストの実行拡張**~~ **実装済み(2026-07)**: `run-pure-tests.sh` が最小 Android 型スタブ(heredoc 生成・非コミット)でストア層も実行、計435テスト。脆いテスト3件・設計矛盾テスト1件を修正済み。**境界は実測済み — 再測定は不要**(2026-07): 33テストファイル中 **24 を実行**。残る9件は
+   1件ずつ阻害要因を測定した結果、**すべて「挙動を持つスタブ」が必須**と判明した
+   (挙動を持つスタブは偽陽性の隠れ場所なので、ここが線):
+   `ManualBlockTest`=BusinessDirectoryBundle.load(assets読込)+SilentBlockerService.screenIncoming へカスケード /
+   `FamilyCallbackTest`=呼ぶのは純関数だが FamilyCallback.kt のコンパイルに PendingIntent/TileService/Uri/Intent /
+   `PauseTileTest`=TileService/Tile/Icon + onClick 実行 /
+   `WarningNotifierRateLimitTest`=show 系を**実呼び出し**するため NotificationCompat.Builder チェーン一式 /
+   BusinessDirectoryBundle/CallStateObserver/PostCallAdvisor/TrustNotifier/WeeklyDigest=Context・NotificationManager・assets。
+   これらは CI の `android-build`(実 SDK の `testReleaseUnitTest`)がカバーする。
+   **境界を動かすなら SDK を使うこと。シムを太らせない。**
+2. ~~**ドキュメント数値の定期突き合わせ**~~ → **自動化済み(2026-07)**。`check_comprehensive.sh` の
+   **11/12「Doc/data count drift」**が ADR 数・警察ディレクトリ件数・高リスク国番号数・
+   マニフェスト項目数をコードから抽出して文書の主張と突き合わせ、**不一致で exit 1**。
+   pre-commit / pre-push / CI の3箇所で走る。**手で数えるのをやめること** — この欠陥は
+   今セッションだけで5回再発した(47→54、11→12、199→285、7/9→10、8→20)。
+   残る手作業は「意味を伴う更新」のみ: ディレクトリや層を変えたら
+   README/SPECIFICATION/DEVELOPING/THREAT_MODEL/HONESTY_ADDENDUM/`play_data_safety.json` の
+   **記述**を更新し、`ProtectionDataVersion.LAST_UPDATED` は**最古の検証日**を維持。
 
-### ユーザー承認後に着手(製品判断)
-3. W2: `toDomestic()` の棄権挙動(numbering-plan 厳格性)。
-4. W4: warn-but-ring 由来の発信警告に専用文言(3案は §2-4 に記載済み)。
-5. W3: 宅配/銀行の warn レーン移行(機関ごと)。
-6. W5/W6/W8: 哲学トレードオフ級。**必ず選択肢を提示して人間が決める**。
+### ユーザー承認後に着手(製品判断)— 残り4件(冒頭「完成状態」の A と同じ)
+3. ~~W2 / W3 / W4 / W5~~ → **✅ すべて解決済み**(§2 の表を参照。W2=E.164 でテスト修正、W3=A/B/C 基準で現状維持が正、W4=コード修正済み、W5=脅威モデル明記)。
+4. W6: History にハッシュを持たせ Allow を exact 化するか(= 「display-only」の主張を弱めてよいか)。~~中間案(末尾4桁+桁数)~~は**検討の結果撤回**(桁数は配送形式 domestic/E.164 で変わり、照合が外れると「正当な Allow が効かない」= 誤ブロック継続という最悪方向の失敗になる。§2-2 (5) 参照)。**残る選択肢は現状維持か完全解のみ**。
+5. W8: 警告の**フルスクリーンインテント化のみ**(他の段 — DND突破/振動/音 — は決着済み。§1-4)。CHI 2025 が支持、誤警告時の高齢者への負荷が反対根拠。音を足す案は**却下済み**(鳴動中の着信音とノイズ対ノイズになり、文言を読む一瞬を奪う)。**必ず選択肢を提示して人間が決める**。
+6. §1-12: 国内プレミアムレート(0990)に層を設けるか。着信の危険は低く(0990 は着信課金の
+   サービス番号で、危険は**掛ける**方向)、自然な対策は発信警告 — だが §2-4 でまさに
+   「正当なかけ直しを妨げる発信警告」を削ったばかりの領域なので、同じ轍を踏まないこと。
+7. §1-13: `oracle_decision.py` を維持するか削除するか。Kotlin 側の回帰を**検出できない**ことを
+   実験で証明済み(閾値 8→9 の改変で Kotlin テストは exit 1、oracle は exit 0)。
+   手動同期の重複実装というコストと、読み比べれば差異が見える弱い価値との天秤。
 
 ### 人間の環境が必要
 7. W9 の3ステップ(`RELEASING.md` 手順、約2分)。
-8. `.github/workflows/` 復活時: `run-pure-tests.sh` + (SDK有りなら) `testReleaseUnitTest` を CI に組み込み「@Test を数えるだけ」を解消。
-9. `play_data_safety.json` の `privacy_policy_url`: GitHub Pages 等でホスティングして実URLを記入(現状 NOT YET SET マーカー)。
+8. ~~`.github/workflows/` 復活~~ → **✅ 実施済み**(`ci.yml`)。以後は CI が壊れていないかを確認するだけでよい。
+9. `play_data_safety.json` の `privacy_policy_url`: **URL は確定済み**(`https://shizukutanaka.github.io/Orange/privacy_policy.html`)。残るのは Settings → Pages → `main` / `/docs` を有効化することと、`docs/privacy_policy.html` を `main` にマージすること。判断は不要、操作のみ。
 
 ## 4. モデル使い分け(このリポジトリでの実績ベース)
 
@@ -74,7 +146,7 @@ FEATURE_AUDIT は「何が未解決か」を担当する。
 ### Opus/Sonnet 共通の作業手順(このセッションで有効だった規律)
 1. 開始時に `docs/FEATURE_AUDIT.md` を読む(再発見の無駄と制約違反を防ぐ)。
 2. 変更は小さく、**1論点=1コミット**。コミットメッセージに「何が矛盾していたか」を書く(将来の再発見防止)。
-3. 検証: Gradle ビルドはサンドボックスで不可 → `bash tools/run-pure-tests.sh`(285テスト、SDK不要)+ 机上トレース。push 後の CI は当てにしない(W1)。
+3. 検証: Gradle ビルドはサンドボックスで不可 → `bash tools/run-pure-tests.sh`(435テスト、SDK不要)+ 机上トレース。**push 後は CI(`ci.yml`)が全ゲート + SDK 有りの完全ビルドを回す**ので、サンドボックスで検証できなかった部分はそこで確認できる。
 4. 発見した問題は3分類 — **機械的に直せる**(直す)/**陳腐化**(記録どおり更新)/**設計判断**(FEATURE_AUDIT に記録して止まる)。テストの assertion を黙って実装に合わせる改変は禁止(gap の隠蔽)。
 5. 迷ったら削る方向へ(DESIGN_NOTES の subtraction 哲学)。機能追加 PR より削除 PR が歓迎される製品。
 
@@ -90,7 +162,9 @@ FEATURE_AUDIT は「何が未解決か」を担当する。
 
 ```bash
 # 純粋ロジック層のテスト実行(SDK 不要、~0.2秒)
-bash tools/run-pure-tests.sh          # 期待値: 285 run / 2 failures(W2 の意図的シグナル)
+bash tools/run-pure-tests.sh          # 期待値: 435 run / 0 failures(いかなる失敗も回帰)
+# CI と同じ全ゲートをローカルで:
+bash .githooks/pre-push               # privacy guard → oracle 31 → 435 tests
 
 # ロケール4ファイルのキー集合一致
 cd app/src/main/res && for f in values values-ja values-zh values-ko; do \
@@ -105,6 +179,8 @@ python3 -m json.tool docs/play_data_safety.json > /dev/null && echo valid
 
 ---
 
-**要約**: 長所は「オフライン・純関数・契約明文化」であり全て守る対象。短所の大半は
-「わかっていて、判断を待っている」状態(W2-W8)。改善は上の優先度と着手条件に従い、
+**要約**: 長所は「オフライン・純関数・契約明文化」であり全て守る対象。
+2026-07 の監査で **W1/W2/W3/W4/W5 は解決、W6/W8 は判断材料が出揃った状態**まで進んだ。
+残る未決は実質2件で、いずれも**技術的事実ではなく製品としての意思**を要する:
+W6(display-only の主張を弱めてよいか)/ W8(警告で画面を占有してよいか)。改善は上の優先度と着手条件に従い、
 機械的に正当化できるものだけを進め、それ以外は選択肢を添えて人間に返すこと。

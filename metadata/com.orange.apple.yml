@@ -2,11 +2,8 @@ Categories:
   - Phone & SMS
 License: MIT
 AuthorName: Orange contributors
-SourceCode: https://github.com/OWNER/orange
-IssueTracker: https://github.com/OWNER/orange/issues
-
-# Note: replace OWNER with the GitHub username/org before submitting to F-Droid.
-# The repository name "orange" may need qualification if it conflicts with existing repos.
+SourceCode: https://github.com/shizukutanaka/Orange
+IssueTracker: https://github.com/shizukutanaka/Orange/issues
 
 AutoName: Orange
 Description: |
@@ -20,17 +17,17 @@ Description: |
   See PRIVACY_MANIFESTO.md in the source repository.
 
 RepoType: git
-Repo: https://github.com/OWNER/orange
+Repo: https://github.com/shizukutanaka/Orange
 
 Builds:
-  - versionName: 1.0.0
-    versionCode: 1
-    commit: v1.0.0
+  - versionName: 1.6.0
+    versionCode: 3
+    commit: v1.6.0
     subdir: app
     gradle:
       - yes
 
 AutoUpdateMode: Version
 UpdateCheckMode: Tags
-CurrentVersion: 1.0.0
-CurrentVersionCode: 1
+CurrentVersion: 1.6.0
+CurrentVersionCode: 3

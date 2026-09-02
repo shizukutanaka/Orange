@@ -54,7 +54,8 @@ Your phone stops ringing when it shouldn't.
 
 That's the entire product. Orange runs silently in the background, screens
 incoming calls, and blocks the unwanted ones before the ring ever reaches
-you. No menus to learn. No settings to configure. No account to create.
+you. No menus to learn. Nothing to configure to be protected. No account
+to create.
 
 Orange catches international scam corridors, Caribbean premium-rate traps,
 Wangiri callback scams (both classic one-ring and the newer recorded-message
@@ -83,7 +84,7 @@ Free. No ads. No subscription. Not now, not later.
 鳴らなくていい電話は、鳴らない。
 
 それが全部。Orangeは背景で静かに動き、着信を判定し、不要なものだけを
-呼び出し音の前で止める。メニューなし。設定なし。アカウントなし。
+呼び出し音の前で止める。メニューなし。守られるために設定する項目なし。アカウントなし。
 
 国際詐欺回線、カリブ海プレミアム番号、ワン切りコールバック詐欺
 （従来型＋録音音声型）、存在しない番号構造、非通知着信、キャリア検証

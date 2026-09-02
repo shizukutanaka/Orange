@@ -89,7 +89,7 @@ See `HONESTY_ADDENDUM.md` for what Orange **doesn't** catch.
 
 | File | What it's for |
 |------|---------------|
-| [`PRIVACY_MANIFESTO.md`](PRIVACY_MANIFESTO.md) | The nine things Orange does NOT do. |
+| [`PRIVACY_MANIFESTO.md`](PRIVACY_MANIFESTO.md) | Ten promises: eight things Orange does NOT do, plus two it does narrowly. |
 | [`HONESTY_ADDENDUM.md`](HONESTY_ADDENDUM.md) | What still rings, and why. |
 | [`RESEARCH_BASIS.md`](RESEARCH_BASIS.md) | Academic basis for each layer; why CEIVE/LLM are rejected. |
 | [`DESIGN_NOTES.md`](DESIGN_NOTES.md) | The subtraction log. What was cut, and why. |

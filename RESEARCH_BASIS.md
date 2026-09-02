@@ -123,6 +123,75 @@ the modality and timing differ, so the effect size does not transfer directly.
 What transfers is the comparative finding that contextual framing outperforms a
 terse "this may be suspicious", which is a claim about content, not channel.
 
+## The leading zero is a trunk prefix, not part of the number
+
+ITU-T E.164 treats Japan's leading `0` as a **national trunk prefix** — a signal
+to the domestic network that a long-distance call follows — not as part of the
+subscriber's identity. It is stripped for international routing, which is why
+`090-1234-5678` becomes `+81 90 1234 5678` rather than `+81 090 …`.
+
+That definition settles a question logged as a design call in FEATURE_AUDIT
+§1-7. `DomesticSpoofDetector.isImpossibleJpNumber()` answers "is this number
+structurally impossible under the MIC plan", and a bare `9012345678` is not
+impossible — it is the national significant number with no prefix attached. So
+abstaining (`false`) matches the function's contract rather than dodging it.
+
+Two consequences worth recording. First, accepting the bare form would not even
+produce the behaviour the failing test asks for: prefixing the `0` yields
+`09012345678`, a perfectly valid 11-digit mobile, so the detector would still
+return `false`. The test is asking for an "anomalous delivery format" rule, not
+a numbering-plan rule. Second, `phoneVariants()` — the codebase's single source
+of truth for number matching — expands only the domestic-trunk and E.164 forms
+too. Teaching the detector a form the variant expander does not know would split
+the two apart, which is worse than either treating the form consistently or not
+at all.
+
+## Two Keystore facts that decided what NOT to build
+
+`SaltVault`'s key protects the per-install salt behind every stored hash, so its
+loss is not a privacy event but an availability one: the outbound-known trust
+set, SpamCache and RepeatCallerTracker all stop matching at once, and previously
+trusted callers quietly fall through to the FOREIGN_* layers. Two documented
+platform behaviours bound that risk, and both argue for restraint:
+
+- **`KeyPermanentlyInvalidatedException` only affects auth-bound keys.** Android
+  invalidates a key permanently when the secure lock screen is disabled or
+  reconfigured, or when biometrics are added or removed — but only for keys
+  created with `setUserAuthenticationRequired()`. Orange does not set it, so an
+  elderly user re-enrolling a fingerprint cannot lose their whitelist. Adding
+  that flag would read as hardening while actually introducing exactly that
+  failure, which is why the KDoc now forbids it explicitly.
+- **Device migration cannot orphan the trust set**, because nothing migrates.
+  `data_extraction_rules.xml` excludes every domain under both `<cloud-backup>`
+  and `<device-transfer>` (with `allowBackup="false"` as the belt to that
+  suspenders). A new phone starts empty rather than inheriting hashes whose salt
+  it can no longer decrypt.
+
+What remains is the narrow case of Keystore entries corrupted by an OS or
+security patch, reported on some devices. There `decrypt()` returns null, no
+plaintext fallback survives, and a fresh salt is generated. Since the §1-8 TTL
+landed, even that resolves itself: the situational silences it would cause
+expire within 180 days instead of persisting. Recorded in FEATURE_AUDIT §1-9,
+deliberately not engineered around.
+
+## Caller-ID spoofing is inbound-only — so the callback is safe
+
+A point that decides a real behaviour question (FEATURE_AUDIT §2-4): spoofing
+falsifies only what your screen shows on an *incoming* call. It cannot redirect
+a call you *place*. If a scammer spoofs a real police or tax-agency number and
+you hang up and dial that number back, you reach the real agency — never the
+scammer. This is exactly why the FCC's standard guidance is "hang up and redial
+independently," and why Orange's own police warning says "hang up and call
+#9110."
+
+The consequence for Orange: it must not treat that callback as dangerous.
+Recording a warn-but-ring police/tax number into OutboundGuard did exactly that
+— it fired the outbound warning on the very action anti-scam guidance
+recommends, and labelled the number "recently blocked" when in fact it had been
+rung through. Those numbers are therefore no longer recorded (§2-4). The
+high-risk-hour case is kept, because that number is unknown rather than a
+spoofed known agency, so a callback genuinely can reach a scammer.
+
 ## Phone numbers are recycled — which bounds how long a blocklist stays true
 
 A blocklist is a claim about a *number*, but the thing the user actually wants
@@ -198,8 +267,19 @@ working, and may even read as *improvement* ("it stopped blocking things").
 
 Nothing here argues for more notifications in general. It argues that the one
 recurring wake-up Orange already schedules — the `WeeklyDigest` alarm — should
-not disable itself precisely when protection is off, which is its current
-behaviour (`WeeklyDigest.kt:36`).
+not disable itself precisely when protection is off.
+
+**Implemented (2026-07).** `WeeklyDigest` now reports the loss instead of
+returning silently — but exactly **once per loss episode**, re-armed only when
+the role comes back. That restraint is itself evidence-driven: habituation to
+warnings is a measured neural effect rather than user carelessness (BYU
+Neurosecurity / *MIS Quarterly* 2018, "Tuning Out Security Warnings" — fMRI
+shows visual-processing response to a repeated warning dropping sharply), and
+the same line of work finds the effect **generalises**: habituation accumulated
+from routine, non-security notifications carries into lower adherence to real
+security warnings. A weekly "still off!" reminder would therefore not merely be
+ignored — it would spend down the attention Orange needs for its actual scam
+warnings. One notice, same channel, same notification id, same alarm.
 
 ## Layer-by-layer mapping
 
@@ -256,6 +336,14 @@ points the user to the right humans for everything else."
   IEEE S&P 2025 (CISPA). (Basis for rewriting `police_warn_body` from a terse
   "may be spoofed" to a contextual warning; 36 blind + 36 sighted participants,
   cold-called in a naturalistic setting.)
+- ITU-T. *E.164 numbering plan* and the Japan national numbering plan notification
+  (country code +81): the leading `0` is a national trunk prefix, removed in
+  international format. (Basis for treating a bare national significant number
+  as valid-but-unprefixed rather than impossible — FEATURE_AUDIT §1-7.)
+- Federal Communications Commission. *Caller ID Spoofing* consumer guide
+  (fcc.gov/consumers/guides/spoofing): spoofing falsifies inbound caller ID only,
+  and the recommended response is "hang up and redial independently." (Basis for
+  not obstructing the callback to a spoofed agency number — FEATURE_AUDIT §2-4.)
 - Keck School of Medicine of USC / National Center on Elder Abuse. *Analysis of
   ~2,000 NCEA resource-line calls* (2019): financial abuse most-reported (~55%),
   family members most frequently identified perpetrators (~48%); NCEA separately
@@ -271,6 +359,17 @@ points the user to the right humans for everything else."
 - 総務省. *電気通信番号規則および電気通信番号政策に関する資料* (番号再利用/再割当).
   (Basis for the Japanese reassignment picture; ~3-year target for unused mobile
   numbers, with far shorter observed cancellation→reuse intervals in practice.)
+- A. Vance, B. Kirwan, D. Bjornn, J. Jenkins, B. Anderson. *Tuning Out Security
+  Warnings: A Longitudinal Examination of Habituation Through fMRI, Eye
+  Tracking, and Field Experiments.* MIS Quarterly 42(2), 2018; and related BYU
+  Neurosecurity work on the generalisation of habituation from non-security
+  notifications. (Basis for showing the role-loss notice once per episode rather
+  than on every weekly firing — see FEATURE_AUDIT §1-11.)
+- Android Developers. *`KeyPermanentlyInvalidatedException`* — raised only for
+  keys authorized to be used after user authentication; triggered by disabling
+  or reconfiguring the secure lock screen, or changing enrolled biometrics.
+  (Basis for never setting `setUserAuthenticationRequired()` on the salt key —
+  FEATURE_AUDIT §1-9.)
 - Android Developers. *`RoleManager` API reference* — `addOnRoleHoldersChangedListener`
   requires the signature-level `MANAGE_ROLE_HOLDERS` permission (system apps
   only). (Basis for the claim that role loss cannot be observed by callback in a

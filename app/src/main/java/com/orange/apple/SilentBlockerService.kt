@@ -270,23 +270,36 @@ class SilentBlockerService : CallScreeningService() {
             // Refresh Quick Settings tiles after block (requestListeningState).
             refreshTiles()
         }
+        // Police / tax warnings are DELIBERATELY not recorded into OutboundGuard.
+        // These fire because the caller ID matched a real, bundled agency number
+        // that was almost certainly spoofed. Caller-ID spoofing is inbound-only:
+        // if the user hangs up and dials that number back, the call reaches the
+        // REAL agency, never the scammer. That callback is exactly what the FCC
+        // ("hang up and redial independently") and Orange's own warning text
+        // ("call #9110") tell the user to do. Recording it here would make the
+        // outbound-warning fire on that safe, recommended action — and worse,
+        // label it "recently blocked" when the call was in fact rung through.
+        // See FEATURE_AUDIT §2-4. (High-risk-hour below is different: that number
+        // is unknown, so a callback CAN reach a scammer and the warning earns its
+        // place.)
         if (decision.warning == WarnReason.POLICE_IMPERSONATION ||
             decision.warning == WarnReason.POLICE_IMPERSONATION_HIGH) {
             val hqName = decision.warnPayload ?: "警察"
-            if (number.isNotEmpty()) OutboundGuard.record(p, number, now)
             WarningNotifier.showPoliceWarning(this, number, hqName,
                 highSeverity = decision.warning == WarnReason.POLICE_IMPERSONATION_HIGH)
         }
         if (decision.warning == WarnReason.TAX_AGENCY_IMPERSONATION ||
             decision.warning == WarnReason.TAX_AGENCY_IMPERSONATION_HIGH) {
             val agencyName = decision.warnPayload ?: "国税庁"
-            if (number.isNotEmpty()) OutboundGuard.record(p, number, now)
             WarningNotifier.showTaxAgencyWarning(this, number, agencyName,
                 highSeverity = decision.warning == WarnReason.TAX_AGENCY_IMPERSONATION_HIGH)
         }
         if (decision.warning == WarnReason.HIGH_RISK_HOUR_DOMESTIC) {
-            // Record in OutboundGuard so if the user calls back, they see the
-            // outbound-warning notification — same behaviour as police warnings.
+            // Unlike police/tax above, this number is unknown — not a spoofed
+            // real agency. A callback can genuinely reach a scammer (an アポ電
+            // caller may use their own burner), so recording it means the user
+            // gets the outbound warning if they dial back. That warning earns its
+            // place here.
             if (number.isNotEmpty()) OutboundGuard.record(p, number, now)
             WarningNotifier.showHighRiskHourWarning(this, number, callingCodeOf(simCountryIso()))
         }

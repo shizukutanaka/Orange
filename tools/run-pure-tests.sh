@@ -4,11 +4,14 @@
 #
 # WHY THIS EXISTS
 # ----------------
-# The repo has no .github/workflows/ (it's .gitignore'd), and the static gate
-# `check_comprehensive.sh` only *counts* @Test annotations — it never *runs*
-# the tests. So until this script, the JVM unit tests had never actually been
-# executed in any automated way. Running them for the first time (2026-07)
-# surfaced real issues (see docs/FEATURE_AUDIT.md → "Test suite never executed").
+# For the repo's whole history there was no CI: `.github/workflows/` sat in
+# .gitignore from the initial commit (an accident — see .github/workflows/ci.yml),
+# and the static gate `check_comprehensive.sh` only *counts* @Test annotations,
+# it never *runs* the tests. So until this script, the JVM unit tests had never
+# actually been executed in any automated way. Running them for the first time
+# (2026-07) surfaced real issues (docs/FEATURE_AUDIT.md §1-6). CI now exists and
+# invokes this script, but it stays useful standalone: it needs no Android SDK
+# and no network, so a contributor can run the suite locally in ~10 seconds.
 #
 # It works by reusing the Kotlin compiler and JUnit 4 jars that ship *inside*
 # the Gradle distribution (no network, no Android SDK needed), plus a tiny
@@ -18,25 +21,42 @@
 # ------------------
 # Runs the tests whose transitive dependencies are either Android-free OR touch
 # only android.content.SharedPreferences (+ androidx.core.content.edit,
-# android.util.Base64, android.security.keystore.* for SaltVault). That covers
-# the whole decision engine, the numbering-plan / directory logic, and the
-# SharedPreferences-backed stores (SpamCache, OutboundGuard, WangiriTracker,
-# RepeatCallerTracker, NotificationRateLimiter, AllowSuffixStore,
-# BlockHistoryStore). Tests that need NotificationManager / NotificationCompat /
-# Context / Activity / Service / Widget (WarningNotifier, ManualBlock,
-# FamilyCallback, TrustNotifier, BusinessDirectoryBundle, the UI classes) still
-# require a real `./gradlew testReleaseUnitTest` with the SDK.
+# android.util.Base64, android.security.keystore.* for SaltVault), plus anything
+# reachable through a CONSTANTS-ONLY stub. That is 24 of the repo's 33 test
+# files: the whole decision engine (CallDecisionTest's 111 cases,
+# EngineInvariantTest, DecisionPriorityTest, PhoneVariantsTest), the
+# numbering-plan and directory logic, and the SharedPreferences-backed stores.
+#
+# The other 9 were each measured (2026-07), not guessed, and every one needs a
+# stub that would carry BEHAVIOUR — which is where this script stops, because a
+# stub with behaviour is a place for a false pass to hide:
+#   ManualBlockTest              ManualBlock cascades into BusinessDirectoryBundle.load
+#                                (reads assets) and SilentBlockerService.screenIncoming
+#   FamilyCallbackTest           calls only the pure normalizeAndValidate, but compiling
+#                                FamilyCallback.kt needs PendingIntent/TileService/Uri/Intent
+#   PauseTileTest                TileService/Tile/Icon, and executes onClick
+#   WarningNotifierRateLimitTest really invokes showOutboundWarning/showHighRiskHourWarning,
+#                                so it needs the whole NotificationCompat.Builder chain
+#   BusinessDirectoryBundleTest  Context + asset loading
+#   CallStateObserverTest        Context + the real service
+#   PostCallAdvisorTest          Context
+#   TrustNotifierTest            Context + NotificationManager
+#   WeeklyDigestTest             Context + NotificationManager
+# These are covered by CI's android-build job (./gradlew testReleaseUnitTest on a
+# real SDK). The boundary above is measured; re-deriving it is wasted effort —
+# to move it, use an SDK, not a bigger shim.
 #
 # The Android shim is type-signatures only (the one behavioural stub, Base64,
 # delegates to java.util.Base64; SaltVault's KeyStore.getInstance("AndroidKeyStore")
 # throws on the JVM and it falls back to a plaintext salt before any keystore
 # type is instantiated). No stub carries business logic, so none can mask a bug.
 #
-# EXPECTED: 285 tests run, 2 failures — the two DomesticSpoofDetector tests that
-# assert isImpossibleJpNumber("110"/"9012345678") == true while the code abstains
-# (returns false). Those are an intentionally-unresolved design question, left
-# failing as a visible signal (docs/FEATURE_AUDIT.md §1-7). Any OTHER failure is
-# a regression.
+# EXPECTED: 435 tests run, 0 failures. (Two DomesticSpoofDetector tests spent a
+# while intentionally failing as the visible signal of a design question; ITU-T
+# E.164 settled it — the leading 0 is a trunk prefix, so the abstain is the
+# contract being honoured — and the tests now assert the correct behaviour with
+# the analysis inline. See docs/FEATURE_AUDIT.md §1-7.) ANY failure is a
+# regression.
 #
 # USAGE:  bash tools/run-pure-tests.sh   (from the repo root)
 set -euo pipefail
@@ -142,6 +162,12 @@ internal object SilentBlockerService {
     const val PREFS = "orange_apple"; const val KEY_OUTBOUND = "outbound"
     const val KEY_SPAM = "spam"; const val KEY_COUNT = "count"
 }
+// Same treatment for RoleMonitor: the real object pulls in RoleManager,
+// AppWidgetManager, BroadcastReceiver and ComponentName, but RoleMonitorTest
+// only ever touches this one constant plus FakePrefs — the RoleManager
+// interaction is explicitly out of scope there ("we deliberately avoid
+// Robolectric"). Constants only, so it carries no behaviour to get wrong.
+internal object RoleMonitor { const val KEY_ROLE_HELD = "role_held" }
 KOTLIN
 
 # --- Compile main (decision engine + SharedPreferences-backed stores) -------
@@ -166,23 +192,28 @@ TEST_SRCS=(
   "$T/SpamCacheTest.kt" "$T/OutboundGuardTest.kt" "$T/WangiriTrackerTest.kt"
   "$T/AllowSuffixStoreTest.kt" "$T/NotificationRateLimiterTest.kt" "$T/BlockHistoryStoreTest.kt"
   "$T/RepeatCallerTrackerTest.kt"
+  # Engine-level suites. CallDecisionTest alone is 111 tests over decide() —
+  # the product's core — and had never been executed by anything.
+  "$T/CallDecisionTest.kt" "$T/EngineInvariantTest.kt" "$T/ComponentTests.kt"
+  "$T/WangiriCallbackWarningTest.kt" "$T/SaltVaultTest.kt" "$T/PhoneVariantsTest.kt"
+  "$T/RoleMonitorTest.kt" "$T/PhoneVariantsTest.kt"
 )
 echo "==> compiling ${#TEST_SRCS[@]} test sources"
 KC "${TEST_SRCS[@]}" -d "$OUT/test" -no-reflect \
    -classpath "$OUT/main:$STDLIB:$JUNIT:$HAMCREST:$OUT/shimjava-out" -Xfriend-paths="$OUT/main"
 
-echo "==> running tests (expected steady state: 285 run / 2 failures = the FEATURE_AUDIT §1-7 signal)"
+echo "==> running tests (expected steady state: 435 run / 0 failures)"
 CLASSES=$(cd "$OUT/test" && find . -name '*Test.class' | sed 's|^\./||;s|\.class$||;s|/|.|g' | tr '\n' ' ')
 set +e
 RESULT=$(java -cp "$OUT/main:$OUT/test:$STDLIB:$JUNIT:$HAMCREST:$OUT/shimjava-out" org.junit.runner.JUnitCore $CLASSES 2>&1 | grep -v 'JAVA_TOOL_OPTIONS')
 set -e
 echo "$RESULT"
 
-# Exit-code contract (so this can gate a push): succeed iff EVERY failing test
-# is one of the two known, intentionally-unresolved DomesticSpoofDetector
-# design-question tests (FEATURE_AUDIT §1-7). Any other failure is a regression.
-# Robust to new tests being added (checks the failure identities, not a count).
-ALLOWED='short_code_110_is_flagged_as_impossible_by_detector missing_leading_zero_is_spoof'
+# Exit-code contract (so this can gate a push): succeed iff NO test fails.
+# ALLOWED is the escape hatch for a future deliberately-failing signal test;
+# it is empty now that the §1-7 design question is settled, and should stay
+# empty absent an equally-well-documented reason.
+ALLOWED=''
 FAILED=$(printf '%s\n' "$RESULT" | grep -oE '^[0-9]+\) [a-zA-Z_0-9]+\(' | sed 's/^[0-9]*) //; s/($//' || true)
 UNEXPECTED=""
 for f in $FAILED; do
@@ -191,7 +222,7 @@ done
 if [ -n "$UNEXPECTED" ]; then
   echo ""
   echo "REGRESSION: unexpected test failure(s):$UNEXPECTED" >&2
-  echo "(Only the 2 DomesticSpoofDetector §1-7 tests may fail. See docs/FEATURE_AUDIT.md.)" >&2
+  echo "(No failures are tolerated; see the ALLOWED list in this script.)" >&2
   exit 1
 fi
-echo "==> OK (only the known FEATURE_AUDIT §1-7 signal failures, if any)"
+echo "==> OK (no unexpected failures)"

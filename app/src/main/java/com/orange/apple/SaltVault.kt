@@ -43,6 +43,20 @@ import javax.crypto.spec.GCMParameterSpec
  * app still functions. The fallback is strictly weaker but never worse than
  * the pre-Keystore design, and unit tests exercise the salting logic without a
  * device. Production devices (API 24+) all have AndroidKeyStore.
+ *
+ * DELIBERATELY NOT setUserAuthenticationRequired(). Adding it would look like a
+ * security upgrade and would in fact be a serious regression, because losing
+ * this key silently voids every hash derived from the salt: the outbound-known
+ * trust set, SpamCache, and RepeatCallerTracker all stop matching at once. The
+ * user's long-known contacts would quietly fall back through to the FOREIGN_*
+ * layers and start getting silenced, with no error and nothing to see.
+ *
+ * KeyPermanentlyInvalidatedException fires only for auth-bound keys, and its
+ * triggers are ordinary user actions: disabling or changing the secure lock
+ * screen, or adding/removing a fingerprint. Binding to those would mean an
+ * elderly user re-enrolling a fingerprint silently loses their whitelist. The
+ * threat model does not need it either — the key is already non-exportable, and
+ * a /data image without it yields only ciphertext. See FEATURE_AUDIT §1-9.
  */
 internal object SaltVault {
 

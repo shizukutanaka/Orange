@@ -30,6 +30,7 @@
     <string name="tile_label_paused">Orange 一時停止中</string>
     <string name="widget_a11y_role_lost">Orangeが無効。タップして再有効化。</string>
     <string name="digest_text">今週 %1$d 件の着信を止めた。</string>
+    <string name="digest_role_lost_text">着信の保護が停止しています。タップして再開</string>
     <string name="digest_text_monthly">今月 %1$d 件の着信を止めた。</string>
     <string name="notif_channel_police_warn">警察偽装警告</string>
     <string name="police_warn_title">%1$s の番号です</string>
