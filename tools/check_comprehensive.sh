@@ -174,6 +174,14 @@ else
     done
 fi
 
+# Separate metric: the TOTAL @Test count across all 33 test files (539), which
+# DEVELOPING.md's repo-tree comment cites and which is larger than the 435 the
+# SDK-free runner above covers (it excludes 9 files needing behavior-bearing
+# stubs, see FEATURE_AUDIT §1-6). Caught drifting 530 vs actual 539 (2026-09).
+_atc_actual=$(grep -c '@Test' app/src/test/java/com/orange/apple/*.kt | awk -F: '{s+=$2} END {print s}')
+_atc_doc=$(grep -oE '[0-9]+ tests\)' DEVELOPING.md | grep -oE '^[0-9]+' | head -1)
+_drift "Total @Test count" "$_atc_actual" "DEVELOPING.md" "$_atc_doc"
+
 _pm_actual=$(grep -cE '^[0-9]+\. \*\*' PRIVACY_MANIFESTO.md)
 [ "$_pm_actual" -ne 10 ] && { echo "FAIL: PRIVACY_MANIFESTO has $_pm_actual items; README/CONTRIBUTING describe 10 (8 refusals + 2 bounded)"; FAIL=1; }
 
