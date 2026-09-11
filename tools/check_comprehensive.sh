@@ -181,6 +181,16 @@ fi
 _atc_actual=$(grep -c '@Test' app/src/test/java/com/orange/apple/*.kt | awk -F: '{s+=$2} END {print s}')
 _atc_doc=$(grep -oE '[0-9]+ tests\)' DEVELOPING.md | grep -oE '^[0-9]+' | head -1)
 _drift "Total @Test count" "$_atc_actual" "DEVELOPING.md" "$_atc_doc"
+for _n in $(grep -oE '~[0-9]+ (Kotlin tests|unit tests)' SPECIFICATION.md | grep -oE '[0-9]+'); do
+    _drift "Total @Test count" "$_atc_actual" "SPECIFICATION.md" "$_n"
+done
+
+# Gate count: derive the denominator from this script's own last "=== N/M."
+# header rather than hardcoding it a second place to drift from.
+_gc_actual=$(grep -oE '^echo "=== [0-9]+/[0-9]+\.' "$0" | tail -1 | grep -oE '/[0-9]+' | tr -d '/')
+for _n in $(grep -oE '[0-9]+/[0-9]+ CI gates' SPECIFICATION.md | grep -oE '/[0-9]+' | tr -d '/'); do
+    _drift "Comprehensive gate count" "$_gc_actual" "SPECIFICATION.md" "$_n"
+done
 
 _pm_actual=$(grep -cE '^[0-9]+\. \*\*' PRIVACY_MANIFESTO.md)
 [ "$_pm_actual" -ne 10 ] && { echo "FAIL: PRIVACY_MANIFESTO has $_pm_actual items; README/CONTRIBUTING describe 10 (8 refusals + 2 bounded)"; FAIL=1; }
