@@ -152,6 +152,46 @@ for _f in README.md SPECIFICATION.md; do
     [ -n "$_cc_doc" ] && _drift "Elevated-risk country codes" "$_cc_actual" "$_f" "$_cc_doc"
 done
 
+# The comment above names "test count 199->276->285" as a repeat offender, yet
+# no assertion covered it — and it drifted again (RELEASING.md still advertised
+# a 285-test suite after the runner reached 435). The runner's own runtime
+# message is the source of truth; every present-tense restatement must match it.
+# Scope is deliberately narrow: FEATURE_AUDIT/CHANGELOG cite old counts as
+# HISTORY ("199 -> 285 this session"), which is correct prose, not drift.
+_tc_actual=$(grep -oE 'expected steady state: [0-9]+ run' tools/run-pure-tests.sh \
+             | grep -oE '[0-9]+' | head -1)
+if [ -z "$_tc_actual" ]; then
+    echo "FAIL: could not read the expected test count from tools/run-pure-tests.sh"; FAIL=1
+else
+    _tc_hdr=$(grep -oE '^# EXPECTED: [0-9]+ tests run' tools/run-pure-tests.sh | grep -oE '[0-9]+')
+    _drift "Test count (runner header vs runtime message)" \
+           "$_tc_actual" "tools/run-pure-tests.sh header" "$_tc_hdr"
+    for _n in $(grep -oE '[0-9]+[- ]test' RELEASING.md | grep -oE '^[0-9]+'); do
+        _drift "Test count" "$_tc_actual" "RELEASING.md" "$_n"
+    done
+    for _n in $(grep -oE '[0-9]+ expected green' docs/ci/ci.yml | grep -oE '^[0-9]+'); do
+        _drift "Test count" "$_tc_actual" "docs/ci/ci.yml" "$_n"
+    done
+fi
+
+# Separate metric: the TOTAL @Test count across all 33 test files (539), which
+# DEVELOPING.md's repo-tree comment cites and which is larger than the 435 the
+# SDK-free runner above covers (it excludes 9 files needing behavior-bearing
+# stubs, see FEATURE_AUDIT §1-6). Caught drifting 530 vs actual 539 (2026-09).
+_atc_actual=$(grep -c '@Test' app/src/test/java/com/orange/apple/*.kt | awk -F: '{s+=$2} END {print s}')
+_atc_doc=$(grep -oE '[0-9]+ tests\)' DEVELOPING.md | grep -oE '^[0-9]+' | head -1)
+_drift "Total @Test count" "$_atc_actual" "DEVELOPING.md" "$_atc_doc"
+for _n in $(grep -oE '~[0-9]+ (Kotlin tests|unit tests)' SPECIFICATION.md | grep -oE '[0-9]+'); do
+    _drift "Total @Test count" "$_atc_actual" "SPECIFICATION.md" "$_n"
+done
+
+# Gate count: derive the denominator from this script's own last "=== N/M."
+# header rather than hardcoding it a second place to drift from.
+_gc_actual=$(grep -oE '^echo "=== [0-9]+/[0-9]+\.' "$0" | tail -1 | grep -oE '/[0-9]+' | tr -d '/')
+for _n in $(grep -oE '[0-9]+/[0-9]+ CI gates' SPECIFICATION.md | grep -oE '/[0-9]+' | tr -d '/'); do
+    _drift "Comprehensive gate count" "$_gc_actual" "SPECIFICATION.md" "$_n"
+done
+
 _pm_actual=$(grep -cE '^[0-9]+\. \*\*' PRIVACY_MANIFESTO.md)
 [ "$_pm_actual" -ne 10 ] && { echo "FAIL: PRIVACY_MANIFESTO has $_pm_actual items; README/CONTRIBUTING describe 10 (8 refusals + 2 bounded)"; FAIL=1; }
 

@@ -144,11 +144,11 @@ When a call arrives, Orange evaluates in strict order; first match wins:
 
 ### Testing
 
-- **Unit tests:** ~530 Kotlin tests across 33 files in `app/src/test/`
+- **Unit tests:** ~539 Kotlin tests across 33 files in `app/src/test/`
   - Pure decision-engine tests (`CallDecisionTest`, `DecisionPriorityTest`, `EngineInvariantTest`)
   - Component tests (`PoliceStationDirectoryTest`, `TaxAgencyDirectoryTest`, `CaribbeanPremiumNANPTest`, `RepeatCallerTracker`/`WangiriTracker` coverage in `ComponentTests`, `PhoneVariantsTest`, `PauseTileTest`, etc.)
   - No Android emulator or device required — files exercising `Context`-dependent Android adapter classes (`SilentBlockerService`, the Activities, the Widget) are deliberately outside this suite; Robolectric is intentionally not used
-- **Static checks:** 10/10 CI gates
+- **Static checks:** 14/14 CI gates
   - `check_privacy.sh` — forbid network keywords
   - `check_comprehensive.sh` — forbid wildcard permissions, require ADRs, validate CSV keys, count @Test annotations (ensuring tests didn't regress)
   - `check_apk_size.sh` — enforce ≤1 MiB release APK
@@ -278,7 +278,7 @@ still awaiting a product decision, for a session picking up this branch cold.
 
 ✅ **Subtraction** — Every decision principle in Rams asks "what can we remove?" (see DESIGN_NOTES.md)
 
-✅ **Testing** — ~530 unit tests, 10/10 CI gates, Python oracle reference implementation
+✅ **Testing** — ~539 unit tests, 14/14 CI gates, Python oracle reference implementation
 
 ✅ **Variant handling** — phoneVariants() handles carrier inconsistencies (domestic 0… ↔ E.164 +81… ↔ mangled +810…)
 
