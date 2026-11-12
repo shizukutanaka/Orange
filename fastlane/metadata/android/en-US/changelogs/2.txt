@@ -1,0 +1,13 @@
+v1.1.0 — false-positive recovery and family setup.
+
+New:
+• Block history — review the last 50 silenced calls (numbers masked to the final 4 digits) and restore false positives with one tap. Tap the widget or the weekly digest to open it. Entries auto-delete after 30 days.
+• Settings screen — register up to 3 family numbers for the 家族に連絡 warning button and Quick Settings tile. Offered once after first setup.
+• Restore now works after the first week — every block keeps a silent notification with a Restore action.
+• Business directory expanded from 29 to 95+ verified numbers (carriers, banks, credit cards, transit, utilities, public hotlines).
+
+Fixed:
+• Trust-week block notifications were silently dropped.
+• Widget tap now opens block history instead of doing nothing while protection is active.
+
+Still: no internet permission, no contacts access, no account, no ads.
