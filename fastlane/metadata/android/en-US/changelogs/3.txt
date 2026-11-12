@@ -1,0 +1,17 @@
+v1.6.0 — impersonation warnings, and a spam cache that forgets.
+
+New:
+• Tax-agency impersonation warning — calls showing the National Tax Agency's number now ring WITH a warning instead of being trusted silently, the same treatment police numbers already had. Both are the numbers scammers spoof most.
+• Police warning rewritten to say what actually happens: real police never move you to LINE or a video call, and never discuss your money.
+• Protection-stopped notice — if call screening is switched off, the weekly digest tells you once, instead of going quiet exactly when it matters.
+
+Fixed:
+• Pause now really means every call rings — a repeat caller could still be silenced during a pause you asked for.
+• The monthly digest counted roughly a month of blocks but labelled them "this week".
+• Blocks from a one-off situation (an unattested carrier, a country you had not dialled yet) now expire after 180 days. Phone numbers get reassigned, and a permanent block meant silencing whoever received the number next.
+• Calling a police or tax number back no longer warns you — that callback reaches the real agency, and it is the safe thing to do.
+• Warnings, tiles and the widget can no longer fail in a way that delays the call itself.
+• Chinese and Korean were missing 21 strings and fell back to English.
+• Launcher icon now appears on Android 7 devices.
+
+Still: no internet permission, no contacts access, no account, no ads.
