@@ -302,6 +302,9 @@ internal object WarningNotifier {
         ctx: Context, mgr: NotificationManager,
         id: String, name: String, importance: Int
     ) {
+        // Notification channels exist only on API 26+; below that
+        // NotificationCompat ignores channel ids entirely.
+        if (android.os.Build.VERSION.SDK_INT < android.os.Build.VERSION_CODES.O) return
         if (mgr.getNotificationChannel(id) == null) {
             mgr.createNotificationChannel(
                 NotificationChannel(id, name, importance).apply {

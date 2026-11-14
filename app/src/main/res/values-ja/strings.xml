@@ -9,7 +9,7 @@
   競合（トビラフォン、Whoscall）が漢語/和語を多用しているため
   Orangeもそれに倣う。
 -->
-<resources>
+<resources xmlns:tools="http://schemas.android.com/tools">
     <string name="app_name">Orange</string>
 
     <string name="cta_protect">守る</string>
@@ -20,7 +20,9 @@
     <string name="notif_action_restore_and_call">解除して折り返す</string>
     <string name="notif_channel_trust">ブロック通知（最初の1週間）</string>
     <string name="notif_channel_ongoing">ブロック通知</string>
-    <string name="notif_summary_text">%d 件の通話をサイレントにしました — タップして確認</string>
+    <plurals name="notif_summary_text">
+        <item quantity="other">%d 件の通話をサイレントにしました — タップして確認</item>
+    </plurals>
 
     <string name="toast_restored">次回から鳴る</string>
 
@@ -29,9 +31,13 @@
     <string name="tile_label_active">Orange</string>
     <string name="tile_label_paused">Orange 一時停止中</string>
     <string name="widget_a11y_role_lost">Orangeが無効。タップして再有効化。</string>
-    <string name="digest_text">今週 %1$d 件の着信を止めた。</string>
+    <plurals name="digest_text">
+        <item quantity="other">今週 %1$d 件の着信を止めた。</item>
+    </plurals>
     <string name="digest_role_lost_text">着信の保護が停止しています。タップして再開</string>
-    <string name="digest_text_monthly">今月 %1$d 件の着信を止めた。</string>
+    <plurals name="digest_text_monthly">
+        <item quantity="other">今月 %1$d 件の着信を止めた。</item>
+    </plurals>
     <string name="notif_channel_police_warn">警察偽装警告</string>
     <string name="police_warn_title">%1$s の番号です</string>
     <string name="police_warn_body">本物の警察がLINEやビデオ通話に誘導したり、お金の話をすることはありません。あれば詐欺です。一度切って #9110 へ</string>
@@ -54,7 +60,9 @@
     <string name="notif_channel_postcall">通話後の安全確認</string>
     <string name="postcall_title">通話後のご確認</string>
     <string name="postcall_body">#9110 に相談できます</string>
-    <string name="postcall_body_big">#9110 警察相談 / 188 消費者ホットライン / 0120-210-364 国際電話不取扱受付（無料）</string>
+    <!-- TypographyDashes suppressed: the hyphens are the phone number
+         0120-210-364, which must stay hyphenated to remain dialable. -->
+    <string name="postcall_body_big" tools:ignore="TypographyDashes">#9110 警察相談 / 188 消費者ホットライン / 0120-210-364 国際電話不取扱受付（無料）</string>
     <string name="postcall_action_9110">#9110 に電話</string>
 
     <!-- 履歴画面 -->
@@ -90,7 +98,9 @@
     <string name="settings_section_family">家族の連絡先</string>
     <string name="settings_family_description">不審な着信があったとき、警告通知に家族への1タップ発信ボタンが追加されます。</string>
     <string name="settings_family_slot">スロット %1$d</string>
-    <string name="settings_family_placeholder">090-1234-5678</string>
+    <!-- TypographyDashes suppressed: this is a sample phone number;
+         the hyphens are the number format, not prose punctuation. -->
+    <string name="settings_family_placeholder" tools:ignore="TypographyDashes">090-1234-5678</string>
     <string name="settings_save">保存</string>
     <string name="settings_saved">保存済み</string>
     <string name="settings_invalid_number">無効な番号です</string>
@@ -98,7 +108,8 @@
     <string name="settings_view_history">ブロック履歴を見る</string>
     <string name="settings_section_block">番号をブロック</string>
     <string name="settings_block_description">他の方法で詐欺番号を知った場合はここでブロック。次回の着信からサイレントになります。</string>
-    <string name="settings_block_placeholder">090-1234-5678</string>
+    <!-- TypographyDashes suppressed: same sample phone number as above. -->
+    <string name="settings_block_placeholder" tools:ignore="TypographyDashes">090-1234-5678</string>
     <string name="settings_block_button">ブロック</string>
     <string name="settings_block_saved">ブロックしました</string>
     <string name="settings_block_invalid">無効または緊急通報番号です</string>

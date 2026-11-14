@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  AppWidget provider info for API 31+.
+
+  targetCellWidth / targetCellHeight / previewLayout only exist on
+  API 31+. Declaring them in the base xml/widget_orange_info.xml makes
+  lint flag them as unused on minSdk 24, so they live here; the base
+  file carries everything else and the values are identical.
+-->
+<appwidget-provider xmlns:android="http://schemas.android.com/apk/res/android"
+    android:minWidth="110dp"
+    android:minHeight="110dp"
+    android:targetCellWidth="2"
+    android:targetCellHeight="2"
+    android:updatePeriodMillis="1800000"
+    android:initialLayout="@layout/widget_orange"
+    android:resizeMode="none"
+    android:widgetCategory="home_screen"
+    android:previewLayout="@layout/widget_orange"/>

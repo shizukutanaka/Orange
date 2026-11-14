@@ -9,7 +9,7 @@
   If a new string is proposed and it can't clear all five tests,
   the feature that needs it shouldn't ship.
 -->
-<resources>
+<resources xmlns:tools="http://schemas.android.com/tools">
     <string name="app_name">Orange</string>
 
     <!-- Onboarding: single screen, single action. -->
@@ -22,7 +22,10 @@
     <string name="notif_action_restore_and_call">Restore &amp; Call</string>
     <string name="notif_channel_trust">Blocked calls (first week)</string>
     <string name="notif_channel_ongoing">Blocked calls</string>
-    <string name="notif_summary_text">%d calls silenced — tap to review</string>
+    <plurals name="notif_summary_text">
+        <item quantity="one">%d call silenced — tap to review</item>
+        <item quantity="other">%d calls silenced — tap to review</item>
+    </plurals>
 
     <!-- Confirmation after Restore. One sentence, no punctuation games. -->
     <string name="toast_restored">Will ring from now on</string>
@@ -34,9 +37,15 @@
     <!-- Quick Settings tile. -->
     <string name="tile_label_active">Orange</string>
     <string name="tile_label_paused">Orange paused</string>
-    <string name="digest_text">Silenced %1$d calls this week.</string>
+    <plurals name="digest_text">
+        <item quantity="one">Silenced %1$d call this week.</item>
+        <item quantity="other">Silenced %1$d calls this week.</item>
+    </plurals>
     <string name="digest_role_lost_text">Orange is no longer screening calls. Tap to turn protection back on.</string>
-    <string name="digest_text_monthly">Silenced %1$d calls this month.</string>
+    <plurals name="digest_text_monthly">
+        <item quantity="one">Silenced %1$d call this month.</item>
+        <item quantity="other">Silenced %1$d calls this month.</item>
+    </plurals>
     <string name="notif_channel_police_warn">Police impersonation warning</string>
     <string name="police_warn_title">Possible %1$s impersonation</string>
     <string name="police_warn_body">Real police never move you to LINE or a video call, and never ask about your money. If they do, it is a scam. Hang up and call #9110.</string>
@@ -59,7 +68,9 @@
     <string name="notif_channel_postcall">Post-call safety</string>
     <string name="postcall_title">Post-call safety check</string>
     <string name="postcall_body">You can consult the police at #9110 (free).</string>
-    <string name="postcall_body_big">#9110 Police consultation (free) / 188 Consumer hotline / 0120-210-364 Int\'l call opt-out (free)</string>
+    <!-- TypographyDashes suppressed: the hyphens are the phone number
+         0120-210-364, which must stay hyphenated to remain dialable. -->
+    <string name="postcall_body_big" tools:ignore="TypographyDashes">#9110 Police consultation (free) / 188 Consumer hotline / 0120-210-364 Int\'l call opt-out (free)</string>
     <string name="postcall_action_9110">Call #9110</string>
 
     <!-- History screen -->
@@ -139,8 +150,11 @@
     <string name="settings_transfer_export">Copy rules as JSON</string>
     <string name="settings_transfer_exported">Copied to clipboard</string>
     <string name="settings_transfer_import">Import from clipboard</string>
-    <string name="settings_transfer_import_result">Imported %1$d prefix rules and %2$d blocked numbers.</string>
-    <string name="settings_transfer_import_skipped">Skipped %1$d allow entries and %2$d reports — Orange has no list they belong to.</string>
+    <!-- The two transfer-result strings each format TWO counts, which a
+         <plurals> resource (one quantity per resource) cannot express;
+         PluralsCandidate is therefore suppressed for these two only. -->
+    <string name="settings_transfer_import_result" tools:ignore="PluralsCandidate">Imported %1$d prefix rules and %2$d blocked numbers.</string>
+    <string name="settings_transfer_import_skipped" tools:ignore="PluralsCandidate">Skipped %1$d allow entries and %2$d reports — Orange has no list they belong to.</string>
     <string name="settings_transfer_import_failed">Clipboard doesn\'t hold a valid block list.</string>
     <string name="settings_section_allowed">Allowed numbers</string>
     <string name="settings_allowed_description">Numbers you\'ve allowed from history. Ending in these last 4 digits always rings through.</string>

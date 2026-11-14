@@ -152,6 +152,9 @@ class WeeklyDigest : BroadcastReceiver() {
     }
 
     private fun ensureDigestChannel(ctx: Context, mgr: NotificationManager) {
+        // Notification channels exist only on API 26+; below that
+        // NotificationCompat ignores channel ids entirely.
+        if (android.os.Build.VERSION.SDK_INT < android.os.Build.VERSION_CODES.O) return
         if (mgr.getNotificationChannel(CHANNEL) != null) return
         mgr.createNotificationChannel(
             NotificationChannel(CHANNEL, ctx.getString(R.string.notif_channel_digest),
@@ -170,9 +173,9 @@ class WeeklyDigest : BroadcastReceiver() {
         ensureDigestChannel(ctx, mgr)
 
         val text = if (isMonthly)
-            ctx.getString(R.string.digest_text_monthly, count)
+            ctx.resources.getQuantityString(R.plurals.digest_text_monthly, count, count)
         else
-            ctx.getString(R.string.digest_text, count)
+            ctx.resources.getQuantityString(R.plurals.digest_text, count, count)
 
         val historyPi = android.app.PendingIntent.getActivity(
             ctx, 0,

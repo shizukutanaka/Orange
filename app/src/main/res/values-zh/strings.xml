@@ -1,4 +1,4 @@
-<resources>
+<resources xmlns:tools="http://schemas.android.com/tools">
     <string name="app_name">Orange</string>
     <string name="cta_protect">守护</string>
     <string name="cta_protect_description">保护此手机免受骚扰电话</string>
@@ -7,15 +7,21 @@
     <string name="notif_action_restore_and_call">取消拦截并回拨</string>
     <string name="notif_channel_trust">已拦截的来电（前 7 天）</string>
     <string name="notif_channel_ongoing">已拦截的来电</string>
-    <string name="notif_summary_text">已静音 %d 个来电 — 点击查看</string>
+    <plurals name="notif_summary_text">
+        <item quantity="other">已静音 %d 个来电 — 点击查看</item>
+    </plurals>
     <string name="toast_restored">下次起将正常响铃</string>
     <string name="widget_caption">已拦截</string>
     <string name="tile_label_active">Orange</string>
     <string name="tile_label_paused">Orange 已暂停</string>
     <string name="widget_a11y_role_lost">Orange 已停用。点击重新激活。</string>
-    <string name="digest_text">本周拦截了 %1$d 通来电。</string>
+    <plurals name="digest_text">
+        <item quantity="other">本周拦截了 %1$d 通来电。</item>
+    </plurals>
     <string name="digest_role_lost_text">来电保护已停止。点按以重新开启</string>
-    <string name="digest_text_monthly">本月拦截了 %1$d 通来电。</string>
+    <plurals name="digest_text_monthly">
+        <item quantity="other">本月拦截了 %1$d 通来电。</item>
+    </plurals>
     <string name="notif_channel_police_warn">警方号码伪装警告</string>
     <string name="police_warn_title">来自 %1$s 的号码</string>
     <string name="police_warn_body">真警察不会让你转到 LINE 或视频通话，也不会谈论你的钱。若有，即是诈骗。请挂断并拨打 #9110</string>
@@ -38,7 +44,9 @@
     <string name="notif_channel_postcall">通话后安全提示</string>
     <string name="postcall_title">通话后确认</string>
     <string name="postcall_body">可拨打 #9110 咨询警察</string>
-    <string name="postcall_body_big">#9110 警察咨询 / 188 消费者热线 / 0120-210-364 国际电话停用申请（免费）</string>
+    <!-- TypographyDashes suppressed: the hyphens are the phone number
+         0120-210-364, which must stay hyphenated to remain dialable. -->
+    <string name="postcall_body_big" tools:ignore="TypographyDashes">#9110 警察咨询 / 188 消费者热线 / 0120-210-364 国际电话停用申请（免费）</string>
     <string name="postcall_action_9110">拨打 #9110</string>
 
     <string name="history_consult_banner">如遭受诈骗，可免费拨打 #9110 咨询警察</string>
