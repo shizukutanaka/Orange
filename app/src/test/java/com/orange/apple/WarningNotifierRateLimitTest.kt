@@ -156,7 +156,13 @@ class WarningNotifierRateLimitTest {
         p.edit().putLong(outboundKey(p, numberA), now).apply()
 
         val lastB = p.getLong(outboundKey(p, numberB), 0L)
-        assertFalse("B should not be rate-limited by A's record", now - lastB < window)
+        // Mirror showOutboundWarning's predicate exactly: a missing record reads
+        // back as 0, and 0 means "never warned" — without the lastB > 0 guard,
+        // now (=1,000,000) < window (1h) makes now - 0 < window spuriously true
+        // for every never-warned number. If B ever shared A's bucket, lastB
+        // would be `now` here and this assertion would still fail.
+        assertFalse("B should not be rate-limited by A's record",
+            lastB > 0L && (now < lastB || now - lastB < window))
     }
 
     // --- Stale rate-limit key pruning ---
