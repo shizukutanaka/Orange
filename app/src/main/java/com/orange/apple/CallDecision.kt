@@ -53,6 +53,12 @@ enum class BlockReason {
     REPEAT_CALLER,
     /** User explicitly blocked this number via Settings, not derived from any decision layer. */
     MANUAL_BLOCK,
+    /**
+     * User-defined prefix rule matched (Layer 6b): the caller starts with
+     * digits the user chose to block as a range. Ported from Ring in the
+     * 2026-11 consolidation; see PrefixRules.kt for the rule semantics.
+     */
+    PREFIX_RULE,
 }
 
 /** Everything the engine learns about ONE incoming call. */
@@ -110,6 +116,13 @@ data class CallState(
      * hash lookups) so the pure decision engine never needs prefs.
      */
     val wangiriRingAt: Long?,
+
+    /**
+     * The user's prefix block rules (PrefixBlockStore), consulted at
+     * Layer 6b. Loaded by the adapter; the engine only reads the list.
+     * Defaults to empty so existing CallState constructions are unaffected.
+     */
+    val prefixRules: List<PrefixRule> = emptyList(),
 )
 
 /** Engine result: what to do, and why. */
@@ -211,6 +224,19 @@ fun decide(ctx: CallContext, state: CallState): Decision {
 
     // Layer 6: User-marked spam. Always block on subsequent attempts.
     if (state.isSpamCached) return Decision(Verdict.SILENCE, BlockReason.SPAM_CACHE)
+
+    // Layer 6b: User prefix rules (ported from Ring, 2026-11). Placement is
+    // the design decision: BELOW the trust layers (4 outbound-known,
+    // 5 bundled business) and the exact-match spam cache, ABOVE every
+    // heuristic layer (wangiri, spoof, foreign, DND, risk-hour). A prefix
+    // is a range the user picked — it must never silence a specific
+    // number the user demonstrably trusts, and it must never lose to a
+    // guess. Empty-number safety: Layers 2/3 and the empty guard above
+    // have already returned for withheld/empty numbers, and
+    // matchPrefixRule itself refuses an empty number.
+    if (matchPrefixRule(ctx.number, ctx.calleeCountryIso, state.prefixRules) != null) {
+        return Decision(Verdict.SILENCE, BlockReason.PREFIX_RULE)
+    }
 
     // Layer 7: Wangiri callback. SilentBlockerService pre-computed whether any
     // phone variant of the current caller matches a recent short ring.
@@ -482,6 +508,9 @@ internal fun isExpiringSilence(reason: BlockReason): Boolean = when (reason) {
     BlockReason.SPAM_CACHE                  -> false
     BlockReason.MANUAL_BLOCK                -> false
     // Never cached in the first place (isCacheableSilence == false), so the
+    // value is moot; stated explicitly for the same reason as DND_HONOR.
+    BlockReason.PREFIX_RULE                 -> false
+    // Never cached in the first place (isCacheableSilence == false), so the
     // value is moot; stated explicitly so a new enum entry breaks the build here
     // too and forces the author to classify it.
     BlockReason.DND_HONOR                   -> false
@@ -512,6 +541,11 @@ internal fun isCacheableSilence(reason: BlockReason): Boolean = when (reason) {
     // True for consistency: a manual block is the most persistent kind of
     // property a number can have (explicit, permanent user intent).
     BlockReason.MANUAL_BLOCK                -> true
+    // PREFIX_RULE: the judgement belongs to the RULE, not to this number.
+    // Caching would keep the number silenced after the user deletes the
+    // rule, and would silently narrow a range rule into a permanent
+    // exact block of whichever number happened to match first.
+    BlockReason.PREFIX_RULE                 -> false
     // NOTE: adding a new BlockReason enum entry will cause a compile error here,
     // forcing the author to decide whether it should be cached or not.
 }

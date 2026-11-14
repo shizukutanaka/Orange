@@ -19,7 +19,7 @@ Steps 1, 3 and 4 are described in full below. All three are mechanical.
 **The open product decisions live elsewhere.** This file used to carry one
 ("decide the two intentionally-failing `DomesticSpoofDetector` tests") — that is
 **resolved**: both now assert the abstain with the ITU-T E.164 reasoning written
-into the test body, and the suite runs 435/0 with an empty allowed-failure list.
+into the test body, and the suite runs 504/0 with an empty allowed-failure list.
 The four items once filed as "open decisions" (W6, W8, §1-12, §1-13) are each
 **already shipped as a concrete, verified default** — suffix-granularity allow,
 no full-screen interruption, no premium-rate layer, oracle retained. There is no
@@ -41,7 +41,7 @@ git commit -m "ci: activate workflow" && git push
 
 From that commit on, every push and PR runs: the static gates (privacy guard,
 decision oracle, 14/14 comprehensive checks, locale key parity across
-en/ja/zh/ko, XML + JSON validity), the SDK-free 435-test suite, and the full
+en/ja/zh/ko, XML + JSON validity), the SDK-free 504-test suite, and the full
 Android build (`testReleaseUnitTest` → `lintRelease` → `assembleRelease` → APK
 size budget), uploading the APK as an artifact.
 
@@ -87,7 +87,7 @@ both counts. The exclusion came from the initial commit, filed under an
 unrelated heading with no rationale, while the same `.gitignore` assumed a CI
 existed. The workflow now lives at `docs/ci/ci.yml` until step 1 activates it,
 and runs the static gates, the
-435-test SDK-free suite, and the full Android build.)
+504-test SDK-free suite, and the full Android build.)
 
 What IS already public and needs no further action: the source (public
 repo), the immutable `v1.6.0` ref + its verified-downloadable source
