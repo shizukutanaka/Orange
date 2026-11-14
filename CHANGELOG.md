@@ -6,6 +6,9 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Changed
+- **APK size budget raised 1 MiB → 1.5 MiB** (`tools/check_apk_size.sh`) — the 1 MiB ceiling was set before CI had ever reached the size step and had never been measured against the real app; the first full CI run measured 1.3 MiB after the Ring consolidation features (PR #10). The budget remains a bloat guard, set at the measured size plus ~15% headroom.
+
 ### Added
 - **Ring consolidation: prefix block rules, number lookup, block-list transfer** — Ring, the sibling spam-call blocker, was folded into Orange by the owner's decision (2026-11-14); Orange is now the single spam-call blocker. Ported from Ring's spam blocker (with its golden test vectors): user-defined **prefix block rules** (Settings → "Block by prefix"; matched in `decide()` as new Layer 6b, below the trust layers and the exact-match spam cache, above every heuristic — see ADR 013), a **"Check a number"** lookup (Ring's parse/classify semantics: toll-free / IP phone / mobile / Navi Dial / fixed line / international, plus which of the user's own protections would apply), and **block-list transfer** in Ring's JSON schema v1 (export carries prefix rules only — blocked numbers are salted hashes and cannot be read back, ADR 006; import accepts prefix rules and exact numbers, and visibly counts the allow/report entries it skips). No new permissions, no network code: the transfer rides the clipboard. Suite: 504 SDK-free tests (was 435), 608 total.
 

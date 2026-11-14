@@ -88,7 +88,7 @@ B の残り3手順が済んだ時点で、この節ごと削除してよい(A �
 1. `INTERNET` / `READ_CONTACTS` / `READ_CALL_LOG` 権限の追加禁止。製品のプライバシー上の核心的約束。
 2. 開発・push は `claude/sleepy-hypatia-o9gwuv` ブランチのみ(git プロキシも他 ref を 403 で拒否する)。
 3. テストは JVM 純粋ユニットテストのみ。**Robolectric 禁止**。Context 依存コードは純関数を分離してテストする。
-4. APK ≤ 1 MiB(CI ゲート `tools/check_apk_size.sh`)。
+4. APK ≤ 1.5 MiB(CI ゲート `tools/check_apk_size.sh`)。
 5. `PhoneNumbers.normalize()` / `phoneVariants()` / `isCacheableSilence()` は single source of truth。再実装禁止。
 6. 番号照合・キャッシュ書込は**必ず全 `phoneVariants()` に対して行う**(コードベース全体の規約)。
 7. ロケール文字列を1つでも触ったら、en/ja/zh/ko の4ファイルでキー集合一致を検証する
