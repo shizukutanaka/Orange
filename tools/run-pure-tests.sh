@@ -77,7 +77,34 @@ KCP=$(find "$GRADLE_LIB" -name '*.jar' | tr '\n' ':')
 STDLIB=$(ls "$GRADLE_LIB"/kotlin-stdlib-*.jar | head -1)
 JUNIT=$(ls "$GRADLE_LIB"/junit-*.jar | head -1)
 HAMCREST=$(ls "$GRADLE_LIB"/hamcrest-core-*.jar | head -1)
-KC() { java -cp "$KCP" org.jetbrains.kotlin.cli.jvm.K2JVMCompiler "$@" 2>&1 | grep -v 'JAVA_TOOL_OPTIONS\|unable to find' || true; }
+
+# The borrowed compiler must not be older than the Kotlin the sources are
+# written for (gradle/libs.versions.toml). A Gradle distribution's embeddable
+# compiler can lag the language level: the wrapper-pinned Gradle 8.10.2
+# embeds Kotlin 1.9.24 while the sources require 2.0.20. Compiling with the
+# old compiler fails on the main sources first (e.g. `return` inside a
+# try-expression body, legal since 2.0), and because KC used to swallow the
+# failure, the run then drowned in hundreds of misleading "unresolved
+# reference" errors against the *test* files. Fail here, with the remedy,
+# instead.
+EMBEDDABLE_JAR=$(ls "$GRADLE_LIB"/kotlin-compiler-embeddable-*.jar | head -1)
+COMPILER_VER=$(basename "$EMBEDDABLE_JAR" | sed -E 's/^kotlin-compiler-embeddable-([0-9]+\.[0-9]+\.[0-9]+).*/\1/')
+REQUIRED_VER=$(grep -E '^kotlin[[:space:]]*=' gradle/libs.versions.toml | head -1 | grep -oE '[0-9]+\.[0-9]+\.[0-9]+' || true)
+if [[ -n "$REQUIRED_VER" && "$(printf '%s\n%s\n' "$REQUIRED_VER" "$COMPILER_VER" | sort -V | head -1)" != "$REQUIRED_VER" ]]; then
+  echo "ERROR: GRADLE_LIB provides kotlin-compiler-embeddable $COMPILER_VER, but the sources require Kotlin >= $REQUIRED_VER (gradle/libs.versions.toml)." >&2
+  echo "Point GRADLE_LIB at a Gradle distribution whose embeddable Kotlin is new enough (Gradle 8.11 embeds 2.0.20)." >&2
+  exit 2
+fi
+
+KC() {
+  local out rc=0
+  out=$(java -cp "$KCP" org.jetbrains.kotlin.cli.jvm.K2JVMCompiler "$@" 2>&1) || rc=$?
+  printf '%s\n' "$out" | grep -v 'JAVA_TOOL_OPTIONS\|unable to find' || true
+  if [[ "$rc" -ne 0 ]]; then
+    echo "ERROR: Kotlin compilation failed (kotlinc exit $rc) — see the errors above." >&2
+    exit 1
+  fi
+}
 
 SRC=app/src/main/java/com/orange/apple
 T=app/src/test/java/com/orange/apple
