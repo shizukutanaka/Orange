@@ -105,26 +105,24 @@ jobs:
           distribution: temurin
           java-version: '17'
 
-      # run-pure-tests.sh borrows the Kotlin compiler and JUnit jars from a
-      # Gradle distribution rather than resolving dependencies, so it needs no
-      # Android SDK and no network. Locate the runner's Gradle for it; the
-      # script also probes /opt/gradle-*/lib and $(which gradle)/../lib itself.
-      - name: Locate Gradle libs
+      # run-pure-tests.sh borrows the Kotlin compiler and the JUnit/Hamcrest
+      # jars from a Gradle distribution's lib/ rather than resolving
+      # dependencies, so it needs no Android SDK. The runner image's Gradle 9
+      # no longer bundles the junit/hamcrest jars in lib/ (only a junit-bom
+      # .properties file remains), so borrowing it kills the script's `ls`
+      # probe with exit code 2 before a single test runs. Install the pinned
+      # distribution the runner is verified against instead — 8.14.3 ships
+      # embeddable Kotlin 2.0.21 (>= the required 2.0.20) plus junit and
+      # hamcrest in lib/.
+      - name: Install pinned Gradle for the SDK-free runner
         id: gradlelib
         run: |
-          lib=""
-          for cand in /opt/gradle-*/lib /usr/share/gradle*/lib \
-                      "$(dirname "$(command -v gradle 2>/dev/null || echo /nonexistent)")/../lib"; do
-            if compgen -G "$cand/kotlin-compiler-embeddable-*.jar" > /dev/null 2>&1; then
-              lib="$(cd "$cand" && pwd)"; break
-            fi
-          done
-          if [ -z "$lib" ]; then
-            echo "::error::No Gradle distribution with kotlin-compiler-embeddable found on the runner."
-            exit 1
-          fi
-          echo "GRADLE_LIB=$lib" >> "$GITHUB_OUTPUT"
-          echo "Using $lib"
+          ver=8.14.3
+          curl -fsSL -o /tmp/gradle-bin.zip \
+            "https://services.gradle.org/distributions/gradle-${ver}-bin.zip"
+          sudo unzip -q /tmp/gradle-bin.zip -d /opt
+          echo "GRADLE_LIB=/opt/gradle-${ver}/lib" >> "$GITHUB_OUTPUT"
+          echo "Using /opt/gradle-${ver}/lib"
 
       # Exits non-zero on any test failure (504 expected green; the script's
       # ALLOWED escape hatch for deliberately-failing signal tests is empty —
