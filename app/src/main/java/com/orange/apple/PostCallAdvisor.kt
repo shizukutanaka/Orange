@@ -44,7 +44,7 @@ object PostCallAdvisor {
 
     const val THRESHOLD_MS = 30_000L
     private const val CHANNEL = "orange_postcall"
-    private const val WINDOW_MS = 24L * 60 * 60 * 1000
+    internal const val WINDOW_MS = 24L * 60 * 60 * 1000
 
     @Synchronized
     fun maybeShow(ctx: Context, number: String, durationMs: Long) {
