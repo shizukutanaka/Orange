@@ -84,6 +84,7 @@ private fun HistoryScreen() {
     val lazyListState = rememberLazyListState()
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
+    val historyTitle = stringResource(R.string.history_title)
 
     Scaffold(
         topBar = {
@@ -92,7 +93,7 @@ private fun HistoryScreen() {
                     Text(
                         stringResource(R.string.history_title),
                         fontWeight = FontWeight.SemiBold,
-                        modifier = Modifier.semantics { contentDescription = stringResource(R.string.history_title) }
+                        modifier = Modifier.semantics { contentDescription = historyTitle }
                     )
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
@@ -198,6 +199,7 @@ private fun HistoryScreen() {
 @Composable
 private fun ConsultBanner() {
     val ctx = LocalContext.current
+    val call9110Label = stringResource(R.string.postcall_action_9110)
     Card(
         shape = RoundedCornerShape(12.dp),
         colors = CardDefaults.cardColors(containerColor = Color(0xFFFFF3E0)),
@@ -222,7 +224,7 @@ private fun ConsultBanner() {
                             .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
                     )
                 },
-                modifier = Modifier.semantics { contentDescription = stringResource(R.string.postcall_action_9110) }
+                modifier = Modifier.semantics { contentDescription = call9110Label }
             ) {
                 Text(
                     stringResource(R.string.postcall_action_9110),
@@ -253,6 +255,7 @@ private fun HistoryCard(
     // (e.g. CARRIER_VERIFICATION_FAILED for a carrier with STIR/SHAKEN issues, or
     //  PREMIUM_RATE_INTERNATIONAL for a family member calling from the Caribbean).
     val canAllow = entry.reason !in setOf(BlockReason.WITHHELD_NUMBER, BlockReason.DOMESTIC_SPOOF)
+    val allowLabel = stringResource(R.string.history_action_allow)
 
     Card(
         shape = RoundedCornerShape(12.dp),
@@ -318,7 +321,7 @@ private fun HistoryCard(
                 TextButton(
                     onClick = onAllow,
                     modifier = Modifier.semantics {
-                        contentDescription = "${stringResource(R.string.history_action_allow)} ${entry.maskedNumber}"
+                        contentDescription = "$allowLabel ${entry.maskedNumber}"
                     }
                 ) {
                     Text(
