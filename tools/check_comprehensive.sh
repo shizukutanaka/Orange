@@ -169,8 +169,8 @@ else
     for _n in $(grep -oE '[0-9]+[- ]test' RELEASING.md | grep -oE '^[0-9]+'); do
         _drift "Test count" "$_tc_actual" "RELEASING.md" "$_n"
     done
-    for _n in $(grep -oE '[0-9]+ expected green' docs/ci/ci.yml | grep -oE '^[0-9]+'); do
-        _drift "Test count" "$_tc_actual" "docs/ci/ci.yml" "$_n"
+    for _n in $(grep -oE '[0-9]+ expected green' .github/workflows/ci.yml | grep -oE '^[0-9]+'); do
+        _drift "Test count" "$_tc_actual" ".github/workflows/ci.yml" "$_n"
     done
 fi
 
