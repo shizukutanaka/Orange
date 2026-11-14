@@ -64,6 +64,7 @@
     <string name="reason_dnd">방해 금지 모드</string>
     <string name="reason_repeat_caller">반복 착신</string>
     <string name="reason_manual_block">수동 차단</string>
+    <string name="reason_prefix_rule">접두사 규칙으로 차단</string>
     <string name="settings_title">설정</string>
     <string name="settings_section_family">가족 연락처</string>
     <string name="settings_family_description">의심스러운 전화가 오면 경고 알림에 가족에게 바로 전화할 수 있는 버튼이 표시됩니다.</string>

@@ -64,6 +64,7 @@
     <string name="reason_dnd">免打扰模式</string>
     <string name="reason_repeat_caller">频繁来电</string>
     <string name="reason_manual_block">手动拦截</string>
+    <string name="reason_prefix_rule">按前缀规则拦截</string>
     <string name="settings_title">设置</string>
     <string name="settings_section_family">家人联系方式</string>
     <string name="settings_family_description">收到可疑来电时，警告通知将显示一键呼叫家人的按钮。</string>

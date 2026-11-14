@@ -88,6 +88,7 @@
     <string name="reason_dnd">DND active</string>
     <string name="reason_repeat_caller">Repeat caller</string>
     <string name="reason_manual_block">Blocked manually</string>
+    <string name="reason_prefix_rule">Blocked by prefix rule</string>
 
     <!-- Settings screen -->
     <string name="settings_title">Settings</string>
