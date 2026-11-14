@@ -18,7 +18,7 @@ class CallStateObserverTest {
     @Test fun outbound_add_appears_in_set() {
         val p = FakePrefs()
         addToOutbound(p, "+14155551234")
-        val set = p.getStringSet(SilentBlockerService.KEY_OUTBOUND, emptySet())!!
+        val set = p.getStringSet(SilentBlockerService.KEY_OUTBOUND, mutableSetOf())!!
         assertTrue(SpamCache.hash(p, "+14155551234") in set)
     }
 
@@ -26,7 +26,7 @@ class CallStateObserverTest {
         val p = FakePrefs()
         addToOutbound(p, "+111")
         addToOutbound(p, "+111")
-        val set = p.getStringSet(SilentBlockerService.KEY_OUTBOUND, emptySet())!!
+        val set = p.getStringSet(SilentBlockerService.KEY_OUTBOUND, mutableSetOf())!!
         assertEquals(1, set.size)
     }
 
@@ -35,7 +35,7 @@ class CallStateObserverTest {
         repeat(SilentBlockerService.MAX_OUTBOUND_ENTRIES + 10) { i ->
             addToOutbound(p, "+$i")
         }
-        val set = p.getStringSet(SilentBlockerService.KEY_OUTBOUND, emptySet())!!
+        val set = p.getStringSet(SilentBlockerService.KEY_OUTBOUND, mutableSetOf())!!
         assertEquals(SilentBlockerService.MAX_OUTBOUND_ENTRIES, set.size)
     }
 
@@ -88,7 +88,7 @@ class CallStateObserverTest {
         val p = FakePrefs()
         addToOutbound(p, "110")
         addToOutbound(p, "119")
-        val set = p.getStringSet(SilentBlockerService.KEY_OUTBOUND, emptySet())!!
+        val set = p.getStringSet(SilentBlockerService.KEY_OUTBOUND, mutableSetOf())!!
         assertFalse("110 must not be in outbound set", SpamCache.hash(p, "110") in set)
         assertFalse("119 must not be in outbound set", SpamCache.hash(p, "119") in set)
     }
@@ -98,7 +98,7 @@ class CallStateObserverTest {
         if (number.isEmpty()) return
         if (EmergencyWhitelist.isEmergency(number)) return
         val hash = SpamCache.hash(prefs, number)
-        val set = prefs.getStringSet(SilentBlockerService.KEY_OUTBOUND, emptySet())!!
+        val set = prefs.getStringSet(SilentBlockerService.KEY_OUTBOUND, mutableSetOf())!!
             .toMutableSet()
         if (set.add(hash)) {
             if (set.size > SilentBlockerService.MAX_OUTBOUND_ENTRIES) {
