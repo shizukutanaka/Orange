@@ -122,7 +122,11 @@ object PostCallAdvisor {
         val mgr = ctx.getSystemService(Context.NOTIFICATION_SERVICE) as? NotificationManager
             ?: return
 
-        if (mgr.getNotificationChannel(CHANNEL) == null) {
+        // NotificationChannel APIs exist only on API 26+. Below that,
+        // NotificationCompat ignores the channel id, so there is nothing
+        // to ensure.
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O &&
+            mgr.getNotificationChannel(CHANNEL) == null) {
             mgr.createNotificationChannel(
                 NotificationChannel(
                     CHANNEL,

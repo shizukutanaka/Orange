@@ -161,12 +161,14 @@ object TrustNotifier {
     ) {
         // notification.group is the raw group key without Android's package prefix
         // (groupKey includes the package name, making endsWith() fragile).
-        val count = if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.M) {
-            mgr.activeNotifications.count {
-                it.notification.group == "orange_blocks" && it.id != NOTIF_ID_SUMMARY
-            }
-        } else 0
-        val summaryText = ctx.getString(R.string.notif_summary_text, count.coerceAtLeast(1))
+        // activeNotifications is API 23+ and minSdk is 24, so no
+        // version check is needed here.
+        val count = mgr.activeNotifications.count {
+            it.notification.group == "orange_blocks" && it.id != NOTIF_ID_SUMMARY
+        }
+        val summaryCount = count.coerceAtLeast(1)
+        val summaryText = ctx.resources.getQuantityString(
+            R.plurals.notif_summary_text, summaryCount, summaryCount)
         val summary = NotificationCompat.Builder(ctx, CHANNEL_ONGOING)
             .setSmallIcon(android.R.drawable.stat_sys_phone_call_forward)
             .setContentTitle(ctx.getString(R.string.app_name))
@@ -195,6 +197,9 @@ object TrustNotifier {
     }
 
     private fun ensureChannel(ctx: Context, id: String, name: String, importance: Int) {
+        // Notification channels exist only on API 26+; below that
+        // NotificationCompat ignores channel ids entirely.
+        if (android.os.Build.VERSION.SDK_INT < android.os.Build.VERSION_CODES.O) return
         val mgr = ctx.getSystemService(Context.NOTIFICATION_SERVICE) as? NotificationManager ?: return
         if (mgr.getNotificationChannel(id) == null) {
             mgr.createNotificationChannel(NotificationChannel(id, name, importance).apply {

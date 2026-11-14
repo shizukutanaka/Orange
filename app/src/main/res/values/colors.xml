@@ -16,6 +16,4 @@
 -->
 <resources>
     <color name="orange_primary">#FF8C42</color>
-    <color name="orange_primary_pale">#FFE4CC</color>
-    <color name="white">#FFFFFF</color>
 </resources>

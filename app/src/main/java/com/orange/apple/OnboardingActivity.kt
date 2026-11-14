@@ -195,7 +195,15 @@ private fun ProtectScreen(fadingOut: Boolean, onTap: () -> Unit) {
                     interactionSource = remember { MutableInteractionSource() },
                     indication = ripple(color = Color(0xFFFF8C42))
                 ) {
-                    view.performHapticFeedback(HapticFeedbackConstants.CONFIRM)
+                    // CONFIRM exists only on API 30+; on older versions
+                    // CONTEXT_CLICK (API 23+) is the closest equivalent.
+                    view.performHapticFeedback(
+                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                            HapticFeedbackConstants.CONFIRM
+                        } else {
+                            HapticFeedbackConstants.CONTEXT_CLICK
+                        }
+                    )
                     onTap()
                 }
                 .semantics { contentDescription = description },

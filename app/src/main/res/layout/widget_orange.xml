@@ -4,42 +4,49 @@
   caption. No buttons, no decoration, no chrome. If the widget doesn't
   invite fidgeting, users learn to trust it.
 
+  Single root: the LinearLayout carries the background and padding
+  itself. An earlier FrameLayout wrapper existed only to center the
+  column; gravity on the root does the same job with one less layer
+  (and one less full-screen paint).
+
   16dp padding on all sides gives the foreground 88x88dp breathing room
   inside Android's 110x110dp widget minimum, which matches the app icon's
   inner safe zone. The widget is the icon enlarged.
+
+  Overdraw is suppressed on the root: lint infers the application theme
+  (Theme.Orange) as a background painted behind this layout, but this
+  is a RemoteViews widget layout. A widget host never paints the app
+  theme behind it, so the root background is the only paint there is,
+  not a second one.
 -->
-<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
     android:id="@+id/widget_root"
+    tools:ignore="Overdraw"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@color/orange_primary"
-    android:padding="16dp">
+    android:padding="16dp"
+    android:gravity="center"
+    android:orientation="vertical">
 
-    <LinearLayout
+    <TextView
+        android:id="@+id/w_number"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_gravity="center"
-        android:orientation="vertical">
+        android:layout_gravity="center_horizontal"
+        android:textSize="48sp"
+        android:textStyle="bold"
+        android:importantForAccessibility="yes"
+        tools:text="247"/>
 
-        <TextView
-            android:id="@+id/w_number"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_gravity="center_horizontal"
-            android:textSize="48sp"
-            android:textStyle="bold"
-            android:importantForAccessibility="yes"
-            tools:text="247"/>
-
-        <TextView
-            android:id="@+id/w_caption"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_gravity="center_horizontal"
-            android:layout_marginTop="-4dp"
-            android:textSize="12sp"
-            android:importantForAccessibility="yes"
-            tools:text="silenced"/>
-    </LinearLayout>
-</FrameLayout>
+    <TextView
+        android:id="@+id/w_caption"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center_horizontal"
+        android:layout_marginTop="-4dp"
+        android:textSize="12sp"
+        android:importantForAccessibility="yes"
+        tools:text="silenced"/>
+</LinearLayout>
