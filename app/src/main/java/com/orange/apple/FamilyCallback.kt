@@ -1,5 +1,6 @@
 package com.orange.apple
 
+import android.annotation.SuppressLint
 import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
@@ -144,6 +145,16 @@ class FamilyCallbackTile : TileService() {
                 )
                 startActivityAndCollapse(pi)
             } else {
+                // Before API 34 the Intent overload is the only way to
+                // collapse the panel, and it cannot throw there: the
+                // UnsupportedOperationException lives in API 34+ framework
+                // code, which this branch never runs on (34+ takes the
+                // PendingIntent path above). Lint's
+                // StartActivityAndCollapseDeprecated check does not
+                // analyze version guards — it errors on any Intent
+                // overload call when targetSdk >= 34 — so suppress it for
+                // this call site only.
+                @SuppressLint("StartActivityAndCollapseDeprecated")
                 @Suppress("DEPRECATION")
                 startActivityAndCollapse(intent)
             }

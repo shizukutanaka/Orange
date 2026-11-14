@@ -132,13 +132,13 @@ android {
         abortOnError = true
         // Categories Orange specifically cares about
         checkDependencies = true
-        // Print every finding to the build log. Without this, lint shows
-        // only the first error on the console and buries the rest in an
-        // HTML report file on the build machine — in CI that file is gone
-        // when the job ends, so the remaining failures were invisible.
-        // This changes visibility only; it does not weaken any check.
+        // Generate the plain-text report. Lint shows only the first error
+        // on the console and buries the rest in report files on the build
+        // machine — in CI those files are gone when the job ends, so the
+        // remaining failures were invisible. The CI workflow prints this
+        // report file after the lint step. Visibility only; no check is
+        // weakened.
         textReport = true
-        textOutput = file("stdout")
         // We don't disable default lint checks — if a lint rule is wrong
         // for our codebase, fix the code. One deliberate exception:
         //  - OldTargetApi: targetSdk stays at 35 on purpose. It still
