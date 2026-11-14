@@ -22,7 +22,7 @@
 # Runs the tests whose transitive dependencies are either Android-free OR touch
 # only android.content.SharedPreferences (+ androidx.core.content.edit,
 # android.util.Base64, android.security.keystore.* for SaltVault), plus anything
-# reachable through a CONSTANTS-ONLY stub. That is 24 of the repo's 33 test
+# reachable through a CONSTANTS-ONLY stub. That is 29 of the repo's 38 test
 # files: the whole decision engine (CallDecisionTest's 111 cases,
 # EngineInvariantTest, DecisionPriorityTest, PhoneVariantsTest), the
 # numbering-plan and directory logic, and the SharedPreferences-backed stores.
@@ -51,7 +51,7 @@
 # throws on the JVM and it falls back to a plaintext salt before any keystore
 # type is instantiated). No stub carries business logic, so none can mask a bug.
 #
-# EXPECTED: 435 tests run, 0 failures. (Two DomesticSpoofDetector tests spent a
+# EXPECTED: 504 tests run, 0 failures. (Two DomesticSpoofDetector tests spent a
 # while intentionally failing as the visible signal of a design question; ITU-T
 # E.164 settled it — the leading 0 is a trunk prefix, so the abstain is the
 # contract being honoured — and the tests now assert the correct behaviour with
@@ -205,6 +205,10 @@ MAIN_SRCS=(
   "$SRC/SpamCache.kt" "$SRC/SaltVault.kt" "$SRC/OutboundGuard.kt" "$SRC/WangiriTracker.kt"
   "$SRC/RepeatCallerTracker.kt" "$SRC/AllowSuffixStore.kt" "$SRC/NotificationRateLimiter.kt"
   "$SRC/BlockHistoryStore.kt"
+  # Ring consolidation (2026-11): prefix rules + store, schema v1 transfer,
+  # number inspection. All pure or SharedPreferences-backed, like the rest.
+  "$SRC/PrefixRules.kt" "$SRC/PrefixBlockStore.kt" "$SRC/MiniJson.kt"
+  "$SRC/BlockListTransfer.kt" "$SRC/NumberInspector.kt"
 )
 echo "==> compiling ${#MAIN_SRCS[@]} main sources + shim"
 KC "${MAIN_SRCS[@]}" "$OUT/shim/base64.kt" "$OUT/shim/keystore.kt" "$OUT/shim/edit.kt" "$OUT/shim/sbs.kt" \
@@ -224,12 +228,14 @@ TEST_SRCS=(
   "$T/CallDecisionTest.kt" "$T/EngineInvariantTest.kt" "$T/ComponentTests.kt"
   "$T/WangiriCallbackWarningTest.kt" "$T/SaltVaultTest.kt" "$T/PhoneVariantsTest.kt"
   "$T/RoleMonitorTest.kt" "$T/PhoneVariantsTest.kt"
+  "$T/PrefixRulesTest.kt" "$T/PrefixBlockStoreTest.kt" "$T/PrefixRuleDecisionTest.kt"
+  "$T/BlockListTransferTest.kt" "$T/NumberInspectorTest.kt"
 )
 echo "==> compiling ${#TEST_SRCS[@]} test sources"
 KC "${TEST_SRCS[@]}" -d "$OUT/test" -no-reflect \
    -classpath "$OUT/main:$STDLIB:$JUNIT:$HAMCREST:$OUT/shimjava-out" -Xfriend-paths="$OUT/main"
 
-echo "==> running tests (expected steady state: 435 run / 0 failures)"
+echo "==> running tests (expected steady state: 504 run / 0 failures)"
 CLASSES=$(cd "$OUT/test" && find . -name '*Test.class' | sed 's|^\./||;s|\.class$||;s|/|.|g' | tr '\n' ' ')
 set +e
 RESULT=$(java -cp "$OUT/main:$OUT/test:$STDLIB:$JUNIT:$HAMCREST:$OUT/shimjava-out" org.junit.runner.JUnitCore $CLASSES 2>&1 | grep -v 'JAVA_TOOL_OPTIONS')

@@ -69,6 +69,7 @@ Sixteen-point decision engine, in order:
 4. **Outbound-known** — numbers you have dialed always ring.
 5. **Business bundle** — known-legit business numbers ring.
 6. **Spam cache** — numbers you've previously blocked stay silent.
+6b. **Your prefix rules** — numbers starting with digits you chose to block as a range (Settings → "Block by prefix"; ported from Ring in the 2026-11 consolidation — see ADR 013) silenced. Deliberately below the trust layers above: a range never outranks a specific number you trust, and always outranks the guesses below.
 7. **Wangiri callback** — same number short-rang you (under 15s) in last 6 hours → silenced.
 8. **Domestic spoofing** — JP numbers violating the MIC numbering plan silenced.
 9. **Police HQ impersonation** — 54 numbers (47 prefectural HQ + National Police Agency + 6 verified Tokyo-area stations): call **rings** + warning. STIR/SHAKEN FAILED escalates to 🚨 high-severity alert. (Checked before Layer 10 so a real officer's call is never silenced — see ADR 011.)
@@ -94,7 +95,7 @@ See `HONESTY_ADDENDUM.md` for what Orange **doesn't** catch.
 | [`RESEARCH_BASIS.md`](RESEARCH_BASIS.md) | Academic basis for each layer; why CEIVE/LLM are rejected. |
 | [`DESIGN_NOTES.md`](DESIGN_NOTES.md) | The subtraction log. What was cut, and why. |
 | [`THREAT_MODEL.md`](THREAT_MODEL.md) | STRIDE analysis and security invariants. |
-| [`docs/adr/`](docs/adr/) | Architecture Decision Records (12). |
+| [`docs/adr/`](docs/adr/) | Architecture Decision Records (13). |
 | [`docs/FEATURE_AUDIT.md`](docs/FEATURE_AUDIT.md) | Open deficiencies/excesses awaiting a decision + log of what's fixed. |
 | [`docs/MODEL_PLAYBOOK.md`](docs/MODEL_PLAYBOOK.md) | Strengths/weaknesses, improvement backlog, danger files, model-tier guidance for AI-assisted work. |
 | [`docs/SETUP_GUIDE_FAMILY.md`](docs/SETUP_GUIDE_FAMILY.md) | 家族向けセットアップガイド — for caregivers installing Orange on a parent's phone. |

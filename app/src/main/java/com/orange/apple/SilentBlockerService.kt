@@ -203,6 +203,11 @@ class SilentBlockerService : CallScreeningService() {
             knownBusinesses   = businesses,
             pausedUntilMillis = pausedUntilMillis,
             wangiriRingAt     = wangiriRingAt,
+            // User prefix rules for Layer 6b (ported from Ring, 2026-11).
+            // Trust bypasses above have already returned for family /
+            // outbound / business numbers, so a broad rule can never
+            // silence a number the user demonstrably trusts.
+            prefixRules       = PrefixBlockStore.listForEngine(p),
         )
 
         // DND state: read once per call, inject into context.
