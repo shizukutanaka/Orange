@@ -148,6 +148,17 @@ android {
         //    Revisit when the targetSdk 36 migration is scheduled
         //    together with on-device testing.
         disable += setOf("OldTargetApi")
+        // Two freshness checks run as informational instead of errors:
+        //  - GradleDependency / AndroidGradlePluginVersion only report
+        //    that a newer version of a dependency exists. A newer
+        //    upstream release is not a defect in this code, and under
+        //    warningsAsErrors a WARNING severity is promoted to ERROR
+        //    anyway, so the build would go red on a calendar event with
+        //    no code change — a gate that fires on its own teaches
+        //    everyone to ignore red builds. These checks still run and
+        //    every finding is printed by CI's "Show lint report" step;
+        //    following up on new versions is Dependabot's job.
+        informational += setOf("GradleDependency", "AndroidGradlePluginVersion")
     }
 }
 
