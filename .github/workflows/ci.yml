@@ -163,6 +163,26 @@ jobs:
       - name: Lint (release variant)
         run: ./gradlew lintRelease --no-daemon
 
+      # The Gradle console only ever prints the first lint error; the rest
+      # exist only in the text report file. Print it so every finding is
+      # visible in the job log (runs even when the lint step failed).
+      - name: Show lint report
+        if: always()
+        run: |
+          found=0
+          for report in \
+            app/build/intermediates/lint_intermediate_text_report/release/lintReportRelease/lint-results-release.txt \
+            app/build/reports/lint-results-release.txt; do
+            if [ -f "$report" ]; then
+              echo "===== $report ====="
+              cat "$report"
+              found=1
+            fi
+          done
+          if [ "$found" -eq 0 ]; then
+            echo "No lint text report found (the lint step may not have run)."
+          fi
+
       - name: Assemble release
         run: ./gradlew assembleRelease --no-daemon
 
