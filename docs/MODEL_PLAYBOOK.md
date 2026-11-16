@@ -186,7 +186,7 @@ B の残り3手順が済んだ時点で、この節ごと削除してよい(A �
 - `CallDecision.kt` — 層順序が生命線。変更したら `DecisionPriorityTest`/`EngineInvariantTest` を実行。Pause の適用範囲を変えるなら decide() 冒頭の KDoc も更新(3経路の整合)。
 - `SilentBlockerService.kt` — decide() の**外側**にある判定(AllowSuffix 早期 RING、trusted-set、RepeatCaller ゲート)は Pause 契約を自前で守る必要がある(過去バグの温床)。
 - `ManualBlock.kt` — 3点セット(record/MANUAL_BLOCK 除外集計/classify)のどれか1つだけ変えると壊れる(FEATURE_AUDIT §3)。
-- `business_directory.csv` — 警察・税務署番号を**絶対に追加しない**(サイレント信頼になる)。回帰テスト `shipped_csv_never_bundles_a_warn_directory_number` が守る。新 warn ディレクトリを作ったらこのテストの `warnDirectories` に追加。
+- `assets/packs/<code>/business_directory.csv` — 警察・税務署番号を**絶対に追加しない**(サイレント信頼になる)。回帰テスト `shipped_csv_never_bundles_a_warn_directory_number` が守る。新 warn ディレクトリを作ったらこのテストの `warnDirectories` に追加。
 - `EmergencyWhitelist.kt` — 削除方向の変更禁止。「A silenced 110 is a killed user」。
 
 ## 6. 検証コマンド早見表

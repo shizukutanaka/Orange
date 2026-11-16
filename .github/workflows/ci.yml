@@ -124,7 +124,7 @@ jobs:
           echo "GRADLE_LIB=/opt/gradle-${ver}/lib" >> "$GITHUB_OUTPUT"
           echo "Using /opt/gradle-${ver}/lib"
 
-      # Exits non-zero on any test failure (504 expected green; the script's
+      # Exits non-zero on any test failure (515 expected green; the script's
       # ALLOWED escape hatch for deliberately-failing signal tests is empty —
       # the §1-7 question it existed for was settled by ITU-T E.164).
       - name: Run tests

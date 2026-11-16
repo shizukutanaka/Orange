@@ -10,8 +10,9 @@ import android.net.Uri
  *
  * Problem (audit M2): CallScreeningService has a 5-second response deadline.
  * On low-end Android Go devices (BASIO / らくらくスマートフォン), first-call
- * cold start that synchronously loads business_directory.csv + police station
- * directory can exceed 5s → call auto-rings without screening.
+ * cold start that synchronously loads the business-directory packs
+ * (assets/packs/) + police station directory can exceed 5s → call
+ * auto-rings without screening.
  *
  * Fix: this zero-authority ContentProvider runs at Application.onCreate() time
  * (before any service bind). It pre-warms both in-memory caches so the first
@@ -34,8 +35,9 @@ class EngineWarmup : ContentProvider() {
         // Pre-load caches. Both are lazy-init singletons; calling load() here
         // ensures subsequent reads are O(1) HashMap lookups.
         BusinessDirectoryBundle.load(ctx)
-        // PoliceStationDirectory and TaxAgencyDirectory are static Maps — already
-        // initialized. Touch both here to force class loading at app start, not
+        // PoliceStationDirectory and TaxAgencyDirectory are static Maps (merged
+        // views over the country packs' compiled data) — already initialized.
+        // Touch both here to force class loading at app start, not
         // at first call (TaxAgencyDirectory was added after this warmup path and
         // was missed the first time; Layer 9b in CallDecision.kt depends on it
         // being loaded just as much as Layer 9 depends on PoliceStationDirectory).

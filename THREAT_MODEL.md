@@ -55,7 +55,7 @@ screener.
 | Scammer spoofs JP caller ID | `DomesticSpoofDetector` catches structural violations (020 reserved prefix, wrong mobile/IP/freephone digit lengths, 8+ repeating digits, 00x intl-access); `WangiriTracker` catches callback pattern; STIR/SHAKEN `VERIFICATION_STATUS_FAILED` catches carrier-detectable spoofs (API 30+) | Partial. Structurally valid non-STIR/SHAKEN spoofs still ring. |
 | Scammer spoofs 110/119 emergency | Emergency numbers hard-allow, so spoofed 110 calls ring | Accepted risk. Silencing 110 to stop 0.001% scammer would kill real users. |
 | Attacker impersonates Orange update | Play Store signed updates only; F-Droid build is reproducible | Mitigated by platform |
-| Malicious replacement of `business_directory.csv` | CSV bundled in signed APK, not fetched at runtime | Mitigated. A compromised APK is a supply-chain issue, not a runtime one. |
+| Malicious replacement of a pack's `business_directory.csv` (`assets/packs/<code>/`) | CSVs bundled in signed APK, not fetched at runtime | Mitigated. A compromised APK is a supply-chain issue, not a runtime one. |
 | Wangiri premium-number callback scam | `CallStateObserver` detects short-ring (< 6s); `WangiriTracker` caches the candidate; `decide()` silences callback within 6h | Mitigated for the 6h window. Delayed callbacks outside the window ring. |
 
 ### T — Tampering

@@ -14,33 +14,37 @@ package com.orange.apple
  * The correct design for a safety-critical feature is: the user never
  * knows it's there, and it never fails.
  *
+ * Composition (ADR 014): each country pack contributes its own emergency
+ * numbers (JpCountryPack: 110/119/118/189/171 and their +81 forms), and
+ * this object adds the ROAMING numbers below — emergency codes owned by
+ * no single pack that a user must be able to reach (and be reached by)
+ * while travelling, whatever their home country is. The union is what
+ * isEmergency() checks; it is identical to the flat list this object
+ * held before the pack restructure.
+ *
  * List source: ITU-T E.161 + national emergency directories, current as of
  * 2026-04. Expand only if a number actually falls through in the wild;
  * do not speculatively add.
  */
 internal object EmergencyWhitelist {
 
-    private val numbers: Set<String> = buildSet {
-        // Japan
-        add("110")  // 警察 Police
-        add("119")  // 消防/救急 Fire & Ambulance
-        add("118")  // 海上保安庁 Coast Guard
-        add("189")  // 児童相談所虐待対応ダイヤル
-        add("171")  // 災害用伝言ダイヤル
-
-        // International common emergencies (reachable when roaming)
-        add("911")  // US/Canada
-        add("112")  // EU/GSM universal
-        add("999")  // UK/HK/IE
-        add("000")  // Australia
+    /** Emergency codes reachable when roaming, independent of home country. */
+    private val roamingNumbers: Set<String> = setOf(
+        "911",  // US/Canada
+        "112",  // EU/GSM universal
+        "999",  // UK/HK/IE
+        "000",  // Australia
 
         // Extended-format variants the OS may deliver when roaming
-        add("+81110"); add("+81119"); add("+81118")
-        add("+81189"); add("+81171")   // 児童相談所 / 災害用伝言 international form
-        add("+1911")                   // US 911 as dialed by some MVNO SIMs
-        add("+44999")                  // UK 999 as dialed by some MVNO SIMs
-        add("+61000")                  // AU 000 international form
-        add("+112")                    // EU 112 bare (no national prefix)
+        "+1911",                   // US 911 as dialed by some MVNO SIMs
+        "+44999",                  // UK 999 as dialed by some MVNO SIMs
+        "+61000",                  // AU 000 international form
+        "+112"                     // EU 112 bare (no national prefix)
+    )
+
+    private val numbers: Set<String> = buildSet {
+        addAll(roamingNumbers)
+        for (pack in CountryPacks.all) addAll(pack.emergencyNumbers)
     }
 
     /**

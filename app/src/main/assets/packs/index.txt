@@ -1,0 +1,22 @@
+# Orange country data packs — registry of the ASSET (file-based) packs.
+#
+# One ISO 3166-1 alpha-2 country code per line ('#' comments and blank
+# lines are ignored; case-insensitive). BusinessDirectoryBundle loads and
+# merges packs/<code>/business_directory.csv for every code listed here,
+# where <code> is the lowercase form of the ISO code.
+#
+# Adding a country to the asset packs = add its
+# packs/<code>/business_directory.csv and one line here. No code change.
+# (Numbers in a pack file must meet the same bar as the JP file: verified
+# from the organisation's OWN public page, never a third-party listing,
+# never a mobile number. A mis-labelled number becomes a spear-phishing
+# vector — accuracy > coverage. Police/tax numbers must NEVER be added to
+# a business file: the bundle grants silent trust, they need warn-but-ring.)
+#
+# Safety-critical data (emergency numbers, police/tax warn directories,
+# numbering-plan rules, elevated-risk codes) is NOT file-based: it ships
+# compiled-in as CountryPack implementations registered in CountryPacks
+# (CountryPack.kt), so it cannot fail to load. See
+# docs/adr/014-country-pack-structure.md for the two-tier rationale.
+
+jp

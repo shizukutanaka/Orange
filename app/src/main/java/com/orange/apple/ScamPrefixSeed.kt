@@ -1,10 +1,19 @@
 package com.orange.apple
 
 /**
- * Seed list of international dialing prefixes disproportionately linked to
- * special-fraud (特殊詐欺) calls reaching Japanese users.
+ * Country-code table (ITU-T E.164) plus the elevated-risk seed view.
  *
- * Source rationale (updated 2026-07):
+ * The country-code table below is global reference data: it maps an
+ * international number to its country code, for any caller and any callee.
+ *
+ * The ELEVATED-RISK set is not global: risk is relative to the callee's
+ * country, so the set itself lives in the callee's country pack
+ * (JpCountryPack.elevatedRiskCountryCodes — the corridors disproportionately
+ * linked to special-fraud (特殊詐欺) calls reaching Japanese users), and
+ * decide() reads it from the pack. [elevatedRiskCountryCodes] below remains
+ * as a view of the JP pack's set for existing callers.
+ *
+ * Source rationale for the JP set (updated 2026-07):
  *  - 警察庁 SOS47 特殊詐欺対策: 国際発信を偽装した詐欺の増加。令和8年(2026)から
  *    「ニセ警察詐欺」を独立手口に再分類 — 被害額の約7割(985億円超)を占める。
  *  - NPA/総務省「みんとめ」: 特殊詐欺に利用された電話番号の約75.5%が国際電話番号
@@ -39,46 +48,13 @@ package com.orange.apple
 internal object ScamPrefixSeed {
 
     /**
-     * Country codes where an unsolicited call to a JP number has historically
-     * carried an elevated scam probability. Used only when the callee is in JP
-     * and the number is international and the number is not in outbound-known.
+     * The JP pack's elevated-risk country codes, exposed here for existing
+     * callers. The data lives in JpCountryPack (risk is a property of the
+     * callee's country, so each pack carries its own set); decide() reads
+     * the set from the callee's pack directly.
      */
-    val elevatedRiskCountryCodes: Set<String> = setOf(
-        "675",  // Papua New Guinea — Wangiri/IRSF corridor (Palau is +680)
-        "7",    // Russia/Kazakhstan transit
-        "86",   // Mainland China
-        "44",   // UK (heavily spoofed for JP targets)
-        "39",   // Italy (less common, but rising)
-        "212",  // Morocco (Wangiri callbacks)
-        "234",  // Nigeria (419 corridor)
-        "63",   // Philippines (call-center fraud corridor)
-        // IRSF/Wangiri high-cost termination corridors. These small or
-        // low-traffic destinations are repeatedly identified in IRSF research
-        // (NDSS 2021 "Understanding and Detecting IRSF"; CFCA loss reports) as
-        // the termination points for International Premium Rate Numbers. A JP
-        // consumer almost never places a legitimate call to these, so an
-        // unsolicited inbound call from one is a strong revenue-share signal.
-        "371",  // Latvia — recurrent IRSF test-number range
-        "370",  // Lithuania — recurrent IRSF test-number range
-        "239",  // Sao Tome and Principe — classic IPRN termination
-        "232",  // Sierra Leone — high-cost IRSF corridor
-        "252",  // Somalia — high-cost IRSF corridor
-        "53",   // Cuba — high-cost termination
-        "682",  // Cook Islands — Pacific IPRN range
-        "676",  // Tonga — Pacific IPRN range
-        "678",  // Vanuatu — Pacific IPRN range
-        "855",  // Cambodia — documented scam-center corridor (2025-2026)
-        // Laos: Bokeo Golden Triangle SEZ — same NPA-identified corridor as Myanmar/Cambodia.
-        // ゴールデン・トライアングル経済特区はミャンマー・カンボジアの詐欺拠点と並び
-        // NPA 2025 特殊詐欺白書でも言及 (詐欺コールセンターのSEZ隣接地帯).
-        "856",  // Laos — Golden Triangle SEZ scam-compound corridor
-        // Myanmar: KK Park (カンコー特区) and Myawaddy border SEZs are large-scale
-        // scam operation hubs targeting JP victims; NPA 2025 白書 identifies
-        // Myanmar-based call centers as a primary origin for 国際電話詐欺.
-        // Legitimate inbound +95 calls to JP mobile numbers are extremely rare,
-        // making the signal high-precision for JP users.
-        "95"    // Myanmar — Myawaddy/KK Park scam-compound corridor
-    )
+    val elevatedRiskCountryCodes: Set<String>
+        get() = JpCountryPack.elevatedRiskCountryCodes
 
     /**
      * Given a normalized E.164-ish number ("+81…"/"+1…" etc.), returns the

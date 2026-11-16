@@ -95,7 +95,7 @@ See `HONESTY_ADDENDUM.md` for what Orange **doesn't** catch.
 | [`RESEARCH_BASIS.md`](RESEARCH_BASIS.md) | Academic basis for each layer; why CEIVE/LLM are rejected. |
 | [`DESIGN_NOTES.md`](DESIGN_NOTES.md) | The subtraction log. What was cut, and why. |
 | [`THREAT_MODEL.md`](THREAT_MODEL.md) | STRIDE analysis and security invariants. |
-| [`docs/adr/`](docs/adr/) | Architecture Decision Records (13). |
+| [`docs/adr/`](docs/adr/) | Architecture Decision Records (14). |
 | [`docs/FEATURE_AUDIT.md`](docs/FEATURE_AUDIT.md) | Open deficiencies/excesses awaiting a decision + log of what's fixed. |
 | [`docs/MODEL_PLAYBOOK.md`](docs/MODEL_PLAYBOOK.md) | Strengths/weaknesses, improvement backlog, danger files, model-tier guidance for AI-assisted work. |
 | [`docs/SETUP_GUIDE_FAMILY.md`](docs/SETUP_GUIDE_FAMILY.md) | 家族向けセットアップガイド — for caregivers installing Orange on a parent's phone. |

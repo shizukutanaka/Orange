@@ -106,7 +106,8 @@ class BusinessDirectoryBundleTest {
      * addition to either can't silently reintroduce the same bug.
      */
     @Test fun shipped_csv_never_bundles_a_warn_directory_number() {
-        val csvFile = File("src/main/assets/business_directory.csv")
+        // The JP asset pack's business file (ADR 014 moved it under packs/jp/).
+        val csvFile = File("src/main/assets/packs/jp/business_directory.csv")
         assertTrue("expected asset to exist at ${csvFile.absolutePath}", csvFile.exists())
         val m = parse(csvFile.readText())
 
