@@ -245,8 +245,10 @@ fun decide(ctx: CallContext, state: CallState): Decision {
         return Decision(Verdict.SILENCE, BlockReason.WANGIRI_CALLBACK)
     }
 
-    // Layer 8: Domestic spoofing. JP number that can't exist in the JP plan.
-    if (ctx.calleeCountryIso == "JP" && DomesticSpoofDetector.isImpossibleJpNumber(ctx.number)) {
+    // Layer 8: Domestic spoofing. A number that can't exist in the callee
+    // country's numbering plan (the JP pack's plan check is
+    // DomesticSpoofDetector; countries without a pack skip this layer).
+    if (CountryPacks.forIso(ctx.calleeCountryIso)?.isImpossibleDomesticNumber(ctx.number) == true) {
         return Decision(Verdict.SILENCE, BlockReason.DOMESTIC_SPOOF)
     }
 
@@ -297,10 +299,13 @@ fun decide(ctx: CallContext, state: CallState): Decision {
         }
     }
 
-    // Layer 12: International + elevated-risk corridor.
-    if (ctx.calleeCountryIso == "JP" && ctx.number.startsWith("+")) {
+    // Layer 12: International + elevated-risk corridor. The elevated-risk
+    // set is the callee's country pack's own (risk corridors are relative
+    // to the target country); countries without a pack skip this layer.
+    if (ctx.number.startsWith("+")) {
+        val pack = CountryPacks.forIso(ctx.calleeCountryIso)
         val cc = ScamPrefixSeed.countryCodeOf(ctx.number)
-        if (cc != null && cc in ScamPrefixSeed.elevatedRiskCountryCodes) {
+        if (pack != null && cc != null && cc in pack.elevatedRiskCountryCodes) {
             return Decision(Verdict.SILENCE, BlockReason.FOREIGN_ELEVATED)
         }
     }
@@ -349,15 +354,19 @@ fun decide(ctx: CallContext, state: CallState): Decision {
  * escalation logic lives in exactly one place.
  */
 private fun govAgencyImpersonationWarning(ctx: CallContext): Decision? {
-    if (ctx.calleeCountryIso != "JP") return null
-    PoliceStationDirectory.lookup(ctx.number)?.let { hqName ->
+    // Warn directories are per-country data: only the callee's own pack is
+    // consulted (a JP police number must not produce an impersonation
+    // warning for a callee in another country, and vice versa). Countries
+    // without a pack have no warn directories, so the check abstains.
+    val pack = CountryPacks.forIso(ctx.calleeCountryIso) ?: return null
+    pack.lookupPolice(ctx.number)?.let { hqName ->
         val warnSeverity = if (ctx.verificationFailed)
             WarnReason.POLICE_IMPERSONATION_HIGH
         else
             WarnReason.POLICE_IMPERSONATION
         return Decision(Verdict.RING, warning = warnSeverity, warnPayload = hqName)
     }
-    TaxAgencyDirectory.lookup(ctx.number)?.let { taxName ->
+    pack.lookupTax(ctx.number)?.let { taxName ->
         val warnSeverity = if (ctx.verificationFailed)
             WarnReason.TAX_AGENCY_IMPERSONATION_HIGH
         else

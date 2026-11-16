@@ -36,8 +36,10 @@ for cls in $(grep -oP 'android:name="\.\K[^"]+' app/src/main/AndroidManifest.xml
 done
 
 echo "=== 5/14. Emergency coverage ==="
+# Emergency numbers live in EmergencyWhitelist.kt (roaming set) and in the
+# country packs (*CountryPack.kt) since ADR 014 — search both homes.
 for n in 110 119 118 911 112 999 000; do
-    if ! grep -q "\"$n\"" "$MAIN/EmergencyWhitelist.kt"; then
+    if ! grep -q "\"$n\"" "$MAIN/EmergencyWhitelist.kt" "$MAIN"/*CountryPack.kt; then
         echo "FAIL: Emergency $n missing"; FAIL=1
     fi
 done
@@ -81,8 +83,16 @@ else
 fi
 
 echo "=== 9/14. Business directory integrity ==="
-CSV="app/src/main/assets/business_directory.csv"
-if [ -f "$CSV" ]; then
+# Since ADR 014 the business directory ships as per-country asset packs:
+# assets/packs/<code>/business_directory.csv, registered in packs/index.txt.
+# Every registered pack's file gets the same integrity checks the single
+# CSV used to get, and the registry must list at least one pack whose file
+# actually exists.
+PACKS_DIR="app/src/main/assets/packs"
+_found_pack=0
+for CSV in "$PACKS_DIR"/*/business_directory.csv; do
+    [ -f "$CSV" ] || continue
+    _found_pack=1
     # Duplicate E.164 keys cause the later entry to silently overwrite the earlier
     # one in the HashMap. Every key must appear exactly once.
     dups=$(grep -v '^#' "$CSV" | grep -v '^[[:space:]]*$' | cut -d',' -f1 | sort | uniq -d)
@@ -98,8 +108,13 @@ if [ -f "$CSV" ]; then
         echo "$bad"
         FAIL=1
     fi
-else
-    echo "FAIL: $CSV missing"
+done
+if [ "$_found_pack" -eq 0 ]; then
+    echo "FAIL: no business_directory.csv found under $PACKS_DIR/*/"
+    FAIL=1
+fi
+if [ ! -f "$PACKS_DIR/index.txt" ]; then
+    echo "FAIL: $PACKS_DIR/index.txt (asset pack registry) missing"
     FAIL=1
 fi
 
@@ -137,16 +152,24 @@ _adr_actual=$(ls docs/adr/*.md 2>/dev/null | wc -l | tr -d ' ')
 _adr_doc=$(grep -oE 'Architecture Decision Records \([0-9]+\)' README.md | grep -oE '[0-9]+')
 _drift "ADR count" "$_adr_actual" "README.md" "$_adr_doc"
 
-_pol_actual=$(grep -cE '^\s+"\+?[0-9]+" to ' app/src/main/java/com/orange/apple/PoliceStationDirectory.kt)
+# Police data lives in the country packs since ADR 014: count the entries of
+# every pack's policeDirectory block (the tax block in the same files must
+# NOT be counted, hence the sed range over the police block only).
+_pol_actual=$(for _f in app/src/main/java/com/orange/apple/*CountryPack.kt; do
+                 sed -n '/policeDirectory: Map<String, String> = mapOf(/,/^    )/p' "$_f"
+              done | grep -cE '^\s+"\+?[0-9]+" to ')
 _pol_doc=$(grep -oE '[0-9]+ numbers \(47 prefectural' README.md | grep -oE '^[0-9]+')
 _drift "Police directory size" "$_pol_actual" "README.md" "$_pol_doc"
 
 # NB: match entries with or without a trailing comma — the final element has
 # none, and requiring one is how an earlier attempt at this check miscounted 20
 # as 19 and nearly "corrected" a document that was right.
-_cc_actual=$(sed -n '/val elevatedRiskCountryCodes/,/^    )/p' \
-             app/src/main/java/com/orange/apple/ScamPrefixSeed.kt \
-             | grep -cE '^\s+"[0-9]+"')
+# The elevated-risk set also lives in the country packs since ADR 014 (the
+# anchor includes "= setOf(" so the CountryPack interface's bare declaration
+# is not matched).
+_cc_actual=$(for _f in app/src/main/java/com/orange/apple/*CountryPack.kt; do
+                sed -n '/elevatedRiskCountryCodes: Set<String> = setOf(/,/^    )/p' "$_f"
+             done | grep -cE '^\s+"[0-9]+"')
 for _f in README.md SPECIFICATION.md; do
     _cc_doc=$(grep -oE '[0-9]+ country codes' "$_f" | grep -oE '^[0-9]+' | head -1)
     [ -n "$_cc_doc" ] && _drift "Elevated-risk country codes" "$_cc_actual" "$_f" "$_cc_doc"

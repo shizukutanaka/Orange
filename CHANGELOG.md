@@ -7,6 +7,7 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 ## [Unreleased]
 
 ### Changed
+- **Bundled data restructured into country packs (ADR 014)** — internal restructure, no behaviour change. The business directory now ships as per-country asset packs (`assets/packs/index.txt` registry + `assets/packs/jp/business_directory.csv`, moved byte-identical from the old single file; `BusinessDirectoryBundle` merges all registered packs, so a new country's business data is a file plus one index line). The safety-critical data (police/tax warn directories, emergency numbers, elevated-risk codes, numbering-plan check) moved unchanged into the compiled `CountryPack` contract with `JpCountryPack` as the first pack; `decide()` no longer names "JP" — it resolves the callee's pack. Suite: 515 SDK-free tests (was 504), 619 total.
 - **APK size budget raised 1 MiB → 1.5 MiB** (`tools/check_apk_size.sh`) — the 1 MiB ceiling was set before CI had ever reached the size step and had never been measured against the real app; the first full CI run measured 1.3 MiB after the Ring consolidation features (PR #10). The budget remains a bloat guard, set at the measured size plus ~15% headroom.
 
 ### Added

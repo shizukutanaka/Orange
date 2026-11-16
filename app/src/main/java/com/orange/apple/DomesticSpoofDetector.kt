@@ -5,6 +5,11 @@ package com.orange.apple
  * Only flags numbers that CANNOT exist in the JP plan.
  * Source: 総務省 電気通信番号計画 (MIC).
  *
+ * This is the JP country pack's numbering-plan implementation:
+ * JpCountryPack.isImpossibleDomesticNumber delegates here, so the plan
+ * rules (and their Python oracle mirror, tools/oracle_decision.py) keep
+ * exactly one home.
+ *
  * Digit counts (domestic notation, leading 0 included):
  *   11 digits: 050 (IP), 060/070/080/090 (mobile), 0800 (freephone)
  *   10 digits: 0120 (freephone), 0570 (navi-dial), 0990 (teledome),

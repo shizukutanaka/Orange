@@ -2,8 +2,10 @@ package com.orange.apple
 
 /**
  * Single source of truth for "as of when" every bundled, install-time-frozen
- * directory was last verified: PoliceStationDirectory, TaxAgencyDirectory,
- * BusinessDirectoryBundle (business_directory.csv), ScamPrefixSeed.
+ * directory was last verified: the country packs' compiled data
+ * (JpCountryPack — police/tax warn directories, emergency numbers,
+ * elevated-risk codes) and the asset packs' business directories
+ * (assets/packs/<code>/business_directory.csv).
  *
  * Why this exists: Orange's core promise is "works forever, fully offline" —
  * no servers, no updates, no telemetry. That promise has a cost the user
@@ -19,13 +21,15 @@ package com.orange.apple
  * This intentionally reflects the OLDEST verification date among the bundled
  * directories, not the newest — showing the newest date would overstate
  * freshness for data that hasn't actually been re-checked in longer.
- * As of this constant's last edit: PoliceStationDirectory/TaxAgencyDirectory/
- * business_directory.csv are 2026-06; ScamPrefixSeed/EmergencyWhitelist are
- * 2026-04 — the older of the two floors this value.
+ * As of this constant's last edit: the JP pack's police/tax directories and
+ * business_directory.csv are 2026-06; its elevated-risk codes and emergency
+ * numbers are 2026-04 — the older of the two floors this value. (The 2026-11
+ * country-pack restructure relocated the data without changing it, so the
+ * verification dates did not move.)
  *
  * Update this whenever any bundled directory's source data changes:
- * PoliceStationDirectory, TaxAgencyDirectory, business_directory.csv,
- * ScamPrefixSeed.elevatedRiskCountryCodes, EmergencyWhitelist.
+ * a country pack's policeDirectory / taxDirectory / emergencyNumbers /
+ * elevatedRiskCountryCodes, or any assets/packs/<code>/business_directory.csv.
  */
 internal object ProtectionDataVersion {
     const val LAST_UPDATED = "2026-04"

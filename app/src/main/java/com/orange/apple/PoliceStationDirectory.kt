@@ -1,120 +1,38 @@
 package com.orange.apple
 
 /**
- * Bundled directory of 47 prefectural police HQ + Tokyo area major police stations.
+ * Aggregate view of every country pack's warn-but-ring police directory.
  *
- * 2025年のニセ警察詐欺 (9,642件, ¥831.9億円, 過去最悪) の主要手口:
- *   scammer → 被害者端末に"警視庁新宿署"の代表番号を偽装表示
- *   → 被害者が折り返すとLINE/ビデオ通話に誘導
+ * The data itself lives in the country packs (JP: JpCountryPack — 47
+ * prefectural police HQ + National Police Agency + verified major Tokyo
+ * stations, sourced from each prefectural police HQ's official site +
+ * 警視庁公式サイト, 2026-06). This object is the merged view the rest of
+ * the app has always consumed; with one pack registered it is exactly the
+ * JP directory it was before the pack restructure (ADR 014).
  *
- * 旧Layer 7.7 (0110-tail heuristic) の問題:
- *   実際の警察署代表番号は0110で終わらないものが多数。
- *   例: 警視庁 03-3581-4321, 大阪府警 06-6943-1234
- *   0110-tail は偽陽性が多く、真の詐欺パターンを見逃す。
- *
- * 修正: 実在する警察本部代表番号のexact matchに変更。
- * 着信がこのリストに一致 → ブロックではなく **警告表示**:
- *   「この番号は○○警察の番号です。偽装の可能性があります。
- *    一度切って、#9110 にかけ直してください」
- *
- * Source: 各都道府県警察公式サイト + 警視庁公式サイト (2026-06時点)
- * 都道府県警察本部 (47件) + 警視庁管内 主要警察署 (実際のアポ電被害で偽装確認済)。
- * 個別署番号は公式サイトで確認が取れた番号のみ収録 (不確かな番号は除外)。
+ * Why these numbers get their own directory at all: 2025年のニセ警察詐欺
+ * (9,642件, ¥831.9億円, 過去最悪) works by spoofing real police HQ numbers.
+ * A match must therefore RING (we never block the police) but always
+ * surface the impersonation warning — never the business bundle's silent
+ * trust. The engine consults the callee's own pack (see
+ * CallDecision.govAgencyImpersonationWarning); this aggregate exists for
+ * whole-directory consumers (warmup, the business-bundle regression guard).
  */
 internal object PoliceStationDirectory {
 
-    /**
-     * Map of domestic number → display name (police HQ or verified major station).
-     * Keys are stored in domestic form ("0335814321", not "+81335814321").
-     * lookup() accepts both forms and converts as needed.
-     * If an incoming call matches, the decision engine returns RING
-     * (we do NOT block police) but flags it for post-pickup warning.
-     */
-    val entries: Map<String, String> = mapOf(
-        // 警察庁 (National Police Agency) — moved here from business_directory.csv:
-        // that bundle grants unconditional silent trust with no warning, which is
-        // the wrong treatment for a number scammers impersonate.
-        "0335810141" to "警察庁",
-        // 北海道
-        "0112510110" to "北海道警察",
-        // 東北
-        "0172233211" to "青森県警察",
-        "0196531111" to "岩手県警察",
-        "0222211611" to "宮城県警察",
-        "0188631111" to "秋田県警察",
-        "0236265211" to "山形県警察",
-        "0245221111" to "福島県警察",
-        // 関東
-        "0293011621" to "茨城県警察",
-        "0286217004" to "栃木県警察",
-        "0273431271" to "群馬県警察",
-        "0488321111" to "埼玉県警察",
-        "0432011111" to "千葉県警察",
-        "0335814321" to "警視庁",         // 東京都
-        // 警視庁管内 主要警察署 — ニセ警察詐欺で頻繁に偽装される番号
-        // Source: 警視庁公式サイト (keishicho.metro.tokyo.lg.jp) 2026-06時点
-        // 2025-06-19: 千代田区が丸の内警察署番号でのアポ電入電中を公式警告
-        "0332130110" to "丸の内警察署",   // 千代田区 — 2025年アポ電で実際に使用
-        "0333460110" to "新宿警察署",     // 新宿区
-        "0339860110" to "池袋警察署",     // 豊島区
-        "0334980110" to "渋谷警察署",     // 渋谷区
-        "0338470110" to "上野警察署",     // 台東区
-        "0335430110" to "築地警察署",     // 中央区（銀座・築地エリア担当）
-        "0452110110" to "神奈川県警察",
-        // 中部
-        "0252850110" to "新潟県警察",
-        "0764410110" to "富山県警察",
-        "0762250110" to "石川県警察",
-        "0776220110" to "福井県警察",
-        "0552210110" to "山梨県警察",
-        "0262330110" to "長野県警察",
-        "0582712424" to "岐阜県警察",
-        "0542711616" to "静岡県警察",
-        "0529510110" to "愛知県警察",
-        // 近畿
-        "0592220110" to "三重県警察",
-        "0775233010" to "滋賀県警察",
-        "0754510110" to "京都府警察",
-        "0669430110" to "大阪府警察",
-        "0783410110" to "兵庫県警察",
-        "0742230110" to "奈良県警察",
-        "0734230110" to "和歌山県警察",
-        // 中国
-        "0857220110" to "鳥取県警察",
-        "0852270110" to "島根県警察",
-        "0862340110" to "岡山県警察",
-        "0822283111" to "広島県警察",
-        "0839330110" to "山口県警察",
-        // 四国
-        "0886221211" to "徳島県警察",
-        "0878330110" to "香川県警察",
-        "0899340110" to "愛媛県警察",
-        "0888260110" to "高知県警察",
-        // 九州・沖縄
-        "0926410110" to "福岡県警察",
-        "0952240110" to "佐賀県警察",
-        "0958200110" to "長崎県警察",
-        "0963810110" to "熊本県警察",
-        "0975360110" to "大分県警察",
-        "0985260110" to "宮崎県警察",
-        "0992060110" to "鹿児島県警察",
-        "0988620110" to "沖縄県警察",
-    )
+    /** Merged police directories of all registered packs, in pack order. */
+    val entries: Map<String, String> = buildMap {
+        for (pack in CountryPacks.all) putAll(pack.policeDirectory)
+    }
 
     /**
-     * 国際形式 (+81…) と国内形式 (0…) の両方で検索。
-     * Returns the police HQ name, or null if not a known police number.
+     * Searches every pack's police directory, accepting domestic and
+     * E.164 forms. Returns the police HQ name, or null if not a known
+     * police number in any pack.
      */
     fun lookup(normalized: String): String? {
-        // Direct domestic match
-        entries[normalized]?.let { return it }
-        // +81 → domestic conversion
-        // Standard E.164: +81 3 3581 4321 (no leading zero)
-        // Some systems deliver +810335814321 (with leading zero) — handle both.
-        if (normalized.startsWith("+81")) {
-            val rest = normalized.removePrefix("+81")
-            val domestic = if (rest.startsWith("0")) rest else "0$rest"
-            entries[domestic]?.let { return it }
+        for (pack in CountryPacks.all) {
+            pack.lookupPolice(normalized)?.let { return it }
         }
         return null
     }

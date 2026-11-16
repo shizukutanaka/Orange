@@ -154,11 +154,12 @@ or its passphrases.
 orange/
 ├── app/
 │   ├── src/main/
-│   │   ├── java/com/orange/apple/  ← Kotlin sources (≈6600 LOC, 38 files)
+│   │   ├── java/com/orange/apple/  ← Kotlin sources (≈6900 LOC, 40 files)
 │   │   ├── res/                    ← Layouts, strings (en/ja/zh/ko), icons
-│   │   ├── assets/business_directory.csv
+│   │   ├── assets/packs/           ← Country data packs: index.txt registry +
+│   │   │                             packs/<code>/business_directory.csv (ADR 014)
 │   │   └── AndroidManifest.xml
-│   ├── src/test/                   ← Pure Kotlin unit tests (≈5100 LOC, 608 tests)
+│   ├── src/test/                   ← Pure Kotlin unit tests (≈5100 LOC, 619 tests)
 │   ├── build.gradle.kts
 │   ├── proguard-rules.pro
 │   └── signing.gradle.kts
@@ -175,12 +176,14 @@ orange/
 | File | Role |
 |------|------|
 | `CallDecision.kt` | 16-layer `decide()` engine + `BlockReason` / `WarnReason` / `CallContext` |
-| `EmergencyWhitelist.kt` | Hard-coded emergency numbers that always ring |
-| `DomesticSpoofDetector.kt` | MIC numbering plan structure validator |
-| `ScamPrefixSeed.kt` | 20 elevated-risk country codes + `countryCodeOf()` (+1 deliberately excluded — see its KDoc) |
+| `EmergencyWhitelist.kt` | Roaming emergency numbers + every pack's emergency set; always ring |
+| `DomesticSpoofDetector.kt` | MIC numbering plan structure validator (the JP pack's plan check) |
+| `CountryPack.kt` | Country-pack contract + `CountryPacks` registry + asset-pack index parser (ADR 014) |
+| `JpCountryPack.kt` | JP pack data: police/tax warn directories, emergency numbers, 20 elevated-risk codes |
+| `ScamPrefixSeed.kt` | ITU country-code table (`countryCodeOf()`); elevated-risk sets live in the packs (+1 deliberately excluded — see JpCountryPack) |
 | `CaribbeanPremiumNANP.kt` | 23 NANP premium-rate area codes |
-| `PoliceStationDirectory.kt` | 54 police numbers (47 prefectural HQ + NPA + 6 Tokyo-area stations), warn-but-ring |
-| `TaxAgencyDirectory.kt` | National Tax Agency number, same warn-but-ring treatment (Layer 9b) |
+| `PoliceStationDirectory.kt` | Merged pack view: 54 police numbers (47 prefectural HQ + NPA + 6 Tokyo-area stations), warn-but-ring |
+| `TaxAgencyDirectory.kt` | Merged pack view: National Tax Agency number, same warn-but-ring treatment (Layer 9b) |
 | `PhoneNumbers.kt` | `normalize()` — single source of truth for number cleaning |
 
 ### Android adapter layer

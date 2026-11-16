@@ -38,7 +38,7 @@ When a call arrives, Orange evaluates in strict order; first match wins:
 | 2 | Pause tile | User activated 1-hour pause in Quick Settings | **ALLOW** (ring) |
 | 3 | Withheld caller ID | Caller ID is anonymous/restricted/unavailable | **SILENCE** |
 | 4 | Outbound-known | Caller number dialed by user before | **ALLOW** (ring) |
-| 5 | Business bundle | Number in `BusinessDirectoryBundle` (business_directory.csv) | **ALLOW** (ring) |
+| 5 | Business bundle | Number in `BusinessDirectoryBundle` (asset packs: `assets/packs/<code>/business_directory.csv`) | **ALLOW** (ring) |
 | 6 | Spam cache | Number in device spam cache (salted SHA-256 hash) | **SILENCE** |
 | 7 | Wangiri callback | Same number short-rang (<15s) in last 6 hours | **SILENCE** |
 | 8 | Domestic spoofing | JP number violates MIC numbering plan | **SILENCE** |
@@ -77,8 +77,8 @@ When a call arrives, Orange evaluates in strict order; first match wins:
 - Per-install salt encrypted via Android Keystore AES-GCM (non-exportable key)
 - Graceful degradation if Keystore is unavailable (falls back to plaintext salt, still hashed)
 
-#### Business Directory (`BusinessDirectoryBundle.kt`, `business_directory.csv`)
-- 74 verified legitimate business/government numbers, deliberately NOT including police or tax-agency numbers (those live in `PoliceStationDirectory.kt`/`TaxAgencyDirectory.kt` on the warn-but-ring Layer 9/9b instead — a police/tax number here would be silently trusted, exactly what a spoofer relies on)
+#### Business Directory (`BusinessDirectoryBundle.kt`, `assets/packs/<code>/business_directory.csv`)
+- Ships as per-country asset packs registered in `assets/packs/index.txt` (ADR 014); the JP pack holds 74 verified legitimate business/government numbers, deliberately NOT including police or tax-agency numbers (those live in the country packs' warn-but-ring directories, aggregated by `PoliceStationDirectory.kt`/`TaxAgencyDirectory.kt`, on Layer 9/9b instead — a police/tax number here would be silently trusted, exactly what a spoofer relies on). Adding a country is data-only: new pack file + one index line
 - E.164 format (+81…) with CSV key-uniqueness validated by CI (`BusinessDirectoryBundleTest.shipped_csv_never_bundles_a_warn_directory_number` also asserts no Layer-9/9b number ever appears here)
 - Lookups expanded via `phoneVariants()` to handle both domestic (0…) and E.164 forms
 - Loaded once at app startup via `EngineWarmup` (a zero-authority `ContentProvider` that runs before any `Service.bind()`), parsed on-demand per call thereafter
@@ -100,13 +100,13 @@ When a call arrives, Orange evaluates in strict order; first match wins:
 - Rules: 020 reserved (M2M/pager), wrong digit lengths for mobile/freephone/IP, 8+ repeating digits, 00x intl-access, d[1]=='0' double-zero form
 - E.164 conversion via `to_domestic()` handles "+810…" leading-zero variant
 
-#### Police Station Directory (`PoliceStationDirectory.kt`)
-- Hard-coded 54 police numbers: 47 prefectural HQ (Kyushu to Hokkaido) + National Police Agency + 6 verified Tokyo-area stations
+#### Police Station Directory (`PoliceStationDirectory.kt`, data in the country packs)
+- 54 police numbers in the JP pack (`JpCountryPack.kt`): 47 prefectural HQ (Kyushu to Hokkaido) + National Police Agency + 6 verified Tokyo-area stations; `PoliceStationDirectory` is the merged view over all packs
 - Accepts both domestic (0…) and E.164 (+81…) forms including "+810…" mangled variant
-- Used for Layer 9 police-impersonation detection + high-severity alert on STIR/SHAKEN failure
+- Used for Layer 9 police-impersonation detection + high-severity alert on STIR/SHAKEN failure; the engine consults only the callee's own pack
 
-#### Tax Agency Directory (`TaxAgencyDirectory.kt`)
-- Same warn-but-ring pattern as `PoliceStationDirectory`, for the National Tax Agency's number (targeted by 還付金詐欺/税金未納詐欺)
+#### Tax Agency Directory (`TaxAgencyDirectory.kt`, data in the country packs)
+- Same warn-but-ring pattern as `PoliceStationDirectory`, for the National Tax Agency's number in the JP pack (targeted by 還付金詐欺/税金未納詐欺)
 - Layer 9b, checked immediately after Layer 9 via the shared `govAgencyImpersonationWarning()` helper
 
 #### Phone Numbers Utility (`PhoneNumbers.kt`)
@@ -144,7 +144,7 @@ When a call arrives, Orange evaluates in strict order; first match wins:
 
 ### Testing
 
-- **Unit tests:** ~608 Kotlin tests across 38 files in `app/src/test/`
+- **Unit tests:** ~619 Kotlin tests across 39 files in `app/src/test/`
   - Pure decision-engine tests (`CallDecisionTest`, `DecisionPriorityTest`, `EngineInvariantTest`)
   - Component tests (`PoliceStationDirectoryTest`, `TaxAgencyDirectoryTest`, `CaribbeanPremiumNANPTest`, `RepeatCallerTracker`/`WangiriTracker` coverage in `ComponentTests`, `PhoneVariantsTest`, `PauseTileTest`, etc.)
   - No Android emulator or device required — files exercising `Context`-dependent Android adapter classes (`SilentBlockerService`, the Activities, the Widget) are deliberately outside this suite; Robolectric is intentionally not used
@@ -207,18 +207,20 @@ These are not bugs; they are accepted limitations of an on-device, contact-free 
 
 ## File Structure
 
-38 files under `app/src/main/java/com/orange/apple/` (~6600 LOC). Representative subset — see `DEVELOPING.md`'s "Key source files" tables for the complete, categorized list:
+40 files under `app/src/main/java/com/orange/apple/` (~6900 LOC). Representative subset — see `DEVELOPING.md`'s "Key source files" tables for the complete, categorized list:
 
 ```
 ├── CallDecision.kt          ← Pure decision engine (16 layers, decide())
 ├── SilentBlockerService.kt  ← CallScreeningService entry point (adapter)
 ├── CallStateObserver.kt     ← Outbound adapter + Wangiri short-ring detector
-├── DomesticSpoofDetector.kt
-├── PoliceStationDirectory.kt ← 54 police numbers (Layer 9)
-├── TaxAgencyDirectory.kt     ← National Tax Agency number (Layer 9b)
-├── BusinessDirectoryBundle.kt ← CSV parser + 74 businesses (Layer 5)
+├── DomesticSpoofDetector.kt ← JP numbering-plan rules (the JP pack's plan check)
+├── CountryPack.kt           ← Country-pack contract + registry (ADR 014)
+├── JpCountryPack.kt         ← JP pack data: police/tax/emergency/elevated-risk
+├── PoliceStationDirectory.kt ← Merged pack view: 54 police numbers (Layer 9)
+├── TaxAgencyDirectory.kt     ← Merged pack view: National Tax Agency number (Layer 9b)
+├── BusinessDirectoryBundle.kt ← Asset-pack loader: CSV parser + 74 businesses (Layer 5)
 ├── CaribbeanPremiumNANP.kt   ← 23 premium NANP area codes (Layer 11)
-├── ScamPrefixSeed.kt         ← 20 elevated-risk country codes (Layer 12)
+├── ScamPrefixSeed.kt         ← ITU country-code table; elevated-risk set lives in the packs (20 codes for JP, Layer 12)
 ├── PhoneNumbers.kt           ← normalize() + mask() (single source of truth)
 ├── (phoneVariants() lives in CallDecision.kt — single source of truth)
 ├── SpamCache.kt              ← Hashed blocklist, FIFO, 10,000 entries
@@ -232,7 +234,7 @@ These are not bugs; they are accepted limitations of an on-device, contact-free 
 ├── AllowSuffixStore.kt       ← Settings "Allowed numbers" list
 ├── PostCallAdvisor.kt        ← 30s post-call notification + hotlines
 ├── WarningNotifier.kt        ← Police/tax/high-risk-hour/outbound warnings
-├── EmergencyWhitelist.kt     ← 110, 119, 118, etc. (Layer 1)
+├── EmergencyWhitelist.kt     ← Roaming emergency numbers + every pack's set: 110, 119, 118, etc. (Layer 1)
 ├── HistoryActivity.kt        ← Block history UI
 └── SettingsActivity.kt       ← Family/manual-block/allowed-numbers UI
 
@@ -278,7 +280,7 @@ still awaiting a product decision, for a session picking up this branch cold.
 
 ✅ **Subtraction** — Every decision principle in Rams asks "what can we remove?" (see DESIGN_NOTES.md)
 
-✅ **Testing** — ~608 unit tests, 14/14 CI gates, Python oracle reference implementation
+✅ **Testing** — ~619 unit tests, 14/14 CI gates, Python oracle reference implementation
 
 ✅ **Variant handling** — phoneVariants() handles carrier inconsistencies (domestic 0… ↔ E.164 +81… ↔ mangled +810…)
 
