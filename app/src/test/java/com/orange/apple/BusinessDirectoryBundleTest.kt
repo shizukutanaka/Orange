@@ -104,23 +104,36 @@ class BusinessDirectoryBundleTest {
      * bundle's blind trust. Both 警察庁 and 国税庁 were previously mis-bundled
      * here; this checks EVERY entry in both directories generically so a future
      * addition to either can't silently reintroduce the same bug.
+     *
+     * Per-pack since ADR 015: each pack's business file is checked against
+     * that pack's own warn directories, converting domestic keys to E.164
+     * with the pack's own rule (JP: drop the trunk 0, prefix +81; US: no
+     * trunk exists, prefix +1). The pre-ADR-015 version of this test
+     * applied the +81 conversion to the merged directories — with a
+     * second pack registered it would have fabricated non-existent keys
+     * for the US entries and silently stopped guarding them.
      */
     @Test fun shipped_csv_never_bundles_a_warn_directory_number() {
-        // The JP asset pack's business file (ADR 014 moved it under packs/jp/).
-        val csvFile = File("src/main/assets/packs/jp/business_directory.csv")
-        assertTrue("expected asset to exist at ${csvFile.absolutePath}", csvFile.exists())
-        val m = parse(csvFile.readText())
+        for (pack in CountryPacks.all) {
+            val csvFile = File("src/main/assets/packs/${pack.iso.lowercase()}/business_directory.csv")
+            assertTrue("expected asset to exist at ${csvFile.absolutePath}", csvFile.exists())
+            val m = parse(csvFile.readText())
 
-        val warnDirectories = listOf(
-            "PoliceStationDirectory" to PoliceStationDirectory.entries,
-            "TaxAgencyDirectory" to TaxAgencyDirectory.entries,
-        )
-        for ((dirName, entries) in warnDirectories) {
-            for ((domesticKey, name) in entries) {
-                val e164 = "+81" + domesticKey.removePrefix("0")
-                assertFalse("$name ($domesticKey, from $dirName) must not be silently " +
-                    "trusted via the business bundle as $e164",
-                    m.containsKey(e164))
+            val warnDirectories = listOf(
+                "PoliceStationDirectory" to pack.policeDirectory,
+                "TaxAgencyDirectory" to pack.taxDirectory,
+            )
+            for ((dirName, entries) in warnDirectories) {
+                for ((domesticKey, name) in entries) {
+                    val e164 = when (pack.iso) {
+                        "JP" -> "+81" + domesticKey.removePrefix("0")
+                        "US" -> "+1" + domesticKey
+                        else -> error("No E.164 conversion rule for pack ${pack.iso}")
+                    }
+                    assertFalse("$name ($domesticKey, from $dirName) must not be silently " +
+                        "trusted via the business bundle as $e164",
+                        m.containsKey(e164))
+                }
             }
         }
     }

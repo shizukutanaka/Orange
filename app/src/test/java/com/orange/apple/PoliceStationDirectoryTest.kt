@@ -33,11 +33,26 @@ class PoliceStationDirectoryTest {
     }
 
     @Test fun all_keys_are_10_digit_domestic() {
-        for ((k, _) in PoliceStationDirectory.entries) {
-            assertTrue("Key '$k' should start with 0", k.startsWith("0"))
-            assertEquals("Key '$k' should be 10 digits", 10, k.length)
-            assertTrue("Key '$k' should be all digits", k.all { it.isDigit() })
+        // Keys are each pack's own domestic form, so the shape rule is
+        // per-pack (ADR 015): JP numbers carry the trunk 0; NANP numbers
+        // have no trunk and the NPA's first digit is 2-9. Every JP key is
+        // still held to the original starts-with-0 rule.
+        for (pack in CountryPacks.all) {
+            for ((k, _) in pack.policeDirectory) {
+                assertEquals("Key '$k' should be 10 digits", 10, k.length)
+                assertTrue("Key '$k' should be all digits", k.all { it.isDigit() })
+                when (pack.iso) {
+                    "JP" -> assertTrue("JP key '$k' should start with 0", k.startsWith("0"))
+                    "US" -> assertTrue("US key '$k' should start with 2-9", k[0] in '2'..'9')
+                    else -> error("No key-shape rule for pack ${pack.iso}")
+                }
+            }
         }
+        // The aggregate is exactly the merge of the packs' directories.
+        assertEquals(
+            CountryPacks.all.sumOf { it.policeDirectory.size },
+            PoliceStationDirectory.entries.size
+        )
     }
 
     @Test fun all_values_non_blank() {

@@ -23,9 +23,9 @@ class CountryPackTest {
     }
 
     @Test fun country_without_a_pack_resolves_to_null() {
-        // No US pack ships yet: layers keyed on a pack must abstain, which
+        // No FR pack ships yet: layers keyed on a pack must abstain, which
         // forIso()==null is how decide() knows to skip them.
-        assertNull(CountryPacks.forIso("US"))
+        assertNull(CountryPacks.forIso("FR"))
         assertNull(CountryPacks.forIso(null))
     }
 
@@ -49,14 +49,23 @@ class CountryPackTest {
         assertNull(JpCountryPack.lookupTax("0335814321"))
     }
 
-    @Test fun police_aggregate_is_exactly_the_jp_pack() {
-        assertEquals(JpCountryPack.policeDirectory, PoliceStationDirectory.entries)
-        assertEquals(54, PoliceStationDirectory.entries.size)
+    @Test fun police_aggregate_merges_all_packs_jp_entries_intact() {
+        // Since ADR 015 the aggregate is the merge of every pack; the JP
+        // entries must survive the merge byte-for-byte (the restructure
+        // and the second pack relocate/add data, they never edit JP's).
+        val merged = JpCountryPack.policeDirectory + UsCountryPack.policeDirectory
+        assertEquals(merged, PoliceStationDirectory.entries)
+        assertEquals(55, PoliceStationDirectory.entries.size)
+        for ((number, name) in JpCountryPack.policeDirectory) {
+            assertEquals(name, PoliceStationDirectory.entries[number])
+        }
     }
 
-    @Test fun tax_aggregate_is_exactly_the_jp_pack() {
-        assertEquals(JpCountryPack.taxDirectory, TaxAgencyDirectory.entries)
-        assertEquals(1, TaxAgencyDirectory.entries.size)
+    @Test fun tax_aggregate_merges_all_packs_jp_entry_intact() {
+        val merged = JpCountryPack.taxDirectory + UsCountryPack.taxDirectory
+        assertEquals(merged, TaxAgencyDirectory.entries)
+        assertEquals(2, TaxAgencyDirectory.entries.size)
+        assertEquals("国税庁", TaxAgencyDirectory.entries["0352533111"])
     }
 
     @Test fun emergency_whitelist_unions_pack_and_roaming_numbers() {

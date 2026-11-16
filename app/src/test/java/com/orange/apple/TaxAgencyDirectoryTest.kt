@@ -26,11 +26,23 @@ class TaxAgencyDirectoryTest {
     }
 
     @Test fun all_keys_are_10_digit_domestic() {
-        for ((k, _) in TaxAgencyDirectory.entries) {
-            assertTrue("Key '$k' should start with 0", k.startsWith("0"))
-            assertEquals("Key '$k' should be 10 digits", 10, k.length)
-            assertTrue("Key '$k' should be all digits", k.all { it.isDigit() })
+        // Per-pack domestic shape (ADR 015): JP keys keep the trunk 0;
+        // NANP keys have no trunk and start 2-9. See the police test.
+        for (pack in CountryPacks.all) {
+            for ((k, _) in pack.taxDirectory) {
+                assertEquals("Key '$k' should be 10 digits", 10, k.length)
+                assertTrue("Key '$k' should be all digits", k.all { it.isDigit() })
+                when (pack.iso) {
+                    "JP" -> assertTrue("JP key '$k' should start with 0", k.startsWith("0"))
+                    "US" -> assertTrue("US key '$k' should start with 2-9", k[0] in '2'..'9')
+                    else -> error("No key-shape rule for pack ${pack.iso}")
+                }
+            }
         }
+        assertEquals(
+            CountryPacks.all.sumOf { it.taxDirectory.size },
+            TaxAgencyDirectory.entries.size
+        )
     }
 
     @Test fun all_values_non_blank() {

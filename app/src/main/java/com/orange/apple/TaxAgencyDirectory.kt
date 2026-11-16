@@ -6,9 +6,11 @@ package com.orange.apple
  *
  * The data itself lives in the country packs (JP: JpCountryPack — the
  * National Tax Agency's representative number, verified from the agency's
- * own public page). This object is the merged view the rest of the app
- * has always consumed; with one pack registered it is exactly the JP
- * directory it was before the pack restructure (ADR 014).
+ * own public page; US: UsCountryPack — the IRS's individual assistance
+ * line, irs.gov). This object is the merged view the rest of the app has
+ * always consumed; the JP entry in it is exactly the JP directory as it
+ * was before the pack restructure (ADR 014), with the US pack's entry
+ * merged in since ADR 015.
  *
  * Why these numbers get their own directory at all: 還付金詐欺・税金未納
  * 詐欺 (tax-refund / unpaid-tax scam) is one of the largest 特殊詐欺

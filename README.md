@@ -72,11 +72,11 @@ Sixteen-point decision engine, in order:
 6b. **Your prefix rules** — numbers starting with digits you chose to block as a range (Settings → "Block by prefix"; ported from Ring in the 2026-11 consolidation — see ADR 013) silenced. Deliberately below the trust layers above: a range never outranks a specific number you trust, and always outranks the guesses below.
 7. **Wangiri callback** — same number short-rang you (under 15s) in last 6 hours → silenced.
 8. **Domestic spoofing** — JP numbers violating the MIC numbering plan silenced.
-9. **Police HQ impersonation** — 54 numbers (47 prefectural HQ + National Police Agency + 6 verified Tokyo-area stations): call **rings** + warning. STIR/SHAKEN FAILED escalates to 🚨 high-severity alert. (Checked before Layer 10 so a real officer's call is never silenced — see ADR 011.)
+9. **Police HQ impersonation** — 55 numbers (47 prefectural HQ + National Police Agency + 6 verified Tokyo-area stations for JP users, + FBI Headquarters for US users): call **rings** + warning. STIR/SHAKEN FAILED escalates to 🚨 high-severity alert. (Checked before Layer 10 so a real officer's call is never silenced — see ADR 011.)
 9b. **Tax agency impersonation** — same warn-but-ring treatment as Layer 9, for the National Tax Agency's number (targeted by 還付金詐欺/税金未納詐欺). Checked immediately after Layer 9, same rationale.
 10. **Carrier verification failed** — STIR/SHAKEN says caller ID not authentic (API 30+) → silenced. Dormant on Japanese carriers as of 2026-07 (STIR/SHAKEN not yet deployed domestically); kept as zero-cost forward-insurance for roaming/future rollout.
 11. **International premium rate** — +800/+979/+882/+883 and Caribbean NANP (+1-242, +1-876, etc.) silenced.
-12. **Foreign elevated-risk** — 20 country codes silenced for JP users: +675/+7/+86/+44/+39/+212/+234/+63 (original seed) plus IRSF/Wangiri corridors +371/+370/+239/+232/+252/+53/+682/+676/+678/+855/+856/+95. +1 (US/Canada) is deliberately excluded despite high raw scam volume — it's also the highest-volume *legitimate* international corridor to JP, so it's silenced by Layer 13 instead, just not flagged as elevated-risk.
+12. **Foreign elevated-risk** — 21 country codes across the country packs, silenced for the callee's own country: 20 for JP users (+675/+7/+86/+44/+39/+212/+234/+63 (original seed) plus IRSF/Wangiri corridors +371/+370/+239/+232/+252/+53/+682/+676/+678/+855/+856/+95) and +91 for US users (DOJ-documented IRS/USCIS impersonation corridor — see ADR 015). +1 (US/Canada) is deliberately excluded from the JP set despite high raw scam volume — it's also the highest-volume *legitimate* international corridor to JP, so it's silenced by Layer 13 instead, just not flagged as elevated-risk; for US users +1 is the home plan and is never elevated.
 13. **Foreign generic** — any international call to your country not in outbound history silenced.
 14. **DND honor mode** — device Do Not Disturb active → unknown domestic calls silenced.
 15. **Time-of-day risk** — unknown domestic mobile (090/080/070/060) during アポ電 peak hours (Mon–Fri 09–12/13–16/18–20 JST) → RING + soft warning.
@@ -95,7 +95,7 @@ See `HONESTY_ADDENDUM.md` for what Orange **doesn't** catch.
 | [`RESEARCH_BASIS.md`](RESEARCH_BASIS.md) | Academic basis for each layer; why CEIVE/LLM are rejected. |
 | [`DESIGN_NOTES.md`](DESIGN_NOTES.md) | The subtraction log. What was cut, and why. |
 | [`THREAT_MODEL.md`](THREAT_MODEL.md) | STRIDE analysis and security invariants. |
-| [`docs/adr/`](docs/adr/) | Architecture Decision Records (14). |
+| [`docs/adr/`](docs/adr/) | Architecture Decision Records (15). |
 | [`docs/FEATURE_AUDIT.md`](docs/FEATURE_AUDIT.md) | Open deficiencies/excesses awaiting a decision + log of what's fixed. |
 | [`docs/MODEL_PLAYBOOK.md`](docs/MODEL_PLAYBOOK.md) | Strengths/weaknesses, improvement backlog, danger files, model-tier guidance for AI-assisted work. |
 | [`docs/SETUP_GUIDE_FAMILY.md`](docs/SETUP_GUIDE_FAMILY.md) | 家族向けセットアップガイド — for caregivers installing Orange on a parent's phone. |

@@ -25,7 +25,9 @@ package com.orange.apple
  * business_directory.csv are 2026-06; its elevated-risk codes and emergency
  * numbers are 2026-04 — the older of the two floors this value. (The 2026-11
  * country-pack restructure relocated the data without changing it, so the
- * verification dates did not move.)
+ * verification dates did not move. The US pack added by ADR 015 was
+ * verified 2026-11; being newer than the floor, it does not move this
+ * constant either — the value deliberately tracks the OLDEST data.)
  *
  * Update this whenever any bundled directory's source data changes:
  * a country pack's policeDirectory / taxDirectory / emergencyNumbers /

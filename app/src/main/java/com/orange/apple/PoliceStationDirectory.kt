@@ -6,9 +6,11 @@ package com.orange.apple
  * The data itself lives in the country packs (JP: JpCountryPack — 47
  * prefectural police HQ + National Police Agency + verified major Tokyo
  * stations, sourced from each prefectural police HQ's official site +
- * 警視庁公式サイト, 2026-06). This object is the merged view the rest of
- * the app has always consumed; with one pack registered it is exactly the
- * JP directory it was before the pack restructure (ADR 014).
+ * 警視庁公式サイト, 2026-06; US: UsCountryPack — FBI Headquarters,
+ * fbi.gov, 2026-11). This object is the merged view the rest of the app
+ * has always consumed; the JP entries in it are exactly the JP directory
+ * as it was before the pack restructure (ADR 014), with the US pack's
+ * entries merged in since ADR 015.
  *
  * Why these numbers get their own directory at all: 2025年のニセ警察詐欺
  * (9,642件, ¥831.9億円, 過去最悪) works by spoofing real police HQ numbers.
