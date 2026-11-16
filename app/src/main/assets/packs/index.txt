@@ -20,3 +20,4 @@
 # docs/adr/014-country-pack-structure.md for the two-tier rationale.
 
 jp
+us

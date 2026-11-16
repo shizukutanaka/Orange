@@ -159,7 +159,7 @@ orange/
 │   │   ├── assets/packs/           ← Country data packs: index.txt registry +
 │   │   │                             packs/<code>/business_directory.csv (ADR 014)
 │   │   └── AndroidManifest.xml
-│   ├── src/test/                   ← Pure Kotlin unit tests (≈5100 LOC, 619 tests)
+│   ├── src/test/                   ← Pure Kotlin unit tests (≈5100 LOC, 649 tests)
 │   ├── build.gradle.kts
 │   ├── proguard-rules.pro
 │   └── signing.gradle.kts
@@ -178,12 +178,14 @@ orange/
 | `CallDecision.kt` | 16-layer `decide()` engine + `BlockReason` / `WarnReason` / `CallContext` |
 | `EmergencyWhitelist.kt` | Roaming emergency numbers + every pack's emergency set; always ring |
 | `DomesticSpoofDetector.kt` | MIC numbering plan structure validator (the JP pack's plan check) |
+| `NanpSpoofDetector.kt` | NANP numbering plan structure validator (the US pack's plan check) |
 | `CountryPack.kt` | Country-pack contract + `CountryPacks` registry + asset-pack index parser (ADR 014) |
 | `JpCountryPack.kt` | JP pack data: police/tax warn directories, emergency numbers, 20 elevated-risk codes |
+| `UsCountryPack.kt` | US pack data: FBI/IRS warn directories, 988 emergency, +91 elevated-risk code (ADR 015) |
 | `ScamPrefixSeed.kt` | ITU country-code table (`countryCodeOf()`); elevated-risk sets live in the packs (+1 deliberately excluded — see JpCountryPack) |
 | `CaribbeanPremiumNANP.kt` | 23 NANP premium-rate area codes |
-| `PoliceStationDirectory.kt` | Merged pack view: 54 police numbers (47 prefectural HQ + NPA + 6 Tokyo-area stations), warn-but-ring |
-| `TaxAgencyDirectory.kt` | Merged pack view: National Tax Agency number, same warn-but-ring treatment (Layer 9b) |
+| `PoliceStationDirectory.kt` | Merged pack view: 55 police numbers (47 prefectural HQ + NPA + 6 Tokyo-area stations + FBI Headquarters), warn-but-ring |
+| `TaxAgencyDirectory.kt` | Merged pack view: tax numbers (JP: National Tax Agency, US: IRS), same warn-but-ring treatment (Layer 9b) |
 | `PhoneNumbers.kt` | `normalize()` — single source of truth for number cleaning |
 
 ### Android adapter layer
@@ -206,7 +208,7 @@ orange/
 | `RepeatCallerTracker.kt` | Same number calling N+ times in 60 min → block (respects Pause) |
 | `OutboundGuard.kt` | 24h LRU: warns on callback to recently-blocked number |
 | `NotificationRateLimiter.kt` | 5 notifications / 5-minute window |
-| `BusinessDirectoryBundle.kt` | Offline CSV loader (74 verified business numbers, v1.1) |
+| `BusinessDirectoryBundle.kt` | Offline CSV loader (83 verified business numbers: 74 JP + 9 US asset packs) |
 | `FamilyCallback.kt` | Up to 3 pre-set family numbers + validation |
 | `TrustNotifier.kt` | Per-block trust-window notifications (days 1–7) |
 | `WarningNotifier.kt` | Police impersonation + outbound + high-risk-hour warnings |

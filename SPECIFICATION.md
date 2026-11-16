@@ -42,11 +42,11 @@ When a call arrives, Orange evaluates in strict order; first match wins:
 | 6 | Spam cache | Number in device spam cache (salted SHA-256 hash) | **SILENCE** |
 | 7 | Wangiri callback | Same number short-rang (<15s) in last 6 hours | **SILENCE** |
 | 8 | Domestic spoofing | JP number violates MIC numbering plan | **SILENCE** |
-| 9 | Police HQ impersonation | Number matches one of 54 police numbers (47 prefectural HQ + NPA + 6 Tokyo-area stations); STIR/SHAKEN failed escalates to 🚨 high alert | **ALLOW** (ring) + warning |
+| 9 | Police HQ impersonation | Number matches one of 55 police numbers (47 prefectural HQ + NPA + 6 Tokyo-area stations for JP users; FBI Headquarters for US users); STIR/SHAKEN failed escalates to 🚨 high alert | **ALLOW** (ring) + warning |
 | 9b | Tax agency impersonation | Number matches the National Tax Agency; same warn-but-ring treatment and STIR/SHAKEN escalation as Layer 9 | **ALLOW** (ring) + warning |
 | 10 | STIR/SHAKEN failed | Carrier verification says caller ID not authentic. Dormant on JP carriers as of 2026-07 (STIR/SHAKEN not yet deployed domestically) — kept as zero-cost forward-insurance | **SILENCE** |
 | 11 | International premium | +800/+979/+882/+883 or Caribbean NANP (23 area codes) | **SILENCE** |
-| 12 | Foreign elevated-risk | 20 country codes for JP users: +675/+7/+86/+44/+39/+212/+234/+63 plus IRSF/Wangiri corridors +371/+370/+239/+232/+252/+53/+682/+676/+678/+855/+856/+95. +1 deliberately excluded (highest-volume *legitimate* corridor; still silenced by Layer 13) | **SILENCE** |
+| 12 | Foreign elevated-risk | 21 country codes across the country packs (per-callee set: JP users — +675/+7/+86/+44/+39/+212/+234/+63 plus IRSF/Wangiri corridors +371/+370/+239/+232/+252/+53/+682/+676/+678/+855/+856/+95; US users — +91, ADR 015). +1 deliberately excluded for JP users (highest-volume *legitimate* corridor; still silenced by Layer 13) and never elevated for US users (home plan) | **SILENCE** |
 | 13 | Foreign generic | Any international not in outbound history | **SILENCE** |
 | 14 | DND honor | Device Do Not Disturb active + unknown domestic | **SILENCE** |
 | 15 | High-risk hours | Unknown domestic mobile (090/080/070/060) Mon–Fri 09–12, 13–16, or 18–20 JST | **ALLOW** (ring) + soft warning |
@@ -78,7 +78,7 @@ When a call arrives, Orange evaluates in strict order; first match wins:
 - Graceful degradation if Keystore is unavailable (falls back to plaintext salt, still hashed)
 
 #### Business Directory (`BusinessDirectoryBundle.kt`, `assets/packs/<code>/business_directory.csv`)
-- Ships as per-country asset packs registered in `assets/packs/index.txt` (ADR 014); the JP pack holds 74 verified legitimate business/government numbers, deliberately NOT including police or tax-agency numbers (those live in the country packs' warn-but-ring directories, aggregated by `PoliceStationDirectory.kt`/`TaxAgencyDirectory.kt`, on Layer 9/9b instead — a police/tax number here would be silently trusted, exactly what a spoofer relies on). Adding a country is data-only: new pack file + one index line
+- Ships as per-country asset packs registered in `assets/packs/index.txt` (ADR 014); the JP pack holds 74 verified legitimate business/government numbers and the US pack 9 (ADR 015), deliberately NOT including police or tax-agency numbers (those live in the country packs' warn-but-ring directories, aggregated by `PoliceStationDirectory.kt`/`TaxAgencyDirectory.kt`, on Layer 9/9b instead — a police/tax number here would be silently trusted, exactly what a spoofer relies on). Adding a country is data-only: new pack file + one index line
 - E.164 format (+81…) with CSV key-uniqueness validated by CI (`BusinessDirectoryBundleTest.shipped_csv_never_bundles_a_warn_directory_number` also asserts no Layer-9/9b number ever appears here)
 - Lookups expanded via `phoneVariants()` to handle both domestic (0…) and E.164 forms
 - Loaded once at app startup via `EngineWarmup` (a zero-authority `ContentProvider` that runs before any `Service.bind()`), parsed on-demand per call thereafter
@@ -101,7 +101,7 @@ When a call arrives, Orange evaluates in strict order; first match wins:
 - E.164 conversion via `to_domestic()` handles "+810…" leading-zero variant
 
 #### Police Station Directory (`PoliceStationDirectory.kt`, data in the country packs)
-- 54 police numbers in the JP pack (`JpCountryPack.kt`): 47 prefectural HQ (Kyushu to Hokkaido) + National Police Agency + 6 verified Tokyo-area stations; `PoliceStationDirectory` is the merged view over all packs
+- 54 police numbers in the JP pack (`JpCountryPack.kt`): 47 prefectural HQ (Kyushu to Hokkaido) + National Police Agency + 6 verified Tokyo-area stations; the US pack (`UsCountryPack.kt`, ADR 015) adds FBI Headquarters — `PoliceStationDirectory` is the merged view over all packs
 - Accepts both domestic (0…) and E.164 (+81…) forms including "+810…" mangled variant
 - Used for Layer 9 police-impersonation detection + high-severity alert on STIR/SHAKEN failure; the engine consults only the callee's own pack
 
@@ -144,7 +144,7 @@ When a call arrives, Orange evaluates in strict order; first match wins:
 
 ### Testing
 
-- **Unit tests:** ~619 Kotlin tests across 39 files in `app/src/test/`
+- **Unit tests:** ~649 Kotlin tests across 41 files in `app/src/test/`
   - Pure decision-engine tests (`CallDecisionTest`, `DecisionPriorityTest`, `EngineInvariantTest`)
   - Component tests (`PoliceStationDirectoryTest`, `TaxAgencyDirectoryTest`, `CaribbeanPremiumNANPTest`, `RepeatCallerTracker`/`WangiriTracker` coverage in `ComponentTests`, `PhoneVariantsTest`, `PauseTileTest`, etc.)
   - No Android emulator or device required — files exercising `Context`-dependent Android adapter classes (`SilentBlockerService`, the Activities, the Widget) are deliberately outside this suite; Robolectric is intentionally not used
@@ -207,20 +207,22 @@ These are not bugs; they are accepted limitations of an on-device, contact-free 
 
 ## File Structure
 
-40 files under `app/src/main/java/com/orange/apple/` (~6900 LOC). Representative subset — see `DEVELOPING.md`'s "Key source files" tables for the complete, categorized list:
+42 files under `app/src/main/java/com/orange/apple/` (~6900 LOC). Representative subset — see `DEVELOPING.md`'s "Key source files" tables for the complete, categorized list:
 
 ```
 ├── CallDecision.kt          ← Pure decision engine (16 layers, decide())
 ├── SilentBlockerService.kt  ← CallScreeningService entry point (adapter)
 ├── CallStateObserver.kt     ← Outbound adapter + Wangiri short-ring detector
 ├── DomesticSpoofDetector.kt ← JP numbering-plan rules (the JP pack's plan check)
+├── NanpSpoofDetector.kt     ← NANP numbering-plan rules (the US pack's plan check)
 ├── CountryPack.kt           ← Country-pack contract + registry (ADR 014)
 ├── JpCountryPack.kt         ← JP pack data: police/tax/emergency/elevated-risk
-├── PoliceStationDirectory.kt ← Merged pack view: 54 police numbers (Layer 9)
-├── TaxAgencyDirectory.kt     ← Merged pack view: National Tax Agency number (Layer 9b)
-├── BusinessDirectoryBundle.kt ← Asset-pack loader: CSV parser + 74 businesses (Layer 5)
+├── UsCountryPack.kt         ← US pack data: FBI/IRS/988/elevated-risk (ADR 015)
+├── PoliceStationDirectory.kt ← Merged pack view: 55 police numbers (Layer 9)
+├── TaxAgencyDirectory.kt     ← Merged pack view: tax numbers — JP: NTA, US: IRS (Layer 9b)
+├── BusinessDirectoryBundle.kt ← Asset-pack loader: CSV parser + 83 businesses (74 JP + 9 US) (Layer 5)
 ├── CaribbeanPremiumNANP.kt   ← 23 premium NANP area codes (Layer 11)
-├── ScamPrefixSeed.kt         ← ITU country-code table; elevated-risk set lives in the packs (20 codes for JP, Layer 12)
+├── ScamPrefixSeed.kt         ← ITU country-code table; elevated-risk set lives in the packs (20 codes for JP, +91 for US, Layer 12)
 ├── PhoneNumbers.kt           ← normalize() + mask() (single source of truth)
 ├── (phoneVariants() lives in CallDecision.kt — single source of truth)
 ├── SpamCache.kt              ← Hashed blocklist, FIFO, 10,000 entries
@@ -280,7 +282,7 @@ still awaiting a product decision, for a session picking up this branch cold.
 
 ✅ **Subtraction** — Every decision principle in Rams asks "what can we remove?" (see DESIGN_NOTES.md)
 
-✅ **Testing** — ~619 unit tests, 14/14 CI gates, Python oracle reference implementation
+✅ **Testing** — ~649 unit tests, 14/14 CI gates, Python oracle reference implementation
 
 ✅ **Variant handling** — phoneVariants() handles carrier inconsistencies (domestic 0… ↔ E.164 +81… ↔ mangled +810…)
 

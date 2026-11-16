@@ -15,12 +15,13 @@ package com.orange.apple
  * knows it's there, and it never fails.
  *
  * Composition (ADR 014): each country pack contributes its own emergency
- * numbers (JpCountryPack: 110/119/118/189/171 and their +81 forms), and
+ * numbers (JpCountryPack: 110/119/118/189/171 and their +81 forms;
+ * UsCountryPack: 988 and the Lifeline legacy number, ADR 015), and
  * this object adds the ROAMING numbers below — emergency codes owned by
  * no single pack that a user must be able to reach (and be reached by)
  * while travelling, whatever their home country is. The union is what
- * isEmergency() checks; it is identical to the flat list this object
- * held before the pack restructure.
+ * isEmergency() checks; the JP part of it is identical to the flat list
+ * this object held before the pack restructure.
  *
  * List source: ITU-T E.161 + national emergency directories, current as of
  * 2026-04. Expand only if a number actually falls through in the wild;

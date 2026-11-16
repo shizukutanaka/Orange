@@ -1,0 +1,36 @@
+# Orange business directory — US pack v1.0 — E.164 → short display name
+# Curated 2026-11. Sources: each organisation's OWN official contact page
+# (ssa.gov, usps.com, ftc.gov, medicare.gov, va.gov, fcc.gov, fema.gov,
+# travel.state.gov, poison.org). See docs/adr/015-us-country-pack.md.
+#
+# RULES (same bar as the JP pack):
+# 1. Every number below is verified from the organization's OWN public page
+# 2. Never add a number from a third-party listing site
+# 3. Never add a mobile number — those are individual, not org
+# 4. Mis-labeling = spear-phishing weapon. Accuracy > coverage.
+#
+# Format: <E.164>,<display name>
+#
+# The FBI (+12023243000) is intentionally NOT here — see UsCountryPack.kt.
+# This bundle grants unconditional silent trust (Layer 5, rings with NO
+# warning, bypasses even STIR/SHAKEN failure). The FBI itself warns that
+# scammers spoof its headquarters number, so it goes through the police
+# warn-but-ring directory (Layer 9) instead.
+# The IRS (+18008291040) is intentionally NOT here either — IRS
+# impersonation is the canonical US tax scam; the number belongs in the
+# tax warn-but-ring directory (Layer 9b), not in silent trust.
+
+# === Federal agencies (official contact pages) ===
++18007721213,Social Security Administration (SSA)
++18002758777,United States Postal Service (USPS)
++18773824357,Federal Trade Commission (FTC)
++18882255322,Federal Communications Commission (FCC)
++18006213362,FEMA
++18774872778,National Passport Information Center
+
+# === Health / benefits ===
++18006334227,Medicare
++18008271000,Department of Veterans Affairs (VA Benefits)
+
+# === Helplines ===
++18002221222,Poison Control

@@ -101,11 +101,11 @@ internal interface CountryPack {
     }
 }
 
-/** Registry of the compiled country packs. JP is the first pack (2026-11). */
+/** Registry of the compiled country packs. JP is the first pack, US the second (2026-11, ADR 015). */
 internal object CountryPacks {
 
     /** All compiled packs, in lookup order. */
-    val all: List<CountryPack> = listOf(JpCountryPack)
+    val all: List<CountryPack> = listOf(JpCountryPack, UsCountryPack)
 
     /** The pack for a callee's ISO code, or null when Orange ships no pack for it. */
     fun forIso(iso: String?): CountryPack? = all.firstOrNull { it.iso == iso }

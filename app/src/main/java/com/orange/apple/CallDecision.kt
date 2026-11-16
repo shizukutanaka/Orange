@@ -246,8 +246,9 @@ fun decide(ctx: CallContext, state: CallState): Decision {
     }
 
     // Layer 8: Domestic spoofing. A number that can't exist in the callee
-    // country's numbering plan (the JP pack's plan check is
-    // DomesticSpoofDetector; countries without a pack skip this layer).
+    // country's numbering plan (each pack's own check — JP:
+    // DomesticSpoofDetector, US: NanpSpoofDetector; countries without a
+    // pack skip this layer).
     if (CountryPacks.forIso(ctx.calleeCountryIso)?.isImpossibleDomesticNumber(ctx.number) == true) {
         return Decision(Verdict.SILENCE, BlockReason.DOMESTIC_SPOOF)
     }
