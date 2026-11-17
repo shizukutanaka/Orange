@@ -1,0 +1,307 @@
+# Orange Release
+#
+# Tag-driven APK publishing: push a `v*` tag and this workflow builds the
+# release APK through the same gates CI uses, verifies it, and attaches it
+# (plus a SHA-256 checksum file) to the GitHub Release for that tag.
+# Running it manually (workflow_dispatch) from a branch builds the same APK
+# and uploads it as a workflow artifact ONLY — no Release is created, so a
+# dispatch run can never publish anything by accident. Dispatching it from
+# a tag ref is treated as a publish run for that tag; that is how the
+# existing v1.6.0 Release (created by hand with no assets) can be filled
+# without re-tagging.
+#
+# SIGNING
+# -------
+# app/build.gradle.kts already owns the signing contract: its release
+# signingConfig exists only when ORANGE_KEYSTORE_PATH,
+# ORANGE_KEYSTORE_PASSWORD, ORANGE_KEY_ALIAS and ORANGE_KEY_PASSWORD are
+# ALL set in the environment. This workflow feeds them from repository
+# secrets; the keystore file itself travels as the base64 secret
+# ORANGE_KEYSTORE_BASE64 and is materialised into the runner's temp dir
+# (never into the checkout, and *.jks is gitignored besides).
+#
+# An unsigned APK cannot be installed on Android at all, so attaching one
+# to a Release would publish a file that looks installable and is not.
+# Tag (publish) runs therefore FAIL when the signing secrets are not fully
+# configured, instead of silently shipping an unsigned APK. Branch
+# dispatch runs may proceed unsigned, loudly, for build verification only.
+#
+# F-Droid note: F-Droid distributes with its own signing key (or verifies
+# reproducible builds against ours), so the APK attached here and the
+# F-Droid build are not necessarily signed by the same key and cannot
+# update each other in place. That is expected; the fdroiddata metadata in
+# metadata/ tracks tags (UpdateCheckMode: Tags), which this workflow
+# preserves.
+#
+# Third-party actions are avoided, as in ci.yml: only first-party
+# actions/* are used, and the Release is managed with the runner's
+# preinstalled GitHub CLI.
+
+name: Release
+
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+
+jobs:
+  release:
+    name: Build, verify and publish the release APK
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      # Version identity and signing availability are decided up front, so
+      # a mis-tagged or un-signable publish run fails in seconds instead of
+      # after a full build.
+      - name: Resolve version, publish mode and signing availability
+        id: meta
+        env:
+          ORANGE_KEYSTORE_BASE64: ${{ secrets.ORANGE_KEYSTORE_BASE64 }}
+          ORANGE_KEYSTORE_PASSWORD: ${{ secrets.ORANGE_KEYSTORE_PASSWORD }}
+          ORANGE_KEY_ALIAS: ${{ secrets.ORANGE_KEY_ALIAS }}
+          ORANGE_KEY_PASSWORD: ${{ secrets.ORANGE_KEY_PASSWORD }}
+        run: |
+          set -euo pipefail
+          app_version=$(grep -oE 'versionName = "[0-9.]+"' app/build.gradle.kts | grep -oE '[0-9.]+' | head -1)
+          if [ -z "$app_version" ]; then
+            echo "::error::Could not read versionName from app/build.gradle.kts"
+            exit 1
+          fi
+          echo "version=$app_version" >> "$GITHUB_OUTPUT"
+          echo "App versionName: $app_version"
+
+          if [ "${GITHUB_REF_TYPE:-}" = "tag" ]; then
+            echo "publish=true" >> "$GITHUB_OUTPUT"
+            tag_version="${GITHUB_REF_NAME#v}"
+            if [ "$tag_version" != "$app_version" ]; then
+              echo "::error::Tag $GITHUB_REF_NAME does not match versionName $app_version in app/build.gradle.kts. Bump versionName, CHANGELOG and the F-Droid metadata together (check_comprehensive.sh section 12 keeps them in lock-step), then tag."
+              exit 1
+            fi
+            echo "Publish run for tag $GITHUB_REF_NAME"
+          else
+            echo "publish=false" >> "$GITHUB_OUTPUT"
+            echo "Branch dispatch run: artifact only, no Release will be created."
+          fi
+
+          if [ -n "${ORANGE_KEYSTORE_BASE64:-}" ] && [ -n "${ORANGE_KEYSTORE_PASSWORD:-}" ] \
+             && [ -n "${ORANGE_KEY_ALIAS:-}" ] && [ -n "${ORANGE_KEY_PASSWORD:-}" ]; then
+            echo "signing=true" >> "$GITHUB_OUTPUT"
+            echo "Signing: all ORANGE_KEYSTORE_* / ORANGE_KEY_* secrets are configured."
+          else
+            echo "signing=false" >> "$GITHUB_OUTPUT"
+            if [ "${GITHUB_REF_TYPE:-}" = "tag" ]; then
+              echo "::error::Signing secrets are not fully configured, so this run would produce an UNSIGNED APK — which Android refuses to install. Refusing to publish. Configure the repository secrets ORANGE_KEYSTORE_BASE64, ORANGE_KEYSTORE_PASSWORD, ORANGE_KEY_ALIAS and ORANGE_KEY_PASSWORD first (see RELEASING.md)."
+              exit 1
+            fi
+            echo "::warning::Signing secrets are not fully configured. This dispatch run builds an UNSIGNED APK for build verification only — it cannot be installed on a device."
+          fi
+
+      - name: Materialise keystore from secret
+        if: steps.meta.outputs.signing == 'true'
+        env:
+          ORANGE_KEYSTORE_BASE64: ${{ secrets.ORANGE_KEYSTORE_BASE64 }}
+        run: |
+          set -euo pipefail
+          umask 077
+          printf '%s' "$ORANGE_KEYSTORE_BASE64" | base64 --decode > "$RUNNER_TEMP/orange-release.keystore"
+          echo "ORANGE_KEYSTORE_PATH=$RUNNER_TEMP/orange-release.keystore" >> "$GITHUB_ENV"
+          echo "Keystore materialised at $RUNNER_TEMP/orange-release.keystore"
+
+      # The static gates run here too: ci.yml triggers on branches only, so
+      # a tag push would otherwise publish without them.
+      - name: Privacy guard — no network code in app/src/main
+        run: bash tools/check_no_network.sh app/src/main
+
+      - name: Decision oracle
+        run: python3 tools/oracle_decision.py
+
+      - name: Comprehensive static checks
+        run: bash tools/check_comprehensive.sh
+
+      - name: Locale key parity (en / ja / zh / ko)
+        run: |
+          cd app/src/main/res
+          for f in values values-ja values-zh values-ko; do
+            grep -o 'name="[a-z_0-9]*"' "$f/strings.xml" | sort -u > "/tmp/keys_$f"
+          done
+          fail=0
+          for f in values-ja values-zh values-ko; do
+            if ! diff -q /tmp/keys_values "/tmp/keys_$f" > /dev/null; then
+              echo "::error::$f/strings.xml key set differs from values/strings.xml"
+              diff /tmp/keys_values "/tmp/keys_$f" || true
+              fail=1
+            fi
+          done
+          exit $fail
+
+      - name: strings.xml parses in every locale
+        run: |
+          python3 - <<'PY'
+          import xml.etree.ElementTree as ET, sys
+          for loc in ['values', 'values-ja', 'values-zh', 'values-ko']:
+              ET.parse(f'app/src/main/res/{loc}/strings.xml')
+          ET.parse('app/src/main/AndroidManifest.xml')
+          print('XML OK')
+          PY
+
+      - name: play_data_safety.json is valid JSON
+        run: python3 -m json.tool docs/play_data_safety.json > /dev/null
+
+      # gradle-wrapper.jar is deliberately not committed (see .gitignore), so
+      # fetch it at the exact version gradle-wrapper.properties pins — the
+      # same bootstrap ci.yml uses.
+      - name: Bootstrap Gradle wrapper jar
+        run: |
+          ver=$(grep -oE 'gradle-[0-9]+(\.[0-9]+)*-' gradle/wrapper/gradle-wrapper.properties \
+                | head -1 | sed 's/^gradle-//; s/-$//')
+          echo "Wrapper version: $ver"
+          curl -fsSL -o gradle/wrapper/gradle-wrapper.jar \
+            "https://raw.githubusercontent.com/gradle/gradle/v${ver}/gradle/wrapper/gradle-wrapper.jar"
+          chmod +x gradlew
+
+      - name: Unit tests (release variant)
+        env:
+          ORANGE_KEYSTORE_PASSWORD: ${{ secrets.ORANGE_KEYSTORE_PASSWORD }}
+          ORANGE_KEY_ALIAS: ${{ secrets.ORANGE_KEY_ALIAS }}
+          ORANGE_KEY_PASSWORD: ${{ secrets.ORANGE_KEY_PASSWORD }}
+        run: ./gradlew testReleaseUnitTest --no-daemon --stacktrace
+
+      - name: Lint (release variant)
+        env:
+          ORANGE_KEYSTORE_PASSWORD: ${{ secrets.ORANGE_KEYSTORE_PASSWORD }}
+          ORANGE_KEY_ALIAS: ${{ secrets.ORANGE_KEY_ALIAS }}
+          ORANGE_KEY_PASSWORD: ${{ secrets.ORANGE_KEY_PASSWORD }}
+        run: ./gradlew lintRelease --no-daemon
+
+      # The Gradle console only ever prints the first lint error; print the
+      # full text report so every finding is visible (same as ci.yml).
+      - name: Show lint report
+        if: always()
+        run: |
+          found=0
+          for report in \
+            app/build/intermediates/lint_intermediate_text_report/release/lintReportRelease/lint-results-release.txt \
+            app/build/reports/lint-results-release.txt; do
+            if [ -f "$report" ]; then
+              echo "===== $report ====="
+              cat "$report"
+              found=1
+            fi
+          done
+          if [ "$found" -eq 0 ]; then
+            echo "No lint text report found (the lint step may not have run)."
+          fi
+
+      - name: Assemble release
+        env:
+          ORANGE_KEYSTORE_PASSWORD: ${{ secrets.ORANGE_KEYSTORE_PASSWORD }}
+          ORANGE_KEY_ALIAS: ${{ secrets.ORANGE_KEY_ALIAS }}
+          ORANGE_KEY_PASSWORD: ${{ secrets.ORANGE_KEY_PASSWORD }}
+        run: ./gradlew assembleRelease --no-daemon
+
+      - name: APK size budget
+        run: bash tools/check_apk_size.sh
+
+      # Stage the deliverables under versioned names and prove what they
+      # are: signature verification and the signing certificate fingerprint
+      # for signed builds (so anyone can confirm a downloaded APK is the
+      # one this pipeline produced), and a SHA-256 checksum file either way.
+      - name: Verify signature and stage assets
+        id: stage
+        run: |
+          set -euo pipefail
+          version="${{ steps.meta.outputs.version }}"
+          mkdir -p dist
+          if [ "${{ steps.meta.outputs.signing }}" = "true" ]; then
+            src="app/build/outputs/apk/release/app-release.apk"
+            dest="dist/orange-${version}.apk"
+          else
+            src="app/build/outputs/apk/release/app-release-unsigned.apk"
+            dest="dist/orange-${version}-unsigned.apk"
+          fi
+          if [ ! -f "$src" ]; then
+            echo "::error::Expected APK $src was not produced by assembleRelease"
+            ls -la app/build/outputs/apk/release/ || true
+            exit 1
+          fi
+          cp "$src" "$dest"
+          echo "apk_name=$(basename "$dest")" >> "$GITHUB_OUTPUT"
+
+          if [ "${{ steps.meta.outputs.signing }}" = "true" ]; then
+            sdk_root="${ANDROID_HOME:-${ANDROID_SDK_ROOT:-}}"
+            apksigner=$(find "$sdk_root/build-tools" -name apksigner -type f 2>/dev/null | sort -V | tail -1)
+            if [ -z "$apksigner" ]; then
+              echo "::error::apksigner not found under $sdk_root/build-tools — cannot verify the signed APK, refusing to stage it"
+              exit 1
+            fi
+            echo "Verifying signature with $apksigner"
+            "$apksigner" verify --verbose --print-certs "$dest" | tee /tmp/apksigner.txt
+            cert_sha=$(grep -i 'certificate SHA-256 digest' /tmp/apksigner.txt | head -1 | sed 's/.*: //' || true)
+          else
+            cert_sha=""
+            echo "::warning::$dest is UNSIGNED (build verification only — Android will not install it)."
+          fi
+
+          (cd dist && sha256sum ./*.apk > SHA256SUMS.txt && cat SHA256SUMS.txt)
+
+          {
+            echo "## Orange ${version} — release build"
+            echo ""
+            echo "- APK: \`$(basename "$dest")\`"
+            if [ "${{ steps.meta.outputs.signing }}" = "true" ]; then
+              echo "- Signed: yes (signature verified with apksigner)"
+              if [ -n "$cert_sha" ]; then
+                echo "- Signing certificate SHA-256: \`$cert_sha\`"
+              fi
+            else
+              echo "- Signed: NO — unsigned build-verification artifact, not installable"
+            fi
+            echo "- SHA-256: \`$(cut -d' ' -f1 "dist/SHA256SUMS.txt" | head -1)\`"
+            echo "- Published to a GitHub Release: ${{ steps.meta.outputs.publish }}"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: orange-release-${{ steps.meta.outputs.version }}
+          path: dist/
+          if-no-files-found: error
+
+      # Publish runs only (tag push, or dispatch from a tag ref). If the
+      # Release already exists — v1.6.0 was created by hand with no assets —
+      # attach to it instead of failing; --clobber replaces same-named
+      # assets so a re-run is idempotent.
+      - name: Publish GitHub Release
+        if: steps.meta.outputs.publish == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          tag="$GITHUB_REF_NAME"
+          version="${{ steps.meta.outputs.version }}"
+          notes_file=$(mktemp)
+          awk -v v="$version" '
+            $0 ~ "^## \\[" v "\\]" { capture=1; print; next }
+            capture && /^## \[/ { exit }
+            capture { print }
+          ' CHANGELOG.md > "$notes_file"
+          if [ ! -s "$notes_file" ]; then
+            echo "Orange $tag — see CHANGELOG.md." > "$notes_file"
+          fi
+          if gh release view "$tag" > /dev/null 2>&1; then
+            echo "Release $tag already exists; attaching assets to it."
+            gh release upload "$tag" "dist/${{ steps.stage.outputs.apk_name }}" dist/SHA256SUMS.txt --clobber
+          else
+            gh release create "$tag" \
+              "dist/${{ steps.stage.outputs.apk_name }}" dist/SHA256SUMS.txt \
+              --title "Orange $tag" \
+              --notes-file "$notes_file"
+          fi
