@@ -12,7 +12,7 @@ down. Work top to bottom.
 | 1 | Activate CI (`git mv docs/ci/ci.yml .github/workflows/ci.yml`) | 30 s | The session's GitHub App token lacks the `workflows` permission; GitHub rejects any push touching `.github/workflows/*` |
 | 2 | ~~Merge `claude/sleepy-hypatia-o9gwuv` into `main`~~ | — | **Done** (PR #4, merge commit `b513490`). Kept in the list so the numbering below still matches |
 | 3 | Enable GitHub Pages (Settings → Pages → `main` / `/docs`) | 30 s | Repo settings are not reachable from the session's toolset |
-| 4 | Tag `v1.6.0`, cut the GitHub Release, attach a signed APK | ~2 min | Three independent hard blockers — see the table further down |
+| 4 | Tag `v1.6.0`, cut the GitHub Release, attach a signed APK | ~2 min | Three independent hard blockers — see the table further down. **The tag and the (asset-less) Release now exist; the APK step is automated — see §5** |
 
 Steps 1, 3 and 4 are described in full below. All three are mechanical.
 
@@ -129,4 +129,54 @@ The `v1.6.0` *branch* ref can also be deleted once the annotated tag exists —
 GitHub serves an identical source archive from the tag, so the README's
 download link keeps working (a tag and a branch of the same name resolve the
 same archive URL shape).
+
+## 5. Automated release workflow
+
+`.github/workflows/release.yml` now performs step 4 mechanically:
+
+- **Tag push (`v*`)** — builds the release APK through the same gates CI
+  uses (static gates, the release-variant unit suite, lint, the APK size
+  budget), verifies the signature, and attaches the APK plus a
+  `SHA256SUMS.txt` to the GitHub Release for that tag. Release notes are
+  the matching CHANGELOG.md section. The tag must equal `versionName` in
+  `app/build.gradle.kts`; a mismatch fails the run before anything builds.
+- **Manual dispatch from a branch** — builds the same APK and uploads it
+  as a workflow artifact only. No Release is created, so a dispatch run
+  can never publish by accident.
+- **Manual dispatch from a tag ref** — treated as a publish run for that
+  tag. If the Release already exists (the hand-created v1.6.0 one has no
+  assets), the APK and checksums are attached to it; this is the way to
+  fill that Release without re-tagging.
+
+### Signing secrets (one-time owner setup)
+
+Signing itself is unchanged: `app/build.gradle.kts` enables its release
+signingConfig only when `ORANGE_KEYSTORE_PATH`, `ORANGE_KEYSTORE_PASSWORD`,
+`ORANGE_KEY_ALIAS` and `ORANGE_KEY_PASSWORD` are all present. The workflow
+feeds them from these repository secrets:
+
+| Secret | Content |
+|---|---|
+| `ORANGE_KEYSTORE_BASE64` | The release keystore file (`.jks`), base64-encoded |
+| `ORANGE_KEYSTORE_PASSWORD` | Keystore password |
+| `ORANGE_KEY_ALIAS` | Key alias inside the keystore |
+| `ORANGE_KEY_PASSWORD` | Key password |
+
+The keystore is decoded into the runner's temp directory only — never
+into the checkout. Generating the keystore and registering these secrets
+is the one step only the repository owner can do, and it must happen
+**once**: Android updates require the same key forever, so the keystore
+must be backed up outside this repository.
+
+An unsigned APK cannot be installed on Android at all, so a publish run
+**fails** when the secrets are not fully configured, rather than
+attaching an APK that looks installable and is not. A branch dispatch run
+may proceed unsigned, with a warning, purely to verify the build; the
+resulting file is labelled `-unsigned` and is not installable.
+
+Note on F-Droid: F-Droid signs its builds with its own key (or verifies
+reproducible builds against the developer key), so the GitHub Release APK
+and the F-Droid APK are not necessarily signed by the same key and cannot
+update each other in place. The fdroiddata metadata in `metadata/` tracks
+tags, which this workflow preserves.
 
