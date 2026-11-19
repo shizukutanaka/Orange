@@ -128,4 +128,64 @@ class BlockListTransferTest {
         assertEquals(listOf("+819012345678"), imported.blockExact)
         assertEquals(listOf(PrefixRule("0800", PrefixRule.SCOPE_NATIONAL)), imported.prefixRules)
     }
+
+    // --- Plain-text paste (importText) -------------------------------------
+
+    @Test fun `pasted message yields its numbers in every common written form`() {
+        val message = """
+            母が今朝 03-1234-5678 から「還付金がある」と電話を受けました。
+            ほかに 090（1111）2222、０８０－３３３３－４４４４、+81 70 5555 6666、
+            0120.123.456 にも注意。日付 2026-11-19、〒540-8540、123,456円 は番号ではない。
+        """.trimIndent()
+        val imported = BlockListTransfer.importText(message)
+        assertEquals(
+            listOf("0312345678", "09011112222", "08033334444", "+817055556666", "0120123456"),
+            imported.blockExact,
+        )
+        assertTrue(imported.prefixRules.isEmpty())
+        assertEquals(0, imported.skippedProtected)
+    }
+
+    @Test fun `a date written right before a number does not swallow it`() {
+        val imported = BlockListTransfer.importText("2026-11-19 03-1234-5678")
+        assertEquals(listOf("0312345678"), imported.blockExact)
+    }
+
+    @Test fun `police and tax numbers in a pasted notice are kept ringing and counted`() {
+        // An anti-fraud notice prints the police's own number. Spam cache
+        // (Layer 6) outranks the warn-but-ring lane (Layer 9), so blocking
+        // it would silence a real officer's call.
+        val notice = "警視庁 03-3581-4321 / 国税庁 +81 3 5253 3111 を名乗る詐欺に注意。犯行番号: 050-1234-5678"
+        val imported = BlockListTransfer.importText(notice)
+        assertEquals(listOf("05012345678"), imported.blockExact)
+        assertEquals(2, imported.skippedProtected)
+    }
+
+    @Test fun `emergency and short codes in text are never picked up`() {
+        try {
+            BlockListTransfer.importText("110 番、119 番、#9110、188 に相談")
+            fail("expected IllegalArgumentException")
+        } catch (e: IllegalArgumentException) {
+            assertEquals("no phone numbers", e.message)
+        }
+    }
+
+    @Test fun `repeated number in text collapses`() {
+        val imported = BlockListTransfer.importText("090-1111-2222 と 09011112222 は同じ")
+        assertEquals(listOf("09011112222"), imported.blockExact)
+    }
+
+    @Test fun `schema v1 still goes through the strict JSON path`() {
+        val imported = BlockListTransfer.importText(
+            """  {"version":1,"blockExact":["+819012345678"],"prefixes":[{"prefix":"0800","scope":"national"}]}"""
+        )
+        assertEquals(listOf("+819012345678"), imported.blockExact)
+        assertEquals(listOf(PrefixRule("0800", PrefixRule.SCOPE_NATIONAL)), imported.prefixRules)
+        try {
+            BlockListTransfer.importText("{ broken")
+            fail("expected IllegalArgumentException")
+        } catch (e: IllegalArgumentException) {
+            assertEquals("invalid JSON", e.message)
+        }
+    }
 }

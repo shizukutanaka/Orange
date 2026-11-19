@@ -673,7 +673,7 @@ fun SettingsScreen() {
                                     TransferOutcome(failed = true)
                                 } else {
                                     try {
-                                        val imported = BlockListTransfer.importJson(text)
+                                        val imported = BlockListTransfer.importText(text)
                                         var rulesAdded = 0
                                         for (rule in imported.prefixRules) {
                                             val before = PrefixBlockStore.listForEngine(prefs).size
@@ -693,6 +693,7 @@ fun SettingsScreen() {
                                             numbersBlocked = numbersBlocked,
                                             skippedAllow = imported.skippedAllow,
                                             skippedReports = imported.skippedReports,
+                                            skippedProtected = imported.skippedProtected,
                                         )
                                     } catch (_: IllegalArgumentException) {
                                         TransferOutcome(failed = true)
@@ -736,6 +737,16 @@ fun SettingsScreen() {
                                         stringResource(
                                             R.string.settings_transfer_import_skipped,
                                             outcome.skippedAllow, outcome.skippedReports
+                                        ),
+                                        fontSize = 12.sp,
+                                        color = Color.Gray
+                                    )
+                                }
+                                if (outcome.skippedProtected > 0) {
+                                    Text(
+                                        stringResource(
+                                            R.string.settings_transfer_import_protected,
+                                            outcome.skippedProtected
                                         ),
                                         fontSize = 12.sp,
                                         color = Color.Gray
@@ -831,6 +842,7 @@ private data class TransferOutcome(
     val numbersBlocked: Int = 0,
     val skippedAllow: Int = 0,
     val skippedReports: Int = 0,
+    val skippedProtected: Int = 0,
     val failed: Boolean = false,
     val exported: Boolean = false,
 )

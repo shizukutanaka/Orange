@@ -38,8 +38,15 @@ package com.orange.apple
  *    their data means.
  *
  * Malformed entries are filtered out instead of failing the whole
- * import (Ring's behaviour). A document that is not JSON, or whose
- * version is not 1, is rejected outright.
+ * import (Ring's behaviour). A document that starts with '{' but is not
+ * JSON, or whose version is not 1, is rejected outright.
+ *
+ * Anything else is read as PLAIN TEXT (importText): a police notice, a
+ * neighbour's LINE message or a family member's warning, copied as-is.
+ * The phone numbers in it are pulled out and blocked. This is how a
+ * user keeps the block list current without a server: the source of
+ * fresh scam numbers is whatever the user already reads, and the
+ * number never leaves the device.
  */
 internal object BlockListTransfer {
 
@@ -51,6 +58,8 @@ internal object BlockListTransfer {
         val blockExact: List<String>,
         val skippedAllow: Int,
         val skippedReports: Int,
+        /** Police/tax numbers found in pasted text and deliberately not blocked. */
+        val skippedProtected: Int = 0,
     )
 
     fun exportJson(prefixRules: List<PrefixRule>): String {
@@ -87,6 +96,62 @@ internal object BlockListTransfer {
             skippedReports = (obj["reports"] as? List<*>)?.size ?: 0,
         )
     }
+
+    /**
+     * Schema v1 when [text] looks like a JSON object, otherwise the phone
+     * numbers written anywhere in it.
+     *
+     * Text numbers are accepted only in a full-number shape: domestic
+     * 0 + 9-10 digits (03-1234-5678, 090-1234-5678, 0120-123-456) or
+     * '+' + 8-15 digits, with '-', spaces, dots, parentheses and their
+     * full-width forms as separators. Dates, postal codes, prices and
+     * short codes never reach that shape, so they are not picked up.
+     *
+     * Police and tax-office numbers are never blocked from text, and are
+     * counted in skippedProtected instead: an anti-fraud notice nearly
+     * always prints the police's own number, and decide() checks the
+     * spam cache (Layer 6) before the warn-but-ring lane (Layer 9/9b), so
+     * blocking it would silence a real officer's call.
+     *
+     * @throws IllegalArgumentException when the text holds neither a
+     *         valid block list nor any phone number
+     */
+    fun importText(text: String): ImportResult {
+        if (text.trimStart().startsWith("{")) return importJson(text)
+        val numbers = LinkedHashSet<String>()
+        val kept = HashSet<String>()
+        for (match in TEXT_NUMBER.findAll(text)) {
+            // A space-separated run can join two neighbours ("2026-11-19
+            // 03-1234-5678"); when the whole run is not a number, its
+            // space-separated parts are tried on their own.
+            val whole = PhoneNumbers.normalize(match.value)
+            val candidates = if (isFullNumber(whole)) listOf(whole)
+            else match.value.split(' ', '\u3000').map(PhoneNumbers::normalize).filter(::isFullNumber)
+            for (n in candidates) {
+                if (EmergencyWhitelist.isEmergency(n)) continue
+                if (CountryPacks.all.any { it.lookupPolice(n) != null || it.lookupTax(n) != null }) {
+                    kept += n
+                } else {
+                    numbers += n
+                }
+            }
+        }
+        if (numbers.isEmpty() && kept.isEmpty()) {
+            throw IllegalArgumentException("no phone numbers")
+        }
+        return ImportResult(emptyList(), numbers.toList(), 0, 0, kept.size)
+    }
+
+    private fun isFullNumber(n: String): Boolean =
+        if (n.startsWith("+")) n.length - 1 in 8..15
+        else n.startsWith("0") && !n.startsWith("00") && n.length in 10..11
+
+    // A digit (or '+'), then digits with at most one separator between
+    // any two of them, ending on a digit. Separators: - . space ( ) and
+    // the full-width / Japanese dash forms copy-paste delivers.
+    private val TEXT_NUMBER = Regex(
+        "[+\\uFF0B]?[0-9\\uFF10-\\uFF19](?:[-. ()\\u2010-\\u2015\\u2212\\u30FC\\uFF08\\uFF09\\uFF0D\\u3000]?[0-9\\uFF10-\\uFF19])+"
+    )
 
     private fun prefixList(value: Any?): List<PrefixRule> =
         (value as? List<*>)?.mapNotNull { item ->

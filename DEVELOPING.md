@@ -159,7 +159,7 @@ orange/
 │   │   ├── assets/packs/           ← Country data packs: index.txt registry +
 │   │   │                             packs/<code>/business_directory.csv (ADR 014)
 │   │   └── AndroidManifest.xml
-│   ├── src/test/                   ← Pure Kotlin unit tests (≈5100 LOC, 649 tests)
+│   ├── src/test/                   ← Pure Kotlin unit tests (≈5100 LOC, 655 tests)
 │   ├── build.gradle.kts
 │   ├── proguard-rules.pro
 │   └── signing.gradle.kts

@@ -141,13 +141,14 @@
     <string name="settings_lookup_spoof">日本の番号計画に存在しない番号です — 着信すると偽装として拒否されます。</string>
     <string name="settings_lookup_clear">ブロック済み番号・前方一致ルールのどちらにも一致しません。</string>
     <string name="settings_section_transfer">ブロックリストの入出力</string>
-    <string name="settings_transfer_description">前方一致ルールを JSON でコピーしたり、ブロックリスト（Ring で使われていた形式）を読み込めます。ブロック済み番号はハッシュで保存されるため、読み込みはできても書き出しはできません。</string>
+    <string name="settings_transfer_description">前方一致ルールを JSON でコピーしたり、クリップボードから読み込めます。読み込めるのはブロックリスト（Ring で使われていた形式）か、電話番号を含む文章（家族からのメッセージや警察の注意喚起など）です。ブロック済み番号はハッシュで保存されるため、読み込みはできても書き出しはできません。</string>
     <string name="settings_transfer_export">ルールを JSON でコピー</string>
     <string name="settings_transfer_exported">クリップボードにコピーしました</string>
     <string name="settings_transfer_import">クリップボードから読み込む</string>
     <string name="settings_transfer_import_result">前方一致ルール %1$d 件、ブロック番号 %2$d 件を読み込みました。</string>
     <string name="settings_transfer_import_skipped">許可リスト %1$d 件と通報 %2$d 件は、移し先がないため読み飛ばしました。</string>
-    <string name="settings_transfer_import_failed">クリップボードに有効なブロックリストがありません。</string>
+    <string name="settings_transfer_import_failed">クリップボードにブロックリストも電話番号もありません。</string>
+    <string name="settings_transfer_import_protected">警察・税務署の番号 %1$d 件はブロックせず、着信時に警告します。</string>
     <string name="settings_section_allowed">許可した番号</string>
     <string name="settings_allowed_description">履歴から許可した番号です。末尾4桁が一致する着信は常に鳴ります。</string>
     <string name="settings_allowed_empty">許可した番号はまだありません</string>
