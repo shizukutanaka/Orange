@@ -124,7 +124,9 @@
     <string name="settings_transfer_import_result">已导入 %1$d 条前缀规则和 %2$d 个拦截号码。</string>
     <string name="settings_transfer_import_skipped">已跳过 %1$d 条允许条目和 %2$d 条举报——Orange 中没有对应的列表。</string>
     <string name="settings_transfer_import_failed">剪贴板中既没有拦截名单，也没有电话号码。</string>
-    <string name="settings_transfer_import_protected">%1$d 个警察/税务机关号码未拦截——来电时 Orange 会发出警告。</string>
+    <plurals name="settings_transfer_import_protected">
+        <item quantity="other">%1$d 个警察/税务机关号码未拦截——来电时 Orange 会发出警告。</item>
+    </plurals>
     <string name="settings_section_allowed">已允许的号码</string>
     <string name="settings_allowed_description">您从拦截记录中允许的号码。末 4 位相同的来电将始终响铃</string>
     <string name="settings_allowed_empty">尚无已允许的号码</string>

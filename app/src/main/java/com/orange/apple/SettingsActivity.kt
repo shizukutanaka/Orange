@@ -744,8 +744,9 @@ fun SettingsScreen() {
                                 }
                                 if (outcome.skippedProtected > 0) {
                                     Text(
-                                        stringResource(
-                                            R.string.settings_transfer_import_protected,
+                                        ctx.resources.getQuantityString(
+                                            R.plurals.settings_transfer_import_protected,
+                                            outcome.skippedProtected,
                                             outcome.skippedProtected
                                         ),
                                         fontSize = 12.sp,

@@ -124,7 +124,9 @@
     <string name="settings_transfer_import_result">접두사 규칙 %1$d개, 차단 번호 %2$d개를 가져왔습니다.</string>
     <string name="settings_transfer_import_skipped">허용 항목 %1$d개와 신고 %2$d개는 옮길 목록이 없어 건너뛰었습니다.</string>
     <string name="settings_transfer_import_failed">클립보드에 차단 목록도 전화번호도 없습니다.</string>
-    <string name="settings_transfer_import_protected">경찰·세무서 번호 %1$d개는 차단하지 않고 착신 시 경고합니다.</string>
+    <plurals name="settings_transfer_import_protected">
+        <item quantity="other">경찰·세무서 번호 %1$d개는 차단하지 않고 착신 시 경고합니다.</item>
+    </plurals>
     <string name="settings_section_allowed">허용된 번호</string>
     <string name="settings_allowed_description">차단 기록에서 허용한 번호입니다. 마지막 4자리가 일치하면 항상 울립니다</string>
     <string name="settings_allowed_empty">아직 허용된 번호가 없습니다</string>
