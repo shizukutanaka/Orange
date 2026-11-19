@@ -117,13 +117,16 @@
     <string name="settings_lookup_spoof">该号码在日本编号计划中不存在——来电时将作为伪造号码拦截。</string>
     <string name="settings_lookup_clear">与您的拦截名单和前缀规则均不匹配。</string>
     <string name="settings_section_transfer">拦截名单导入导出</string>
-    <string name="settings_transfer_description">将前缀规则复制为 JSON，或导入拦截名单（Ring 使用的格式）。被拦截号码以哈希形式存储，因此只能导入，无法导出。</string>
+    <string name="settings_transfer_description">将前缀规则复制为 JSON，或从剪贴板导入：拦截名单（Ring 使用的格式），或任何含有电话号码的文字（家人的消息、警方的提醒等）。被拦截号码以哈希形式存储，因此只能导入，无法导出。</string>
     <string name="settings_transfer_export">复制规则为 JSON</string>
     <string name="settings_transfer_exported">已复制到剪贴板</string>
     <string name="settings_transfer_import">从剪贴板导入</string>
     <string name="settings_transfer_import_result">已导入 %1$d 条前缀规则和 %2$d 个拦截号码。</string>
     <string name="settings_transfer_import_skipped">已跳过 %1$d 条允许条目和 %2$d 条举报——Orange 中没有对应的列表。</string>
-    <string name="settings_transfer_import_failed">剪贴板中没有有效的拦截名单。</string>
+    <string name="settings_transfer_import_failed">剪贴板中既没有拦截名单，也没有电话号码。</string>
+    <plurals name="settings_transfer_import_protected">
+        <item quantity="other">%1$d 个警察/税务机关号码未拦截——来电时 Orange 会发出警告。</item>
+    </plurals>
     <string name="settings_section_allowed">已允许的号码</string>
     <string name="settings_allowed_description">您从拦截记录中允许的号码。末 4 位相同的来电将始终响铃</string>
     <string name="settings_allowed_empty">尚无已允许的号码</string>

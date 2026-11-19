@@ -41,7 +41,7 @@ git commit -m "ci: activate workflow" && git push
 
 From that commit on, every push and PR runs: the static gates (privacy guard,
 decision oracle, 14/14 comprehensive checks, locale key parity across
-en/ja/zh/ko, XML + JSON validity), the SDK-free 545-test suite, and the full
+en/ja/zh/ko, XML + JSON validity), the SDK-free 551-test suite, and the full
 Android build (`testReleaseUnitTest` → `lintRelease` → `assembleRelease` → APK
 size budget), uploading the APK as an artifact.
 
@@ -87,7 +87,7 @@ both counts. The exclusion came from the initial commit, filed under an
 unrelated heading with no rationale, while the same `.gitignore` assumed a CI
 existed. The workflow now lives at `docs/ci/ci.yml` until step 1 activates it,
 and runs the static gates, the
-545-test SDK-free suite, and the full Android build.)
+551-test SDK-free suite, and the full Android build.)
 
 What IS already public and needs no further action: the source (public
 repo), the immutable `v1.6.0` ref + its verified-downloadable source

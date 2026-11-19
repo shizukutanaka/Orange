@@ -51,7 +51,7 @@
 # throws on the JVM and it falls back to a plaintext salt before any keystore
 # type is instantiated). No stub carries business logic, so none can mask a bug.
 #
-# EXPECTED: 545 tests run, 0 failures. (Two DomesticSpoofDetector tests spent a
+# EXPECTED: 551 tests run, 0 failures. (Two DomesticSpoofDetector tests spent a
 # while intentionally failing as the visible signal of a design question; ITU-T
 # E.164 settled it — the leading 0 is a trunk prefix, so the abstain is the
 # contract being honoured — and the tests now assert the correct behaviour with
@@ -237,7 +237,7 @@ echo "==> compiling ${#TEST_SRCS[@]} test sources"
 KC "${TEST_SRCS[@]}" -d "$OUT/test" -no-reflect \
    -classpath "$OUT/main:$STDLIB:$JUNIT:$HAMCREST:$OUT/shimjava-out" -Xfriend-paths="$OUT/main"
 
-echo "==> running tests (expected steady state: 545 run / 0 failures)"
+echo "==> running tests (expected steady state: 551 run / 0 failures)"
 CLASSES=$(cd "$OUT/test" && find . -name '*Test.class' | sed 's|^\./||;s|\.class$||;s|/|.|g' | tr '\n' ' ')
 set +e
 RESULT=$(java -cp "$OUT/main:$OUT/test:$STDLIB:$JUNIT:$HAMCREST:$OUT/shimjava-out" org.junit.runner.JUnitCore $CLASSES 2>&1 | grep -v 'JAVA_TOOL_OPTIONS')

@@ -117,13 +117,16 @@
     <string name="settings_lookup_spoof">일본 번호 계획에 존재하지 않는 번호입니다 — 전화가 오면 스푸핑으로 차단됩니다.</string>
     <string name="settings_lookup_clear">차단 목록과 접두사 규칙 모두 일치하지 않습니다.</string>
     <string name="settings_section_transfer">차단 목록 가져오기/내보내기</string>
-    <string name="settings_transfer_description">접두사 규칙을 JSON으로 복사하거나 차단 목록(Ring에서 사용한 형식)을 가져올 수 있습니다. 차단된 번호는 해시로 저장되므로 가져오기만 가능하고 내보낼 수 없습니다.</string>
+    <string name="settings_transfer_description">접두사 규칙을 JSON으로 복사하거나 클립보드에서 가져올 수 있습니다. 차단 목록(Ring에서 사용한 형식)이나 전화번호가 들어 있는 글(가족의 메시지, 경찰의 주의 안내 등)을 가져올 수 있습니다. 차단된 번호는 해시로 저장되므로 가져오기만 가능하고 내보낼 수 없습니다.</string>
     <string name="settings_transfer_export">규칙을 JSON으로 복사</string>
     <string name="settings_transfer_exported">클립보드에 복사했습니다</string>
     <string name="settings_transfer_import">클립보드에서 가져오기</string>
     <string name="settings_transfer_import_result">접두사 규칙 %1$d개, 차단 번호 %2$d개를 가져왔습니다.</string>
     <string name="settings_transfer_import_skipped">허용 항목 %1$d개와 신고 %2$d개는 옮길 목록이 없어 건너뛰었습니다.</string>
-    <string name="settings_transfer_import_failed">클립보드에 유효한 차단 목록이 없습니다.</string>
+    <string name="settings_transfer_import_failed">클립보드에 차단 목록도 전화번호도 없습니다.</string>
+    <plurals name="settings_transfer_import_protected">
+        <item quantity="other">경찰·세무서 번호 %1$d개는 차단하지 않고 착신 시 경고합니다.</item>
+    </plurals>
     <string name="settings_section_allowed">허용된 번호</string>
     <string name="settings_allowed_description">차단 기록에서 허용한 번호입니다. 마지막 4자리가 일치하면 항상 울립니다</string>
     <string name="settings_allowed_empty">아직 허용된 번호가 없습니다</string>

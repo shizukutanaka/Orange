@@ -146,7 +146,7 @@
     <string name="settings_lookup_spoof">This number cannot exist in the Japanese numbering plan — silenced as a spoof if it calls.</string>
     <string name="settings_lookup_clear">No match in your blocked numbers or prefix rules.</string>
     <string name="settings_section_transfer">Block list transfer</string>
-    <string name="settings_transfer_description">Copy your prefix rules as JSON, or import a block list (the format Ring used). Blocked numbers are stored hashed, so they can be imported but never exported.</string>
+    <string name="settings_transfer_description">Copy your prefix rules as JSON, or import from the clipboard: a block list (the format Ring used), or any text with phone numbers in it — a family member\'s message or a police notice. Blocked numbers are stored hashed, so they can be imported but never exported.</string>
     <string name="settings_transfer_export">Copy rules as JSON</string>
     <string name="settings_transfer_exported">Copied to clipboard</string>
     <string name="settings_transfer_import">Import from clipboard</string>
@@ -155,7 +155,11 @@
          PluralsCandidate is therefore suppressed for these two only. -->
     <string name="settings_transfer_import_result" tools:ignore="PluralsCandidate">Imported %1$d prefix rules and %2$d blocked numbers.</string>
     <string name="settings_transfer_import_skipped" tools:ignore="PluralsCandidate">Skipped %1$d allow entries and %2$d reports — Orange has no list they belong to.</string>
-    <string name="settings_transfer_import_failed">Clipboard doesn\'t hold a valid block list.</string>
+    <string name="settings_transfer_import_failed">Clipboard holds no block list and no phone numbers.</string>
+    <plurals name="settings_transfer_import_protected">
+        <item quantity="one">Kept %1$d police/tax-office number ringing — Orange warns on it instead of blocking.</item>
+        <item quantity="other">Kept %1$d police/tax-office numbers ringing — Orange warns on those instead of blocking.</item>
+    </plurals>
     <string name="settings_section_allowed">Allowed numbers</string>
     <string name="settings_allowed_description">Numbers you\'ve allowed from history. Ending in these last 4 digits always rings through.</string>
     <string name="settings_allowed_empty">No numbers allowed yet</string>
